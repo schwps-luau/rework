@@ -1,579 +1,503 @@
 --[[
-    Modern UI Library for Roblox Exploits
-    Inspired by Splix UI design
-    Usage: loadstring(game:HttpGet("your-url.lua"))()
+    Modern UI Library - Splix/Yun Style
+    Clean, minimal, flat design
+    No rounded corners, no shadows, no animations
 ]]
 
 local ModernUI = {}
 ModernUI.__index = ModernUI
 
 -- Services
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 
--- Default theme colors
-ModernUI.Theme = {
-    Background = Color3.fromRGB(25, 25, 35),
-    Surface = Color3.fromRGB(35, 35, 45),
-    Primary = Color3.fromRGB(88, 101, 242),
-    PrimaryDark = Color3.fromRGB(71, 82, 196),
-    Danger = Color3.fromRGB(237, 66, 69),
-    Success = Color3.fromRGB(35, 165, 90),
-    Warning = Color3.fromRGB(250, 166, 26),
-    Text = Color3.fromRGB(255, 255, 255),
-    TextSecondary = Color3.fromRGB(160, 160, 170),
-    Border = Color3.fromRGB(50, 50, 60),
+-- Flat color palette (Splix/Yun style)
+ModernUI.Colors = {
+    Background = Color3.fromRGB(18, 18, 22),
+    Surface = Color3.fromRGB(26, 26, 30),
+    Primary = Color3.fromRGB(64, 128, 255),
+    PrimaryHover = Color3.fromRGB(84, 148, 255),
+    Danger = Color3.fromRGB(230, 70, 70),
+    DangerHover = Color3.fromRGB(250, 90, 90),
+    Success = Color3.fromRGB(70, 190, 90),
+    Text = Color3.fromRGB(235, 235, 240),
+    TextSecondary = Color3.fromRGB(140, 140, 150),
+    Border = Color3.fromRGB(38, 38, 44),
+    Checkmark = Color3.fromRGB(64, 128, 255),
 }
 
--- Tween settings
-local TweenSettings = {
-    InOut = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
-    Out = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-    In = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-    Bounce = TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-}
-
--- Utility function for creating UI elements
-local function createUIElement(parent, className, properties)
-    local element = Instance.new(className)
-    for prop, value in pairs(properties) do
-        element[prop] = value
+-- Utility function
+local function create(parent, className, props)
+    local obj = Instance.new(className)
+    for k, v in pairs(props) do
+        obj[k] = v
     end
-    element.Parent = parent
-    return element
+    obj.Parent = parent
+    return obj
 end
 
--- Create a rounded frame with shadow effect
-local function createRoundedFrame(parent, size, position, color, transparency)
-    local frame = createUIElement(parent, "Frame", {
-        Size = size,
-        Position = position,
-        BackgroundColor3 = color,
-        BackgroundTransparency = transparency or 0,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-    })
-    
-    local corner = createUIElement(frame, "UICorner", {
-        CornerRadius = UDim.new(0, 8)
-    })
-    
-    return frame
-end
-
--- Dragging functionality
-local function makeDraggable(frame)
-    local dragging = false
-    local dragInput
-    local dragStart
-    local startPos
-    
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = frame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-    
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-end
-
--- Main library constructor
-function ModernUI.new(title, size, theme)
+-- Main constructor
+function ModernUI.new(title, size)
     local self = setmetatable({}, ModernUI)
     
-    -- Apply custom theme if provided
-    if theme then
-        for k, v in pairs(theme) do
-            ModernUI.Theme[k] = v
-        end
-    end
+    -- Create ScreenGui
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "ModernUI"
+    gui.Parent = game:GetService("CoreGui")
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Create main container
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "ModernUI"
-    screenGui.Parent = game:GetService("CoreGui")
-    
-    local mainSize = size or UDim2.new(0, 450, 0, 600)
-    local mainPos = UDim2.new(0.5, -mainSize.X.Offset/2, 0.5, -mainSize.Y.Offset/2)
-    
-    self.MainFrame = createRoundedFrame(screenGui, mainSize, mainPos, ModernUI.Theme.Background, 0)
-    self.MainFrame.BackgroundTransparency = 0
-    self.ScreenGui = screenGui
-    
-    -- Make window draggable
-    makeDraggable(self.MainFrame)
-    
-    -- Add shadow effect
-    local shadow = createUIElement(self.MainFrame, "UIStroke", {
-        Color = ModernUI.Theme.Border,
-        Thickness = 1,
-        Transparency = 0.5,
+    local windowSize = size or UDim2.new(0, 380, 0, 520)
+    local window = create(gui, "Frame", {
+        Size = windowSize,
+        Position = UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2),
+        BackgroundColor3 = ModernUI.Colors.Background,
+        BorderSizePixel = 0,
     })
     
     -- Title bar
-    local titleBar = createRoundedFrame(self.MainFrame, UDim2.new(1, 0, 0, 50), UDim2.new(0, 0, 0, 0), ModernUI.Theme.Surface, 0)
-    titleBar.ZIndex = 2
+    local titleBar = create(window, "Frame", {
+        Size = UDim2.new(1, 0, 0, 44),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        BorderSizePixel = 0,
+    })
     
-    local titleLabel = createUIElement(titleBar, "TextLabel", {
-        Size = UDim2.new(1, -50, 1, 0),
-        Position = UDim2.new(0, 15, 0, 0),
+    create(titleBar, "TextLabel", {
+        Size = UDim2.new(1, -40, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
-        Text = title or "Modern UI",
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 18,
-        Font = Enum.Font.GothamBold,
+        Text = title or "ui",
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 13,
+        Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center,
     })
     
     -- Close button
-    local closeButton = createUIElement(titleBar, "TextButton", {
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(1, -40, 0.5, -15),
-        BackgroundColor3 = ModernUI.Theme.Danger,
-        Text = "✕",
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 18,
-        Font = Enum.Font.GothamBold,
+    local closeBtn = create(titleBar, "TextButton", {
+        Size = UDim2.new(0, 44, 1, 0),
+        Position = UDim2.new(1, -44, 0, 0),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        Text = "×",
+        TextColor3 = ModernUI.Colors.TextSecondary,
+        TextSize = 20,
+        Font = Enum.Font.Gotham,
         BorderSizePixel = 0,
         AutoButtonColor = false,
     })
     
-    local closeCorner = createUIElement(closeButton, "UICorner", {
-        CornerRadius = UDim.new(0, 6)
-    })
-    
-    closeButton.MouseButton1Click:Connect(function()
-        self:Destroy()
+    closeBtn.MouseButton1Click:Connect(function()
+        gui:Destroy()
     end)
     
     -- Minimize button
-    local minimizeButton = createUIElement(titleBar, "TextButton", {
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(1, -80, 0.5, -15),
-        BackgroundColor3 = ModernUI.Theme.Surface,
-        Text = "─",
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 18,
-        Font = Enum.Font.GothamBold,
+    local minBtn = create(titleBar, "TextButton", {
+        Size = UDim2.new(0, 44, 1, 0),
+        Position = UDim2.new(1, -88, 0, 0),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        Text = "—",
+        TextColor3 = ModernUI.Colors.TextSecondary,
+        TextSize = 20,
+        Font = Enum.Font.Gotham,
         BorderSizePixel = 0,
         AutoButtonColor = false,
     })
     
-    local minimizeCorner = createUIElement(minimizeButton, "UICorner", {
-        CornerRadius = UDim.new(0, 6)
-    })
-    
     local minimized = false
-    local originalSize = mainSize
+    local originalHeight = windowSize.Y.Offset
     
-    minimizeButton.MouseButton1Click:Connect(function()
+    minBtn.MouseButton1Click:Connect(function()
         minimized = not minimized
-        if minimized then
-            TweenService:Create(self.MainFrame, TweenSettings.Out, {Size = UDim2.new(mainSize.X.Scale, mainSize.X.Offset, 0, 50)}):Play()
-        else
-            TweenService:Create(self.MainFrame, TweenSettings.Out, {Size = originalSize}):Play()
+        window.Size = UDim2.new(windowSize.X.Scale, windowSize.X.Offset, 0, minimized and 44 or originalHeight)
+    end)
+    
+    -- Dragging
+    local dragStart, startPos
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragStart = input.Position
+            startPos = window.Position
         end
     end)
     
-    -- Scrolling frame for content
-    local scrollFrame = createUIElement(self.MainFrame, "ScrollingFrame", {
-        Size = UDim2.new(1, -20, 1, -70),
-        Position = UDim2.new(0, 10, 0, 60),
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and dragStart then
+            local delta = input.Position - dragStart
+            window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragStart = nil
+        end
+    end)
+    
+    -- Content container
+    local container = create(window, "ScrollingFrame", {
+        Size = UDim2.new(1, 0, 1, -44),
+        Position = UDim2.new(0, 0, 0, 44),
         BackgroundTransparency = 1,
+        BorderSizePixel = 0,
         ScrollBarThickness = 4,
-        ScrollBarImageColor3 = ModernUI.Theme.Primary,
+        ScrollBarImageColor3 = ModernUI.Colors.Border,
         CanvasSize = UDim2.new(0, 0, 0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        BorderSizePixel = 0,
     })
     
-    local uiList = createUIElement(scrollFrame, "UIListLayout", {
-        Padding = UDim.new(0, 10),
+    local layout = create(container, "UIListLayout", {
+        Padding = UDim.new(0, 0),
         SortOrder = Enum.SortOrder.LayoutOrder,
-        HorizontalAlignment = Enum.HorizontalAlignment.Center,
     })
     
-    self.ScrollFrame = scrollFrame
-    self.UIList = uiList
+    self.Gui = gui
+    self.Window = window
+    self.Container = container
+    self.Layout = layout
     self.Elements = {}
     
     return self
 end
 
--- Helper function to create element container
-function ModernUI:createElementContainer(order)
-    local container = createRoundedFrame(self.ScrollFrame, UDim2.new(1, -20, 0, 50), UDim2.new(0, 10, 0, 0), ModernUI.Theme.Surface, 0)
-    container.LayoutOrder = order
-    container.BackgroundTransparency = 0.8
-    
-    return container
-end
-
--- Button component
+-- Button
 function ModernUI:Button(text, callback, order)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, 45)
-    container.BackgroundTransparency = 0
-    
-    local button = createUIElement(container, "TextButton", {
-        Size = UDim2.new(1, -20, 1, -10),
-        Position = UDim2.new(0, 10, 0, 5),
-        BackgroundColor3 = ModernUI.Theme.Primary,
-        Text = text,
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 15,
-        Font = Enum.Font.GothamSemibold,
-        AutoButtonColor = false,
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = ModernUI.Colors.Surface,
         BorderSizePixel = 0,
+        LayoutOrder = order,
     })
     
-    local corner = createUIElement(button, "UICorner", {
-        CornerRadius = UDim.new(0, 6)
+    local btn = create(frame, "TextButton", {
+        Size = UDim2.new(1, -24, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
+        BackgroundColor3 = ModernUI.Colors.Primary,
+        Text = text:upper(),
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.GothamSemibold,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
     })
     
-    -- Hover effect
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenSettings.InOut, {BackgroundColor3 = ModernUI.Theme.PrimaryDark}):Play()
-    end)
+    btn.MouseButton1Click:Connect(callback)
     
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenSettings.InOut, {BackgroundColor3 = ModernUI.Theme.Primary}):Play()
-    end)
-    
-    button.MouseButton1Click:Connect(function()
-        TweenService:Create(button, TweenSettings.In, {BackgroundColor3 = ModernUI.Theme.PrimaryDark}):Play()
-        task.wait(0.05)
-        TweenService:Create(button, TweenSettings.Out, {BackgroundColor3 = ModernUI.Theme.Primary}):Play()
-        if callback then callback() end
-    end)
-    
-    table.insert(self.Elements, {Type = "Button", Object = button})
-    return button
+    table.insert(self.Elements, frame)
+    return btn
 end
 
--- Toggle component
+-- Toggle
 function ModernUI:Toggle(text, default, callback, order)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, 50)
-    container.BackgroundTransparency = 0.8
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+    })
     
-    local label = createUIElement(container, "TextLabel", {
-        Size = UDim2.new(0.7, -20, 1, 0),
-        Position = UDim2.new(0, 15, 0, 0),
+    local label = create(frame, "TextLabel", {
+        Size = UDim2.new(1, -60, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 14,
-        Font = Enum.Font.GothamMedium,
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center,
     })
     
-    local toggleFrame = createRoundedFrame(container, UDim2.new(0, 55, 0, 30), UDim2.new(1, -70, 0.5, -15), ModernUI.Theme.Background, 0)
-    toggleFrame.BackgroundColor3 = default and ModernUI.Theme.Primary or ModernUI.Theme.Background
-    
-    local toggleCircle = createRoundedFrame(toggleFrame, UDim2.new(0, 26, 0, 26), default and UDim2.new(1, -28, 0.5, -13) or UDim2.new(0, 2, 0.5, -13), ModernUI.Theme.Text, 0)
-    toggleCircle.BackgroundColor3 = ModernUI.Theme.Text
+    local toggle = create(frame, "TextButton", {
+        Size = UDim2.new(0, 36, 0, 20),
+        Position = UDim2.new(1, -48, 0.5, -10),
+        BackgroundColor3 = default and ModernUI.Colors.Primary or ModernUI.Colors.Border,
+        Text = "",
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
     
     local state = default or false
     
-    local function updateToggle()
-        local targetPos = state and UDim2.new(1, -28, 0.5, -13) or UDim2.new(0, 2, 0.5, -13)
-        local targetColor = state and ModernUI.Theme.Primary or ModernUI.Theme.Background
-        
-        TweenService:Create(toggleCircle, TweenSettings.InOut, {Position = targetPos}):Play()
-        TweenService:Create(toggleFrame, TweenSettings.InOut, {BackgroundColor3 = targetColor}):Play()
-        
+    local function update()
+        toggle.BackgroundColor3 = state and ModernUI.Colors.Primary or ModernUI.Colors.Border
         if callback then callback(state) end
     end
     
-    toggleFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            state = not state
-            updateToggle()
-        end
+    toggle.MouseButton1Click:Connect(function()
+        state = not state
+        update()
     end)
     
-    table.insert(self.Elements, {Type = "Toggle", Object = toggleFrame, State = state})
+    update()
+    
+    table.insert(self.Elements, frame)
     return {
-        SetState = function(newState) 
-            state = newState 
-            updateToggle() 
-        end, 
-        GetState = function() 
-            return state 
-        end
+        Set = function(v) state = v update() end,
+        Get = function() return state end
     }
 end
 
--- TextBox component
+-- TextBox
 function ModernUI:TextBox(placeholder, callback, order)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, 50)
-    container.BackgroundTransparency = 0.8
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+    })
     
-    local textBox = createUIElement(container, "TextBox", {
-        Size = UDim2.new(1, -20, 1, -10),
-        Position = UDim2.new(0, 10, 0, 5),
-        BackgroundColor3 = ModernUI.Theme.Background,
+    local box = create(frame, "TextBox", {
+        Size = UDim2.new(1, -24, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
+        BackgroundColor3 = ModernUI.Colors.Background,
         Text = "",
         PlaceholderText = placeholder,
-        TextColor3 = ModernUI.Theme.Text,
-        PlaceholderColor3 = ModernUI.Theme.TextSecondary,
-        TextSize = 14,
-        Font = Enum.Font.GothamMedium,
-        ClearTextOnFocus = false,
+        TextColor3 = ModernUI.Colors.Text,
+        PlaceholderColor3 = ModernUI.Colors.TextSecondary,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
         BorderSizePixel = 0,
+        ClearTextOnFocus = false,
     })
     
-    local corner = createUIElement(textBox, "UICorner", {
-        CornerRadius = UDim.new(0, 6)
-    })
-    
-    textBox.FocusLost:Connect(function(enterPressed)
-        if callback then callback(textBox.Text) end
+    box.FocusLost:Connect(function()
+        if callback then callback(box.Text) end
     end)
     
-    table.insert(self.Elements, {Type = "TextBox", Object = textBox})
-    return textBox
+    table.insert(self.Elements, frame)
+    return box
 end
 
--- Dropdown component
+-- Dropdown
 function ModernUI:Dropdown(text, options, callback, order)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, 50)
-    container.BackgroundTransparency = 0.8
-    
-    local dropdownButton = createUIElement(container, "TextButton", {
-        Size = UDim2.new(1, -20, 1, -10),
-        Position = UDim2.new(0, 10, 0, 5),
-        BackgroundColor3 = ModernUI.Theme.Background,
-        Text = text .. ": " .. options[1],
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 14,
-        Font = Enum.Font.GothamMedium,
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = ModernUI.Colors.Surface,
         BorderSizePixel = 0,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextTruncate = Enum.TextTruncate.AtEnd,
+        LayoutOrder = order,
     })
     
-    local corner = createUIElement(dropdownButton, "UICorner", {
-        CornerRadius = UDim.new(0, 6)
+    local btn = create(frame, "TextButton", {
+        Size = UDim2.new(1, -24, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
+        BackgroundColor3 = ModernUI.Colors.Background,
+        Text = text .. ": " .. options[1],
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        AutoButtonColor = false,
     })
     
     local dropdownOpen = false
     local dropdownFrame
     
-    dropdownButton.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function()
         if dropdownOpen then
             if dropdownFrame then dropdownFrame:Destroy() end
             dropdownOpen = false
-        else
-            dropdownFrame = createRoundedFrame(self.ScrollFrame, UDim2.new(1, -20, 0, #options * 40), UDim2.new(0, 10, 0, container.AbsolutePosition.Y - self.ScrollFrame.AbsolutePosition.Y + 55), ModernUI.Theme.Surface, 0)
-            dropdownFrame.ZIndex = 10
-            dropdownFrame.BackgroundTransparency = 0
-            
-            local dropdownList = createUIElement(dropdownFrame, "UIListLayout", {
-                Padding = UDim.new(0, 2),
-                SortOrder = Enum.SortOrder.LayoutOrder,
+            return
+        end
+        
+        dropdownFrame = create(self.Container, "Frame", {
+            Size = UDim2.new(1, 0, 0, #options * 36),
+            Position = UDim2.new(0, 0, 0, frame.AbsolutePosition.Y - self.Container.AbsolutePosition.Y + 40),
+            BackgroundColor3 = ModernUI.Colors.Surface,
+            BorderSizePixel = 0,
+            ZIndex = 10,
+        })
+        
+        local list = create(dropdownFrame, "UIListLayout", {
+            Padding = UDim.new(0, 0),
+        })
+        
+        for i, opt in ipairs(options) do
+            local optBtn = create(dropdownFrame, "TextButton", {
+                Size = UDim2.new(1, 0, 0, 36),
+                BackgroundColor3 = ModernUI.Colors.Background,
+                Text = opt,
+                TextColor3 = ModernUI.Colors.Text,
+                TextSize = 12,
+                Font = Enum.Font.Gotham,
+                BorderSizePixel = 0,
+                AutoButtonColor = false,
+                LayoutOrder = i,
             })
             
-            for i, option in ipairs(options) do
-                local optionButton = createUIElement(dropdownFrame, "TextButton", {
-                    Size = UDim2.new(1, -10, 0, 38),
-                    Position = UDim2.new(0, 5, 0, 0),
-                    BackgroundColor3 = ModernUI.Theme.Background,
-                    Text = option,
-                    TextColor3 = ModernUI.Theme.Text,
-                    TextSize = 14,
-                    Font = Enum.Font.GothamMedium,
-                    BorderSizePixel = 0,
-                    LayoutOrder = i,
-                })
-                
-                local optionCorner = createUIElement(optionButton, "UICorner", {
-                    CornerRadius = UDim.new(0, 4)
-                })
-                
-                optionButton.MouseButton1Click:Connect(function()
-                    dropdownButton.Text = text .. ": " .. option
-                    if callback then callback(option) end
-                    dropdownFrame:Destroy()
-                    dropdownOpen = false
-                end)
-            end
-            
-            dropdownOpen = true
+            optBtn.MouseButton1Click:Connect(function()
+                btn.Text = text .. ": " .. opt
+                if callback then callback(opt) end
+                dropdownFrame:Destroy()
+                dropdownOpen = false
+            end)
         end
+        
+        dropdownOpen = true
     end)
     
-    table.insert(self.Elements, {Type = "Dropdown", Object = dropdownButton})
-    return dropdownButton
+    table.insert(self.Elements, frame)
+    return btn
 end
 
--- Slider component
+-- Slider
 function ModernUI:Slider(text, min, max, default, callback, order)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, 80)
-    container.BackgroundTransparency = 0.8
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, 68),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+    })
     
-    local label = createUIElement(container, "TextLabel", {
-        Size = UDim2.new(1, -20, 0, 25),
-        Position = UDim2.new(0, 10, 0, 5),
+    local label = create(frame, "TextLabel", {
+        Size = UDim2.new(1, -24, 0, 20),
+        Position = UDim2.new(0, 12, 0, 8),
         BackgroundTransparency = 1,
         Text = text .. ": " .. tostring(default),
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 14,
-        Font = Enum.Font.GothamMedium,
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
     })
     
-    local valueDisplay = createUIElement(container, "TextLabel", {
-        Size = UDim2.new(0, 50, 0, 25),
-        Position = UDim2.new(1, -60, 0, 5),
+    local valueLabel = create(frame, "TextLabel", {
+        Size = UDim2.new(0, 50, 0, 20),
+        Position = UDim2.new(1, -62, 0, 8),
         BackgroundTransparency = 1,
         Text = tostring(default),
-        TextColor3 = ModernUI.Theme.Primary,
-        TextSize = 14,
+        TextColor3 = ModernUI.Colors.Primary,
+        TextSize = 12,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Right,
     })
     
-    local sliderFrame = createRoundedFrame(container, UDim2.new(1, -20, 0, 30), UDim2.new(0, 10, 0, 40), ModernUI.Theme.Background, 0)
+    local sliderTrack = create(frame, "Frame", {
+        Size = UDim2.new(1, -24, 0, 2),
+        Position = UDim2.new(0, 12, 0, 38),
+        BackgroundColor3 = ModernUI.Colors.Border,
+        BorderSizePixel = 0,
+    })
     
-    local fill = createRoundedFrame(sliderFrame, UDim2.new((default - min) / (max - min), 0, 1, 0), UDim2.new(0, 0, 0, 0), ModernUI.Theme.Primary, 0)
-    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    local sliderFill = create(sliderTrack, "Frame", {
+        Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
+        BackgroundColor3 = ModernUI.Colors.Primary,
+        BorderSizePixel = 0,
+    })
+    
+    local sliderHandle = create(frame, "TextButton", {
+        Size = UDim2.new(0, 12, 0, 12),
+        Position = UDim2.new((default - min) / (max - min), -6, 0, 33),
+        BackgroundColor3 = ModernUI.Colors.Primary,
+        Text = "",
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
     
     local value = default
     
-    local function updateSlider(mouseX)
-        local relativeX = math.clamp((mouseX - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X, 0, 1)
-        value = min + (max - min) * relativeX
+    local function update(posX)
+        local relative = math.clamp((posX - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X, 0, 1)
+        value = min + (max - min) * relative
         value = math.floor(value * 100) / 100
         
-        fill.Size = UDim2.new(relativeX, 0, 1, 0)
+        sliderFill.Size = UDim2.new(relative, 0, 1, 0)
+        sliderHandle.Position = UDim2.new(relative, -6, 0, 33)
         label.Text = text .. ": " .. tostring(value)
-        valueDisplay.Text = tostring(value)
+        valueLabel.Text = tostring(value)
         
         if callback then callback(value) end
     end
     
-    sliderFrame.InputBegan:Connect(function(input)
+    sliderHandle.MouseButton1Down:Connect(function()
+        local conn
+        conn = UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                update(input.Position.X)
+            end
+        end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                conn:Disconnect()
+            end
+        end)
+    end)
+    
+    sliderTrack.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            updateSlider(input.Position.X)
-            
-            local connection
-            connection = UserInputService.InputChanged:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseMovement then
-                    updateSlider(input.Position.X)
-                end
-            end)
-            
-            local endedConn
-            endedConn = UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    connection:Disconnect()
-                    endedConn:Disconnect()
-                end
-            end)
+            update(input.Position.X)
         end
     end)
     
-    table.insert(self.Elements, {Type = "Slider", Object = sliderFrame, Value = value})
+    table.insert(self.Elements, frame)
     return {
-        SetValue = function(newValue) 
-            local relativeX = (newValue - min) / (max - min)
-            fill.Size = UDim2.new(relativeX, 0, 1, 0)
-            value = newValue
+        Set = function(v) 
+            value = math.clamp(v, min, max)
+            local relative = (value - min) / (max - min)
+            sliderFill.Size = UDim2.new(relative, 0, 1, 0)
+            sliderHandle.Position = UDim2.new(relative, -6, 0, 33)
             label.Text = text .. ": " .. tostring(value)
-            valueDisplay.Text = tostring(value)
+            valueLabel.Text = tostring(value)
             if callback then callback(value) end
-        end, 
-        GetValue = function() 
-            return value 
-        end
+        end,
+        Get = function() return value end
     }
 end
 
--- Keybind component
-function ModernUI:Keybind(text, defaultKey, callback, order)
+-- Keybind
+function ModernUI:Keybind(text, default, callback, order)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, 50)
-    container.BackgroundTransparency = 0.8
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+    })
     
-    local label = createUIElement(container, "TextLabel", {
-        Size = UDim2.new(0.6, -20, 1, 0),
-        Position = UDim2.new(0, 15, 0, 0),
+    local label = create(frame, "TextLabel", {
+        Size = UDim2.new(1, -110, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 14,
-        Font = Enum.Font.GothamMedium,
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center,
     })
     
-    local keybindButton = createUIElement(container, "TextButton", {
-        Size = UDim2.new(0, 100, 0, 35),
-        Position = UDim2.new(1, -110, 0.5, -17.5),
-        BackgroundColor3 = ModernUI.Theme.Background,
-        Text = defaultKey and tostring(defaultKey):gsub("Enum.KeyCode.", "") or "None",
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 13,
-        Font = Enum.Font.GothamMedium,
+    local bindBtn = create(frame, "TextButton", {
+        Size = UDim2.new(0, 90, 0, 28),
+        Position = UDim2.new(1, -102, 0.5, -14),
+        BackgroundColor3 = ModernUI.Colors.Background,
+        Text = default and tostring(default):gsub("Enum.KeyCode.", "") or "none",
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
         BorderSizePixel = 0,
-    })
-    
-    local corner = createUIElement(keybindButton, "UICorner", {
-        CornerRadius = UDim.new(0, 6)
+        AutoButtonColor = false,
     })
     
     local listening = false
-    local currentKey = defaultKey
+    local currentKey = default
     
-    keybindButton.MouseButton1Click:Connect(function()
+    bindBtn.MouseButton1Click:Connect(function()
         listening = true
-        keybindButton.Text = "..."
+        bindBtn.Text = "..."
         
-        local connection
-        connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-            if gameProcessed then return end
-            
+        local conn
+        conn = UserInputService.InputBegan:Connect(function(input)
             if listening and input.KeyCode ~= Enum.KeyCode.Unknown then
                 currentKey = input.KeyCode
-                keybindButton.Text = tostring(currentKey):gsub("Enum.KeyCode.", "")
+                bindBtn.Text = tostring(currentKey):gsub("Enum.KeyCode.", "")
                 listening = false
-                connection:Disconnect()
+                conn:Disconnect()
                 if callback then callback(currentKey) end
             end
         end)
@@ -581,274 +505,233 @@ function ModernUI:Keybind(text, defaultKey, callback, order)
         task.wait(3)
         if listening then
             listening = false
-            keybindButton.Text = currentKey and tostring(currentKey):gsub("Enum.KeyCode.", "") or "None"
-            connection:Disconnect()
+            bindBtn.Text = currentKey and tostring(currentKey):gsub("Enum.KeyCode.", "") or "none"
+            conn:Disconnect()
         end
     end)
     
-    table.insert(self.Elements, {Type = "Keybind", Object = keybindButton, Key = currentKey})
+    table.insert(self.Elements, frame)
     return {
-        SetKey = function(newKey) 
-            currentKey = newKey 
-            keybindButton.Text = tostring(newKey):gsub("Enum.KeyCode.", "")
-        end, 
-        GetKey = function() 
-            return currentKey 
-        end
+        Set = function(k) 
+            currentKey = k 
+            bindBtn.Text = tostring(k):gsub("Enum.KeyCode.", "")
+        end,
+        Get = function() return currentKey end
     }
 end
 
--- ColorPicker component
-function ModernUI:ColorPicker(text, defaultColor, callback, order)
+-- ColorPicker
+function ModernUI:ColorPicker(text, default, callback, order)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, 50)
-    container.BackgroundTransparency = 0.8
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+    })
     
-    local label = createUIElement(container, "TextLabel", {
-        Size = UDim2.new(0.6, -20, 1, 0),
-        Position = UDim2.new(0, 15, 0, 0),
+    local label = create(frame, "TextLabel", {
+        Size = UDim2.new(1, -50, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 14,
-        Font = Enum.Font.GothamMedium,
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center,
     })
     
-    local colorDisplay = createRoundedFrame(container, UDim2.new(0, 35, 0, 35), UDim2.new(1, -45, 0.5, -17.5), defaultColor or ModernUI.Theme.Primary, 0)
-    
-    local currentColor = defaultColor or ModernUI.Theme.Primary
+    local colorBox = create(frame, "TextButton", {
+        Size = UDim2.new(0, 32, 0, 24),
+        Position = UDim2.new(1, -44, 0.5, -12),
+        BackgroundColor3 = default or ModernUI.Colors.Primary,
+        Text = "",
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
     
     local colors = {
-        {Color3.fromRGB(255, 0, 0), "Red"},
-        {Color3.fromRGB(0, 255, 0), "Green"},
-        {Color3.fromRGB(0, 0, 255), "Blue"},
-        {Color3.fromRGB(255, 255, 0), "Yellow"},
-        {Color3.fromRGB(255, 0, 255), "Purple"},
-        {Color3.fromRGB(0, 255, 255), "Cyan"},
-        {Color3.fromRGB(255, 165, 0), "Orange"},
-        {Color3.fromRGB(255, 192, 203), "Pink"},
-        {Color3.fromRGB(128, 0, 128), "Dark Purple"},
-        Color3.fromRGB(88, 101, 242), -- Default
+        Color3.fromRGB(255, 70, 70),   -- Red
+        Color3.fromRGB(70, 255, 70),   -- Green
+        Color3.fromRGB(70, 70, 255),   -- Blue
+        Color3.fromRGB(255, 255, 70),  -- Yellow
+        Color3.fromRGB(255, 70, 255),  -- Magenta
+        Color3.fromRGB(70, 255, 255),  -- Cyan
+        Color3.fromRGB(255, 140, 70),  -- Orange
+        Color3.fromRGB(200, 70, 255),  -- Purple
+        Color3.fromRGB(255, 255, 255), -- White
+        Color3.fromRGB(64, 128, 255),  -- Primary
     }
     
-    local colorPickerOpen = false
-    local colorFrame
+    local open = false
+    local picker
     
-    colorDisplay.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if colorPickerOpen then
-                if colorFrame then colorFrame:Destroy() end
-                colorPickerOpen = false
-            else
-                colorFrame = createRoundedFrame(self.ScrollFrame, UDim2.new(0, 200, 0, 250), UDim2.new(0, 10, 0, container.AbsolutePosition.Y - self.ScrollFrame.AbsolutePosition.Y + 55), ModernUI.Theme.Surface, 0)
-                colorFrame.ZIndex = 10
-                colorFrame.BackgroundTransparency = 0
-                
-                local colorList = createUIElement(colorFrame, "UIListLayout", {
-                    Padding = UDim.new(0, 5),
-                    SortOrder = Enum.SortOrder.LayoutOrder,
-                })
-                
-                for i, color in ipairs(colors) do
-                    local colorButton = createRoundedFrame(colorFrame, UDim2.new(1, -20, 0, 35), UDim2.new(0, 10, 0, 0), type(color) == "table" and color[1] or color, 0)
-                    colorButton.LayoutOrder = i
-                    colorButton.BackgroundTransparency = 0
-                    
-                    local colorText = createUIElement(colorButton, "TextLabel", {
-                        Size = UDim2.new(1, 0, 1, 0),
-                        BackgroundTransparency = 1,
-                        Text = type(color) == "table" and color[2] or "",
-                        TextColor3 = ModernUI.Theme.Text,
-                        TextSize = 12,
-                        Font = Enum.Font.GothamMedium,
-                        Visible = type(color) == "table",
-                    })
-                    
-                    colorButton.InputBegan:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                            currentColor = type(color) == "table" and color[1] or color
-                            colorDisplay.BackgroundColor3 = currentColor
-                            if callback then callback(currentColor) end
-                            colorFrame:Destroy()
-                            colorPickerOpen = false
-                        end
-                    end)
-                end
-                
-                colorPickerOpen = true
-            end
+    colorBox.MouseButton1Click:Connect(function()
+        if open then
+            if picker then picker:Destroy() end
+            open = false
+            return
         end
+        
+        picker = create(self.Container, "Frame", {
+            Size = UDim2.new(0, 160, 0, 160),
+            Position = UDim2.new(0, 0, 0, frame.AbsolutePosition.Y - self.Container.AbsolutePosition.Y + 40),
+            BackgroundColor3 = ModernUI.Colors.Surface,
+            BorderSizePixel = 0,
+            ZIndex = 10,
+        })
+        
+        local grid = create(picker, "UIListLayout", {
+            Padding = UDim.new(0, 4),
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Wrap = true,
+        })
+        
+        for _, col in ipairs(colors) do
+            local btn = create(picker, "TextButton", {
+                Size = UDim2.new(0, 32, 0, 32),
+                BackgroundColor3 = col,
+                Text = "",
+                BorderSizePixel = 0,
+                AutoButtonColor = false,
+            })
+            
+            btn.MouseButton1Click:Connect(function()
+                colorBox.BackgroundColor3 = col
+                if callback then callback(col) end
+                picker:Destroy()
+                open = false
+            end)
+        end
+        
+        open = true
     end)
     
-    table.insert(self.Elements, {Type = "ColorPicker", Object = colorDisplay, Color = currentColor})
+    table.insert(self.Elements, frame)
     return {
-        SetColor = function(newColor) 
-            currentColor = newColor 
-            colorDisplay.BackgroundColor3 = newColor 
-            if callback then callback(newColor) end
-        end, 
-        GetColor = function() 
-            return currentColor 
-        end
+        Set = function(col) colorBox.BackgroundColor3 = col if callback then callback(col) end end,
+        Get = function() return colorBox.BackgroundColor3 end
     }
 end
 
--- Counter component
+-- Counter
 function ModernUI:Counter(text, min, max, default, callback, order)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, 50)
-    container.BackgroundTransparency = 0.8
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, 40),
+        BackgroundColor3 = ModernUI.Colors.Surface,
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+    })
     
-    local label = createUIElement(container, "TextLabel", {
-        Size = UDim2.new(0.5, -20, 1, 0),
-        Position = UDim2.new(0, 15, 0, 0),
+    local label = create(frame, "TextLabel", {
+        Size = UDim2.new(1, -110, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
         Text = text,
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 14,
-        Font = Enum.Font.GothamMedium,
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center,
     })
     
-    local valueLabel = createUIElement(container, "TextLabel", {
-        Size = UDim2.new(0, 60, 1, 0),
-        Position = UDim2.new(0.5, -30, 0, 0),
+    local valueLabel = create(frame, "TextLabel", {
+        Size = UDim2.new(0, 40, 1, 0),
+        Position = UDim2.new(1, -100, 0, 0),
         BackgroundTransparency = 1,
         Text = tostring(default),
-        TextColor3 = ModernUI.Theme.Primary,
-        TextSize = 16,
+        TextColor3 = ModernUI.Colors.Primary,
+        TextSize = 12,
         Font = Enum.Font.GothamBold,
         TextYAlignment = Enum.TextYAlignment.Center,
     })
     
-    local minusButton = createUIElement(container, "TextButton", {
-        Size = UDim2.new(0, 35, 0, 35),
-        Position = UDim2.new(1, -85, 0.5, -17.5),
-        BackgroundColor3 = ModernUI.Theme.Danger,
+    local minus = create(frame, "TextButton", {
+        Size = UDim2.new(0, 32, 0, 28),
+        Position = UDim2.new(1, -56, 0.5, -14),
+        BackgroundColor3 = ModernUI.Colors.Danger,
         Text = "-",
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 20,
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 16,
         Font = Enum.Font.GothamBold,
         BorderSizePixel = 0,
         AutoButtonColor = false,
     })
     
-    local minusCorner = createUIElement(minusButton, "UICorner", {
-        CornerRadius = UDim.new(0, 6)
-    })
-    
-    local plusButton = createUIElement(container, "TextButton", {
-        Size = UDim2.new(0, 35, 0, 35),
-        Position = UDim2.new(1, -40, 0.5, -17.5),
-        BackgroundColor3 = ModernUI.Theme.Success,
+    local plus = create(frame, "TextButton", {
+        Size = UDim2.new(0, 32, 0, 28),
+        Position = UDim2.new(1, -20, 0.5, -14),
+        BackgroundColor3 = ModernUI.Colors.Success,
         Text = "+",
-        TextColor3 = ModernUI.Theme.Text,
-        TextSize = 20,
+        TextColor3 = ModernUI.Colors.Text,
+        TextSize = 16,
         Font = Enum.Font.GothamBold,
         BorderSizePixel = 0,
         AutoButtonColor = false,
-    })
-    
-    local plusCorner = createUIElement(plusButton, "UICorner", {
-        CornerRadius = UDim.new(0, 6)
     })
     
     local value = math.clamp(default or 0, min or 0, max or 100)
     
-    local function updateCounter(newValue)
-        value = math.clamp(newValue, min or -1e9, max or 1e9)
+    local function update(v)
+        value = math.clamp(v, min or -1e9, max or 1e9)
         valueLabel.Text = tostring(value)
         if callback then callback(value) end
     end
     
-    minusButton.MouseButton1Click:Connect(function() 
-        TweenService:Create(minusButton, TweenSettings.In, {BackgroundColor3 = ModernUI.Theme.Danger:lerp(Color3.new(0,0,0), 0.3)}):Play()
-        updateCounter(value - 1)
-        task.wait(0.1)
-        TweenService:Create(minusButton, TweenSettings.Out, {BackgroundColor3 = ModernUI.Theme.Danger}):Play()
-    end)
+    minus.MouseButton1Click:Connect(function() update(value - 1) end)
+    plus.MouseButton1Click:Connect(function() update(value + 1) end)
     
-    plusButton.MouseButton1Click:Connect(function() 
-        TweenService:Create(plusButton, TweenSettings.In, {BackgroundColor3 = ModernUI.Theme.Success:lerp(Color3.new(0,0,0), 0.3)}):Play()
-        updateCounter(value + 1)
-        task.wait(0.1)
-        TweenService:Create(plusButton, TweenSettings.Out, {BackgroundColor3 = ModernUI.Theme.Success}):Play()
-    end)
-    
-    table.insert(self.Elements, {Type = "Counter", Object = container, Value = value})
+    table.insert(self.Elements, frame)
     return {
-        SetValue = updateCounter, 
-        GetValue = function() 
-            return value 
-        end
+        Set = update,
+        Get = function() return value end
     }
 end
 
--- Label component
-function ModernUI:Label(text, order, isHeader)
+-- Label
+function ModernUI:Label(text, order, isSection)
     order = order or #self.Elements + 1
-    local container = self:createElementContainer(order)
-    container.Size = UDim2.new(1, -20, 0, isHeader and 40 or 30)
-    container.BackgroundTransparency = 1
+    local height = isSection and 32 or 28
+    local frame = create(self.Container, "Frame", {
+        Size = UDim2.new(1, 0, 0, height),
+        BackgroundColor3 = isSection and ModernUI.Colors.Background or ModernUI.Colors.Surface,
+        BorderSizePixel = 0,
+        LayoutOrder = order,
+    })
     
-    local label = createUIElement(container, "TextLabel", {
-        Size = UDim2.new(1, -20, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
+    local label = create(frame, "TextLabel", {
+        Size = UDim2.new(1, -24, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
         BackgroundTransparency = 1,
-        Text = text,
-        TextColor3 = isHeader and ModernUI.Theme.Primary or ModernUI.Theme.TextSecondary,
-        TextSize = isHeader and 14 or 12,
-        Font = isHeader and Enum.Font.GothamBold or Enum.Font.GothamMedium,
+        Text = text:upper(),
+        TextColor3 = isSection and ModernUI.Colors.Primary or ModernUI.Colors.TextSecondary,
+        TextSize = isSection and 11 or 10,
+        Font = isSection and Enum.Font.GothamBold or Enum.Font.Gotham,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center,
     })
     
-    if isHeader then
-        local line = createUIElement(container, "Frame", {
-            Size = UDim2.new(1, -20, 0, 1),
-            Position = UDim2.new(0, 10, 0, 35),
-            BackgroundColor3 = ModernUI.Theme.Primary,
-            BorderSizePixel = 0,
-        })
-    end
-    
-    table.insert(self.Elements, {Type = "Label", Object = label})
+    table.insert(self.Elements, frame)
     return label
 end
 
--- Method to clear all elements
+-- Clear all
 function ModernUI:Clear()
-    for _, element in ipairs(self.Elements) do
-        if element.Object and element.Object.Parent then
-            local parent = element.Object.Parent
-            if parent and parent.Parent == self.ScrollFrame then
-                parent:Destroy()
-            elseif element.Object.Parent then
-                element.Object:Destroy()
-            end
+    for _, elem in ipairs(self.Elements) do
+        if elem and elem.Parent then
+            elem:Destroy()
         end
     end
     self.Elements = {}
-    
-    task.wait()
-    self.ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, self.UIList.AbsoluteContentSize.Y)
 end
 
--- Method to destroy entire UI
+-- Destroy UI
 function ModernUI:Destroy()
-    if self.ScreenGui then
-        self.ScreenGui:Destroy()
+    if self.Gui then
+        self.Gui:Destroy()
     end
-end
-
--- Method to update canvas size
-function ModernUI:UpdateCanvas()
-    self.ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, self.UIList.AbsoluteContentSize.Y)
 end
 
 return ModernUI
