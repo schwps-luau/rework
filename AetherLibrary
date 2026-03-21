@@ -19,6 +19,7 @@ Aether.Config = {
     Flags = {},
     GlobalEnvironment = {},
     CurrentTheme = "Default",
+    WFlags = {},
 }
 
 -- ============================================
@@ -107,19 +108,16 @@ Aether.Themes = {
     },
 }
 
--- Get current theme colors
 function Aether:GetTheme()
     return Aether.Themes[Aether.Config.CurrentTheme] or Aether.Themes.Default
 end
 
--- Apply theme to all windows
 function Aether:ApplyTheme(themeName)
     if not Aether.Themes[themeName] then return end
     
     Aether.Config.CurrentTheme = themeName
     local theme = Aether:GetTheme()
     
-    -- Update global colors
     Aether.Colors = {
         Black = theme.BackgroundDark,
         Main = theme.Main,
@@ -131,7 +129,6 @@ function Aether:ApplyTheme(themeName)
         Success = theme.Success,
     }
     
-    -- Refresh all windows if they exist
     for _, window in pairs(Aether.Config.Windows) do
         if window.RefreshTheme then
             window:RefreshTheme(theme)
@@ -139,12 +136,10 @@ function Aether:ApplyTheme(themeName)
     end
 end
 
--- Add new theme dynamically
 function Aether:AddTheme(name, colors)
     Aether.Themes[name] = colors
 end
 
--- Get all theme names
 function Aether:GetThemeNames()
     local names = {}
     for name, _ in pairs(Aether.Themes) do
@@ -170,135 +165,44 @@ Aether.Colors = {
 }
 
 -- ============================================
--- ICON LIBRARY (Lucide Icons)
+-- ICON LIBRARY
 -- ============================================
 
 Aether.Icons = {
-    ["accessibility"] = "rbxassetid://10709751939",
-    ["activity"] = "rbxassetid://10709752035",
-    ["alert-circle"] = "rbxassetid://10709752996",
-    ["alert-triangle"] = "rbxassetid://10709753149",
-    ["archive"] = "rbxassetid://10709762233",
-    ["arrow-down"] = "rbxassetid://10709767827",
-    ["arrow-left"] = "rbxassetid://10709768114",
-    ["arrow-right"] = "rbxassetid://10709768347",
-    ["arrow-up"] = "rbxassetid://10709768939",
-    ["at-sign"] = "rbxassetid://10709769286",
-    ["award"] = "rbxassetid://10709769406",
-    ["bar-chart"] = "rbxassetid://10709773755",
-    ["battery"] = "rbxassetid://10709774640",
-    ["bell"] = "rbxassetid://10709775704",
-    ["book"] = "rbxassetid://10709781824",
-    ["bookmark"] = "rbxassetid://10709782154",
-    ["briefcase"] = "rbxassetid://10709782662",
-    ["bug"] = "rbxassetid://10709782845",
-    ["calendar"] = "rbxassetid://10709789505",
-    ["camera"] = "rbxassetid://10709789686",
     ["check"] = "rbxassetid://10709790644",
-    ["check-circle"] = "rbxassetid://10709790387",
     ["chevron-down"] = "rbxassetid://10709790948",
     ["chevron-left"] = "rbxassetid://10709791281",
     ["chevron-right"] = "rbxassetid://10709791437",
     ["chevron-up"] = "rbxassetid://10709791523",
-    ["circle"] = "rbxassetid://10709798174",
+    ["copy"] = "rbxassetid://10709798682",
     ["clipboard"] = "rbxassetid://10709799288",
-    ["clock"] = "rbxassetid://10709805144",
-    ["cloud"] = "rbxassetid://10709806740",
-    ["code"] = "rbxassetid://10709810463",
-    ["cog"] = "rbxassetid://10709810948",
-    ["compass"] = "rbxassetid://10709811445",
-    ["copy"] = "rbxassetid://10709812159",
-    ["cpu"] = "rbxassetid://10709813383",
-    ["crown"] = "rbxassetid://10709818626",
-    ["database"] = "rbxassetid://10709818996",
-    ["delete"] = "rbxassetid://10709819059",
-    ["download"] = "rbxassetid://10723344270",
-    ["edit"] = "rbxassetid://10734883598",
     ["eye"] = "rbxassetid://10723346959",
     ["eye-off"] = "rbxassetid://10723346871",
-    ["file"] = "rbxassetid://10723374641",
-    ["filter"] = "rbxassetid://10723375128",
-    ["flag"] = "rbxassetid://10723375890",
     ["folder"] = "rbxassetid://10723387563",
-    ["folder-open"] = "rbxassetid://10723386277",
-    ["gamepad"] = "rbxassetid://10723395457",
-    ["gift"] = "rbxassetid://10723396402",
-    ["globe"] = "rbxassetid://10723404337",
-    ["heart"] = "rbxassetid://10723406885",
-    ["help-circle"] = "rbxassetid://10723406988",
     ["home"] = "rbxassetid://10723407389",
-    ["image"] = "rbxassetid://10723415040",
-    ["inbox"] = "rbxassetid://10723415335",
     ["info"] = "rbxassetid://10723415903",
-    ["key"] = "rbxassetid://10723416652",
-    ["layers"] = "rbxassetid://10723424505",
-    ["layout"] = "rbxassetid://10723425376",
-    ["link"] = "rbxassetid://10723426722",
-    ["list"] = "rbxassetid://10723433811",
-    ["loader"] = "rbxassetid://10723434070",
-    ["lock"] = "rbxassetid://10723434711",
-    ["log-in"] = "rbxassetid://10723434830",
-    ["log-out"] = "rbxassetid://10723434906",
-    ["mail"] = "rbxassetid://10734885430",
-    ["map"] = "rbxassetid://10734886202",
-    ["menu"] = "rbxassetid://10734887784",
-    ["message-circle"] = "rbxassetid://10734888000",
-    ["mic"] = "rbxassetid://10734888864",
-    ["minus"] = "rbxassetid://10734896206",
-    ["monitor"] = "rbxassetid://10734896881",
-    ["moon"] = "rbxassetid://10734897102",
-    ["more-horizontal"] = "rbxassetid://10734897250",
-    ["music"] = "rbxassetid://10734905958",
-    ["package"] = "rbxassetid://10734909540",
-    ["pause"] = "rbxassetid://10734919336",
-    ["pencil"] = "rbxassetid://10734919691",
-    ["phone"] = "rbxassetid://10734921524",
-    ["pie-chart"] = "rbxassetid://10734921727",
-    ["pin"] = "rbxassetid://10734922324",
-    ["play"] = "rbxassetid://10734923549",
     ["plus"] = "rbxassetid://10734924532",
     ["plus-circle"] = "rbxassetid://10734923868",
-    ["power"] = "rbxassetid://10734930466",
-    ["printer"] = "rbxassetid://10734930632",
-    ["radio"] = "rbxassetid://10734931596",
-    ["refresh-cw"] = "rbxassetid://10734933222",
-    ["rocket"] = "rbxassetid://10734934585",
     ["save"] = "rbxassetid://10734941499",
     ["search"] = "rbxassetid://10734943674",
-    ["send"] = "rbxassetid://10734943902",
     ["settings"] = "rbxassetid://10734950309",
-    ["share"] = "rbxassetid://10734950813",
-    ["shield"] = "rbxassetid://10734951847",
-    ["shopping-cart"] = "rbxassetid://10734952479",
-    ["sliders"] = "rbxassetid://10734963400",
-    ["smartphone"] = "rbxassetid://10734963940",
-    ["smile"] = "rbxassetid://10734964441",
-    ["star"] = "rbxassetid://10734966248",
-    ["sun"] = "rbxassetid://10734974297",
-    ["tag"] = "rbxassetid://10734976528",
-    ["target"] = "rbxassetid://10734977012",
-    ["terminal"] = "rbxassetid://10734982144",
     ["trash"] = "rbxassetid://10747362393",
-    ["trash-2"] = "rbxassetid://10747362241",
-    ["trending-up"] = "rbxassetid://10747363465",
-    ["truck"] = "rbxassetid://10747364031",
     ["user"] = "rbxassetid://10747373176",
-    ["users"] = "rbxassetid://10747373426",
-    ["video"] = "rbxassetid://10747374938",
-    ["volume"] = "rbxassetid://10747376008",
-    ["wallet"] = "rbxassetid://10747376205",
-    ["wifi"] = "rbxassetid://10747382504",
-    ["wrench"] = "rbxassetid://10747383470",
-    ["x"] = "rbxassetid://10747384394",
-    ["x-circle"] = "rbxassetid://10747383819",
-    ["zoom-in"] = "rbxassetid://10747384552",
-    ["zoom-out"] = "rbxassetid://10747384679",
 }
+
+function Aether:GetIcon(name)
+    return self.Icons[name] or ""
+end
+
+function Aether:SetIcon(name, value)
+    self.Icons[name] = value
+end
 
 -- ============================================
 -- SERVICES
 -- ============================================
 
+local cloneref = cloneref or function(i) return i end
 local TextService = cloneref(game:GetService('TextService'))
 local TweenService = cloneref(game:GetService('TweenService'))
 local RunService = cloneref(game:GetService('RunService'))
@@ -336,17 +240,10 @@ function Aether:GetTextSize(text, fontSize, font)
 end
 
 function Aether:IsMouseOverFrame(frame)
+    if not frame then return false end
     local absPos, absSize = frame.AbsolutePosition, frame.AbsoluteSize
     return Mouse.X >= absPos.X and Mouse.X <= absPos.X + absSize.X and
            Mouse.Y >= absPos.Y and Mouse.Y <= absPos.Y + absSize.Y
-end
-
-function Aether:GetIcon(name)
-    return self.Icons[name] or ""
-end
-
-function Aether:SetIcon(name, value)
-    self.Icons[name] = value
 end
 
 function Aether:Rounding(num, decimalPlaces)
@@ -446,7 +343,7 @@ function Aether:CreateResponse(args)
 end
 
 function Aether:GetWindowFromElement(element)
-    for _, window in next, self.Config.Windows do
+    for _, window in pairs(self.Config.Windows) do
         if element:IsDescendantOf(window) then
             return window
         end
@@ -493,664 +390,165 @@ function Aether:ProtectText(label, text)
 end
 
 -- ============================================
--- CREATE COLOR PICKER
+-- CREATE NOTIFIER
 -- ============================================
 
-function Aether:CreateColorPicker(colorBox, transparency, callback)
-    transparency = transparency or 0
-    callback = callback or function() end
+function Aether:CreateNotifier()
+    if self.__NOTIFIER_CACHE then return self.__NOTIFIER_CACHE end
     
-    local ownWindow = self:GetWindowFromElement(colorBox)
-    local theme = self:GetTheme()
-    
-    local colorPickerFrame = Instance.new("Frame")
-    local uiCorner = Instance.new("UICorner")
-    local uiStroke = Instance.new("UIStroke")
-    local dropShadow = Instance.new("ImageLabel")
-    local colorPickBox = Instance.new("ImageLabel")
-    local mouseMovement = Instance.new("ImageLabel")
-    local uiCorner2 = Instance.new("UICorner")
-    local uiStroke2 = Instance.new("UIStroke")
-    local colorRedGreenBlue = Instance.new("Frame")
-    local uiGradient = Instance.new("UIGradient")
-    local uiCorner3 = Instance.new("UICorner")
-    local colorRgbSlide = Instance.new("Frame")
-    local uiStroke3 = Instance.new("UIStroke")
-    local colorOpc = Instance.new("Frame")
-    local uiCorner4 = Instance.new("UICorner")
-    local colorOptSlide = Instance.new("Frame")
-    local uiStroke4 = Instance.new("UIStroke")
-    local uiGradient2 = Instance.new("UIGradient")
-    local uiStroke5 = Instance.new("UIStroke")
-    local colorOpt = Instance.new("Frame")
-    local uiCorner5 = Instance.new("UICorner")
-    local pasteButton = Instance.new("ImageButton")
-    local copyButton = Instance.new("ImageButton")
-    local hexCode = Instance.new("Frame")
-    local uiCorner6 = Instance.new("UICorner")
-    local hexCodeText = Instance.new("TextLabel")
-    
-    local oldCode = 0
-    local codeH, codeV = 1, 1
-    local isPressM1 = false
-    local uiSpawnThread
-    
-    local function updateColor()
-        local h, s, v = colorBox.BackgroundColor3:ToHSV()
-        oldCode = h
-        codeH = s
-        codeV = v
-    end
-    
-    local function visibleToggle(value)
-        if value then
-            colorPickBox.BackgroundColor3 = Color3.fromHSV(oldCode, 1, 1)
-            colorOpc.BackgroundColor3 = colorBox.BackgroundColor3
-            hexCodeText.Text = "#" .. tostring(colorPickBox.BackgroundColor3:ToHex())
-            colorPickerFrame.Position = UDim2.fromOffset(colorBox.AbsolutePosition.X + (colorPickerFrame.AbsoluteSize.X / 1.5), colorBox.AbsolutePosition.Y)
-            updateColor()
-            
-            if uiSpawnThread then
-                task.cancel(uiSpawnThread)
-                uiSpawnThread = nil
-            end
-            
-            uiSpawnThread = task.spawn(function()
-                while true do
-                    task.wait()
-                    self:CreateAnimation(colorPickerFrame, 0.35, {
-                        Position = UDim2.fromOffset(colorBox.AbsolutePosition.X + (colorPickerFrame.AbsoluteSize.X / 1.5), colorBox.AbsolutePosition.Y)
-                    })
-                end
-            end)
-            
-            self:CreateAnimation(colorRgbSlide, 0.35, {Position = UDim2.new(0.5, 0, oldCode, 0)})
-            self:CreateAnimation(mouseMovement, 0.35, {Position = UDim2.new(codeH, 0, 1 - codeV, 0)})
-            self:CreateAnimation(colorOptSlide, 0.35, {Position = UDim2.new(1 - transparency, 0, 0.5, 0)})
-            self:CreateAnimation(colorPickerFrame, 0.45, {Size = UDim2.new(0, 175, 0, 195)})
-            self:CreateAnimation(uiStroke, 0.45, {Transparency = 0})
-            self:CreateAnimation(dropShadow, 0.45, {ImageTransparency = 0.75})
-            self:CreateAnimation(colorPickBox, 0.45, {ImageTransparency = 0, BackgroundTransparency = 0})
-            self:CreateAnimation(mouseMovement, 0.45, {ImageTransparency = 0})
-            self:CreateAnimation(uiStroke2, 0.45, {Transparency = 0})
-            self:CreateAnimation(colorRedGreenBlue, 0.45, {BackgroundTransparency = 0})
-            self:CreateAnimation(colorRgbSlide, 0.45, {BackgroundTransparency = 0})
-            self:CreateAnimation(uiStroke3, 0.45, {Transparency = 0.75})
-            self:CreateAnimation(colorOpc, 0.45, {BackgroundTransparency = 0})
-            self:CreateAnimation(colorOptSlide, 0.45, {BackgroundTransparency = 0})
-            self:CreateAnimation(uiStroke4, 0.45, {Transparency = 0.75})
-            self:CreateAnimation(uiStroke5, 0.45, {Transparency = 0})
-            self:CreateAnimation(pasteButton, 0.45, {ImageTransparency = 0.45})
-            self:CreateAnimation(copyButton, 0.45, {ImageTransparency = 0.45})
-            self:CreateAnimation(hexCode, 0.45, {BackgroundTransparency = 0.4})
-            self:CreateAnimation(hexCodeText, 0.45, {TextTransparency = 0.45})
-        else
-            if uiSpawnThread then
-                task.cancel(uiSpawnThread)
-                uiSpawnThread = nil
-            end
-            
-            self:CreateAnimation(colorPickerFrame, 0.45, {Size = UDim2.new(0, 175, 0, 0)})
-            self:CreateAnimation(uiStroke, 0.45, {Transparency = 1})
-            self:CreateAnimation(dropShadow, 0.45, {ImageTransparency = 1})
-            self:CreateAnimation(colorPickBox, 0.45, {ImageTransparency = 1, BackgroundTransparency = 1})
-            self:CreateAnimation(mouseMovement, 0.45, {ImageTransparency = 1})
-            self:CreateAnimation(uiStroke2, 0.45, {Transparency = 1})
-            self:CreateAnimation(colorRedGreenBlue, 0.45, {BackgroundTransparency = 1})
-            self:CreateAnimation(colorRgbSlide, 0.45, {BackgroundTransparency = 1})
-            self:CreateAnimation(uiStroke3, 0.45, {Transparency = 1})
-            self:CreateAnimation(colorOpc, 0.45, {BackgroundTransparency = 1})
-            self:CreateAnimation(colorOptSlide, 0.45, {BackgroundTransparency = 1})
-            self:CreateAnimation(uiStroke4, 0.45, {Transparency = 1})
-            self:CreateAnimation(uiStroke5, 0.45, {Transparency = 1})
-            self:CreateAnimation(pasteButton, 0.45, {ImageTransparency = 1})
-            self:CreateAnimation(copyButton, 0.45, {ImageTransparency = 1})
-            self:CreateAnimation(hexCode, 0.45, {BackgroundTransparency = 1})
-            self:CreateAnimation(hexCodeText, 0.45, {TextTransparency = 1})
-        end
-    end
-    
-    -- Setup color picker frame properties
-    colorPickerFrame.Active = true
-    colorPickerFrame.Name = self:RandomString()
-    colorPickerFrame.Parent = ownWindow
-    colorPickerFrame.AnchorPoint = Vector2.new(0.5, 0)
-    colorPickerFrame.BackgroundColor3 = theme.BackgroundSecondary
-    colorPickerFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    colorPickerFrame.BorderSizePixel = 0
-    colorPickerFrame.ClipsDescendants = true
-    colorPickerFrame.Position = UDim2.new(4, 0, 4, 0)
-    colorPickerFrame.Size = UDim2.new(0, 175, 0, 195)
-    colorPickerFrame.ZIndex = 200
-    
-    self:AddDragBlacklist(colorPickerFrame)
-    
-    uiCorner.CornerRadius = UDim.new(0, 2)
-    uiCorner.Parent = colorPickerFrame
-    
-    uiStroke.Color = theme.Border
-    uiStroke.Parent = colorPickerFrame
-    
-    dropShadow.Name = self:RandomString()
-    dropShadow.Parent = colorPickerFrame
-    dropShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    dropShadow.BackgroundTransparency = 1
-    dropShadow.BorderSizePixel = 0
-    dropShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    dropShadow.Rotation = 0.001
-    dropShadow.Size = UDim2.new(1, 47, 1, 47)
-    dropShadow.ZIndex = 199
-    dropShadow.Image = "rbxassetid://6014261993"
-    dropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    dropShadow.ImageTransparency = 0.75
-    dropShadow.ScaleType = Enum.ScaleType.Slice
-    dropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
-    
-    colorPickBox.Name = self:RandomString()
-    colorPickBox.Parent = colorPickerFrame
-    colorPickBox.BackgroundColor3 = Color3.fromRGB(39, 255, 35)
-    colorPickBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    colorPickBox.BorderSizePixel = 0
-    colorPickBox.Position = UDim2.new(0, 7, 0, 7)
-    colorPickBox.Size = UDim2.new(0, 135, 0, 135)
-    colorPickBox.ZIndex = 201
-    colorPickBox.Image = "http://www.roblox.com/asset/?id=112554223509763"
-    
-    mouseMovement.Name = self:RandomString()
-    mouseMovement.Parent = colorPickBox
-    mouseMovement.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    mouseMovement.BackgroundTransparency = 1
-    mouseMovement.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    mouseMovement.BorderSizePixel = 0
-    mouseMovement.Position = UDim2.new(0.822222233, 0, 0.0592592582, 0)
-    mouseMovement.Size = UDim2.new(0, 12, 0, 12)
-    mouseMovement.ZIndex = 205
-    mouseMovement.Image = "rbxassetid://4805639000"
-    mouseMovement.AnchorPoint = Vector2.new(0.5, 0.5)
-    
-    uiCorner2.CornerRadius = UDim.new(0, 2)
-    uiCorner2.Parent = colorPickBox
-    
-    uiStroke2.Color = theme.Border
-    uiStroke2.Parent = colorPickBox
-    
-    colorRedGreenBlue.Name = self:RandomString()
-    colorRedGreenBlue.Parent = colorPickerFrame
-    colorRedGreenBlue.AnchorPoint = Vector2.new(1, 0)
-    colorRedGreenBlue.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    colorRedGreenBlue.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    colorRedGreenBlue.BorderSizePixel = 0
-    colorRedGreenBlue.Position = UDim2.new(1, -7, 0, 7)
-    colorRedGreenBlue.Size = UDim2.new(0, 20, 0, 135)
-    colorRedGreenBlue.ZIndex = 206
-    
-    uiGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
-        ColorSequenceKeypoint.new(0.10, Color3.fromRGB(255, 153, 0)),
-        ColorSequenceKeypoint.new(0.20, Color3.fromRGB(203, 255, 0)),
-        ColorSequenceKeypoint.new(0.30, Color3.fromRGB(50, 255, 0)),
-        ColorSequenceKeypoint.new(0.40, Color3.fromRGB(0, 255, 102)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
-        ColorSequenceKeypoint.new(0.60, Color3.fromRGB(0, 101, 255)),
-        ColorSequenceKeypoint.new(0.70, Color3.fromRGB(50, 0, 255)),
-        ColorSequenceKeypoint.new(0.80, Color3.fromRGB(204, 0, 255)),
-        ColorSequenceKeypoint.new(0.90, Color3.fromRGB(255, 0, 153)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0))
-    }
-    uiGradient.Rotation = 90
-    uiGradient.Parent = colorRedGreenBlue
-    
-    uiCorner3.CornerRadius = UDim.new(0, 3)
-    uiCorner3.Parent = colorRedGreenBlue
-    
-    colorRgbSlide.Name = self:RandomString()
-    colorRgbSlide.Parent = colorRedGreenBlue
-    colorRgbSlide.AnchorPoint = Vector2.new(0.5, 0)
-    colorRgbSlide.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    colorRgbSlide.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    colorRgbSlide.BorderSizePixel = 0
-    colorRgbSlide.Position = UDim2.new(0.5, 0, 0.5, 0)
-    colorRgbSlide.Size = UDim2.new(1, 5, 0, 2)
-    colorRgbSlide.ZIndex = 207
-    
-    uiStroke3.Transparency = 0.75
-    uiStroke3.Color = theme.Border
-    uiStroke3.Parent = colorRgbSlide
-    
-    colorOpc.Name = self:RandomString()
-    colorOpc.Parent = colorPickerFrame
-    colorOpc.AnchorPoint = Vector2.new(0.5, 0)
-    colorOpc.BackgroundColor3 = Color3.fromRGB(102, 255, 0)
-    colorOpc.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    colorOpc.BorderSizePixel = 0
-    colorOpc.Position = UDim2.new(0.5, 0, 0, 149)
-    colorOpc.Size = UDim2.new(1, -15, 0, 12)
-    colorOpc.ZIndex = 206
-    
-    uiCorner4.CornerRadius = UDim.new(0, 2)
-    uiCorner4.Parent = colorOpc
-    
-    colorOptSlide.Name = self:RandomString()
-    colorOptSlide.Parent = colorOpc
-    colorOptSlide.AnchorPoint = Vector2.new(0, 0.5)
-    colorOptSlide.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    colorOptSlide.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    colorOptSlide.BorderSizePixel = 0
-    colorOptSlide.Position = UDim2.new(0.5, 0, 0.5, 0)
-    colorOptSlide.Size = UDim2.new(0, 2, 1, 5)
-    colorOptSlide.ZIndex = 207
-    
-    uiStroke4.Transparency = 0.75
-    uiStroke4.Color = theme.Border
-    uiStroke4.Parent = colorOptSlide
-    
-    uiGradient2.Transparency = NumberSequence.new{
-        NumberSequenceKeypoint.new(0.00, 1.00),
-        NumberSequenceKeypoint.new(1.00, 0.00)
-    }
-    uiGradient2.Parent = colorOpc
-    
-    uiStroke5.Color = theme.Border
-    uiStroke5.Parent = colorOpc
-    
-    colorOpt.Name = self:RandomString()
-    colorOpt.Parent = colorPickerFrame
-    colorOpt.AnchorPoint = Vector2.new(0.5, 0)
-    colorOpt.BackgroundColor3 = Color3.fromRGB(102, 255, 0)
-    colorOpt.BackgroundTransparency = 1
-    colorOpt.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    colorOpt.BorderSizePixel = 0
-    colorOpt.Position = UDim2.new(0.5, 0, 0, 169)
-    colorOpt.Size = UDim2.new(1, -15, 0, 18)
-    colorOpt.ZIndex = 206
-    
-    uiCorner5.CornerRadius = UDim.new(0, 2)
-    uiCorner5.Parent = colorOpt
-    
-    pasteButton.Name = self:RandomString()
-    pasteButton.Parent = colorOpt
-    pasteButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    pasteButton.BackgroundTransparency = 1
-    pasteButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    pasteButton.BorderSizePixel = 0
-    pasteButton.Size = UDim2.new(1, 0, 1, 0)
-    pasteButton.SizeConstraint = Enum.SizeConstraint.RelativeYY
-    pasteButton.ZIndex = 209
-    pasteButton.Image = self:GetIcon("clipboard")
-    pasteButton.ImageTransparency = 0.45
-    
-    copyButton.Name = self:RandomString()
-    copyButton.Parent = colorOpt
-    copyButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    copyButton.BackgroundTransparency = 1
-    copyButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    copyButton.BorderSizePixel = 0
-    copyButton.Position = UDim2.new(0, 20, 0, 0)
-    copyButton.Size = UDim2.new(1, 0, 1, 0)
-    copyButton.SizeConstraint = Enum.SizeConstraint.RelativeYY
-    copyButton.ZIndex = 209
-    copyButton.Image = self:GetIcon("copy")
-    copyButton.ImageTransparency = 0.45
-    
-    hexCode.Name = self:RandomString()
-    hexCode.Parent = colorOpt
-    hexCode.BackgroundColor3 = theme.BackgroundDark
-    hexCode.BackgroundTransparency = 0.4
-    hexCode.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    hexCode.BorderSizePixel = 0
-    hexCode.Position = UDim2.new(0, 43, 0, 0)
-    hexCode.Size = UDim2.new(1, -43, 1, 0)
-    hexCode.ZIndex = 209
-    
-    uiCorner6.CornerRadius = UDim.new(0, 4)
-    uiCorner6.Parent = hexCode
-    
-    hexCodeText.Name = self:RandomString()
-    hexCodeText.Parent = hexCode
-    hexCodeText.AnchorPoint = Vector2.new(0, 0.5)
-    hexCodeText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    hexCodeText.BackgroundTransparency = 1
-    hexCodeText.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    hexCodeText.BorderSizePixel = 0
-    hexCodeText.Position = UDim2.new(0, 3, 0.5, 0)
-    hexCodeText.Size = UDim2.new(1, 0, 0.8, 0)
-    hexCodeText.ZIndex = 209
-    hexCodeText.FontFace = self.Config.FontSemiBold
-    hexCodeText.Text = "#fff"
-    hexCodeText.TextColor3 = theme.Text
-    hexCodeText.TextSize = 13
-    hexCodeText.TextTransparency = 0.45
-    hexCodeText.TextXAlignment = Enum.TextXAlignment.Left
-    
-    self:CreateHover(copyButton, function(bool)
-        self:CreateAnimation(copyButton, 0.45, {ImageTransparency = bool and 0.1 or 0.45})
-    end)
-    
-    self:CreateHover(pasteButton, function(bool)
-        self:CreateAnimation(pasteButton, 0.45, {ImageTransparency = bool and 0.1 or 0.45})
-    end)
-    
-    pasteButton.MouseButton1Click:Connect(function()
-        if self.Config.GlobalEnvironment.COLOR_COPY then
-            local h, s, v = self.Config.GlobalEnvironment.COLOR_COPY.RGB:ToHSV()
-            transparency = self.Config.GlobalEnvironment.COLOR_COPY.OPC
-            oldCode = h
-            codeH = s
-            codeV = v
-            hexCodeText.Text = "#" .. tostring(self.Config.GlobalEnvironment.COLOR_COPY.RGB:ToHex())
-            self:CreateAnimation(colorRgbSlide, 0.35, {Position = UDim2.new(0.5, 0, oldCode, 0)})
-            self:CreateAnimation(mouseMovement, 0.35, {Position = UDim2.new(codeH, 0, 1 - codeV, 0)})
-            self:CreateAnimation(colorOptSlide, 0.35, {Position = UDim2.new(1 - transparency, 0, 0.5, 0)})
-            colorPickBox.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
-            colorOpc.BackgroundColor3 = self.Config.GlobalEnvironment.COLOR_COPY.RGB
-            callback(Color3.fromHSV(oldCode, codeH, codeV), transparency)
-        end
-    end)
-    
-    copyButton.MouseButton1Click:Connect(function()
-        self.Config.GlobalEnvironment.COLOR_COPY = {
-            RGB = Color3.fromHSV(oldCode, codeH, codeV),
-            OPC = transparency,
-        }
-    end)
-    
-    visibleToggle(false)
-    self:NewInput(colorBox, function() visibleToggle(true) end)
-    
-    -- Input handling
-    local spawnThread
-    colorPickerFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isPressM1 = true
-            self.Config.GlobalEnvironment.IS_HOLD_COLOR_PICKER = true
-            
-            if spawnThread then
-                task.cancel(spawnThread)
-                spawnThread = nil
-            end
-            
-            spawnThread = task.spawn(function()
-                while isPressM1 do
-                    task.wait()
-                    callback(Color3.fromHSV(oldCode, codeH, codeV), transparency)
-                end
-            end)
-        end
-    end)
-    
-    colorPickerFrame.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isPressM1 = false
-            self.Config.GlobalEnvironment.IS_HOLD_COLOR_PICKER = false
-            
-            if spawnThread then
-                task.cancel(spawnThread)
-                spawnThread = nil
-            end
-        end
-    end)
-    
-    UserInputService.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if not self:IsMouseOverFrame(colorPickerFrame) then
-                visibleToggle(false)
-            end
-        end
-    end)
-    
-    colorRedGreenBlue.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isPressM1 = true
-            while (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or isPressM1) do
-                task.wait()
-                local colorY = colorRedGreenBlue.AbsolutePosition.Y
-                local colorYM = colorY + colorRedGreenBlue.AbsoluteSize.Y
-                local value = math.clamp(Mouse.Y, colorY, colorYM)
-                local code = (value - colorY) / (colorYM - colorY)
-                local color = Color3.fromHSV(code, codeH, codeV)
-                self:CreateAnimation(colorRgbSlide, 0.35, {Position = UDim2.new(0.5, 0, code, 0)})
-                self:CreateAnimation(colorBox, 0.5, {BackgroundColor3 = color})
-                self:CreateAnimation(colorOpc, 0.35, {BackgroundColor3 = color})
-                self:CreateAnimation(colorPickBox, 0.5, {BackgroundColor3 = Color3.fromHSV(code, 1, 1)})
-                hexCodeText.Text = "#" .. tostring(color:ToHex())
-                oldCode = code
-            end
-        end
-    end)
-    
-    colorOpc.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isPressM1 = true
-            while (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or isPressM1) do
-                task.wait()
-                local t = math.clamp((Mouse.X - colorOpc.AbsolutePosition.X) / colorOpc.AbsoluteSize.X, 0, 1)
-                self:CreateAnimation(colorOptSlide, 0.35, {Position = UDim2.new(t, 0, 0.5, 0)})
-                hexCodeText.Text = "#" .. tostring(colorBox.BackgroundColor3:ToHex())
-                transparency = 1 - t
-            end
-        end
-    end)
-    
-    colorPickBox.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isPressM1 = true
-            while (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or isPressM1) do
-                task.wait()
-                local posX = colorPickBox.AbsolutePosition.X
-                local scaleX = posX + colorPickBox.AbsoluteSize.X
-                local value = math.clamp(Mouse.X, posX, scaleX)
-                local posY = colorPickBox.AbsolutePosition.Y
-                local scaleY = posY + colorPickBox.AbsoluteSize.Y
-                local vals = math.clamp(Mouse.Y, posY, scaleY)
-                codeH = (value - posX) / (scaleX - posX)
-                codeV = 1 - ((vals - posY) / (scaleY - posY))
-                self:CreateAnimation(colorBox, 0.5, {BackgroundColor3 = Color3.fromHSV(oldCode, codeH, codeV)})
-                self:CreateAnimation(colorOpc, 0.35, {BackgroundColor3 = Color3.fromHSV(oldCode, codeH, codeV)})
-                hexCodeText.Text = "#" .. tostring(Color3.fromHSV(oldCode, codeH, codeV):ToHex())
-                self:CreateAnimation(mouseMovement, 0.2, nil, {Position = UDim2.new(codeH, 0, 1 - codeV, 0)})
-            end
-        end
-    end)
-    
-    return {
-        set_opc = function(v) transparency = v end,
-    }
-end
-
--- ============================================
--- CREATE DROPDOWN
--- ============================================
-
-function Aether:CreateDropdown(parent, default, multiplier, autoUpdate, callback)
-    local window = self:GetWindowFromElement(parent)
-    local data = {}
-    local selected = (multiplier and {}) or nil
-    local theme = self:GetTheme()
-    
-    local dropdownItemFrame = Instance.new("Frame")
-    local uiCorner = Instance.new("UICorner")
-    local uiStroke = Instance.new("UIStroke")
-    local dropShadow = Instance.new("ImageLabel")
-    local scrollingFrame = Instance.new("ScrollingFrame")
+    local notifyGui = Instance.new("ScreenGui")
+    local layout = Instance.new("Frame")
     local uiListLayout = Instance.new("UIListLayout")
-    local spawnThread
+    local theme = self:GetTheme()
     
-    self:AddDragBlacklist(dropdownItemFrame)
+    notifyGui.Name = self:RandomString()
+    notifyGui.Parent = CoreGui
+    notifyGui.ResetOnSpawn = false
+    notifyGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    notifyGui.IgnoreGuiInset = true
     
-    local function toggle(value)
-        if value then
-            if spawnThread then
-                task.cancel(spawnThread)
-                spawnThread = nil
+    layout.Name = self:RandomString()
+    layout.Parent = notifyGui
+    layout.AnchorPoint = Vector2.new(1, 0)
+    layout.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    layout.BackgroundTransparency = 1
+    layout.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    layout.BorderSizePixel = 0
+    layout.Position = UDim2.new(1, -5, 0, 5)
+    layout.Size = UDim2.new(0, 150, 0, 50)
+    
+    uiListLayout.Parent = layout
+    uiListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    local res = self:CreateResponse({
+        Notify = function(config)
+            config = config or {}
+            config.Icon = config.Icon or "settings"
+            config.Content = config.Content or ""
+            config.Title = config.Title or "Notification"
+            config.Duration = config.Duration or 5
+            
+            local notify = Instance.new("Frame")
+            local notifyBlock = Instance.new("Frame")
+            local uiCorner = Instance.new("UICorner")
+            local uiStroke = Instance.new("UIStroke")
+            local icon = Instance.new("ImageLabel")
+            local headerText = Instance.new("TextLabel")
+            local bodyText = Instance.new("TextLabel")
+            
+            notify.Name = self:RandomString()
+            notify.Parent = layout
+            notify.BackgroundColor3 = theme.Background
+            notify.BackgroundTransparency = 1
+            notify.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            notify.BorderSizePixel = 0
+            notify.Size = UDim2.new(0, 0, 0, 0)
+            
+            notifyBlock.Name = self:RandomString()
+            notifyBlock.Parent = notify
+            notifyBlock.AnchorPoint = Vector2.new(0.5, 0)
+            notifyBlock.BackgroundColor3 = theme.Background
+            notifyBlock.BackgroundTransparency = 1
+            notifyBlock.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            notifyBlock.BorderSizePixel = 0
+            notifyBlock.Position = UDim2.new(0.5, 0, -1, 0)
+            notifyBlock.Size = UDim2.new(1, 0, 1, -12)
+            notifyBlock.ClipsDescendants = true
+            notifyBlock.ZIndex = 54
+            
+            uiCorner.CornerRadius = UDim.new(0, 3)
+            uiCorner.Parent = notifyBlock
+            
+            uiStroke.Thickness = 1
+            uiStroke.Transparency = 1
+            uiStroke.Parent = notifyBlock
+            
+            icon.Name = self:RandomString()
+            icon.Parent = notifyBlock
+            icon.BackgroundColor3 = theme.Main
+            icon.BackgroundTransparency = 1
+            icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            icon.BorderSizePixel = 0
+            icon.Position = UDim2.new(0, 7, 0, 7)
+            icon.Size = UDim2.new(0, 18, 0, 18)
+            icon.Image = self:GetIcon(config.Icon)
+            icon.ImageColor3 = theme.Main
+            icon.ImageTransparency = 1
+            icon.ZIndex = 55
+            
+            headerText.Name = self:RandomString()
+            headerText.Parent = notifyBlock
+            headerText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            headerText.BackgroundTransparency = 1
+            headerText.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            headerText.BorderSizePixel = 0
+            headerText.Position = UDim2.new(0, 30, 0, 7)
+            headerText.Size = UDim2.new(1, 0, 0, 15)
+            headerText.ZIndex = 55
+            headerText.FontFace = self.Config.FontSemiBold
+            headerText.Text = config.Title
+            headerText.TextColor3 = theme.Main
+            headerText.TextSize = 13
+            headerText.TextTransparency = 1
+            headerText.TextXAlignment = Enum.TextXAlignment.Left
+            
+            bodyText.Name = self:RandomString()
+            bodyText.Parent = notifyBlock
+            bodyText.AnchorPoint = Vector2.new(0, 1)
+            bodyText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            bodyText.BackgroundTransparency = 1
+            bodyText.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            bodyText.BorderSizePixel = 0
+            bodyText.Position = UDim2.new(0, 10, 1, 0)
+            bodyText.Size = UDim2.new(1, -15, 1, -29)
+            bodyText.ZIndex = 55
+            bodyText.FontFace = self.Config.FontSemiBold
+            bodyText.Text = config.Content
+            bodyText.TextColor3 = theme.TextSecondary
+            bodyText.TextSize = 12
+            bodyText.TextTransparency = 1
+            bodyText.TextWrapped = true
+            bodyText.TextXAlignment = Enum.TextXAlignment.Left
+            bodyText.TextYAlignment = Enum.TextYAlignment.Top
+            
+            local function updateScale()
+                local titleScale = self:GetTextSize(headerText.Text, headerText.TextSize, Enum.Font.GothamBold)
+                local contentScale = self:GetTextSize(bodyText.Text, bodyText.TextSize, Enum.Font.GothamMedium)
+                local xScale = math.max(titleScale.X, contentScale.X)
+                local yScale = math.max(titleScale.Y, contentScale.Y)
+                notify.Size = UDim2.new(0, xScale + 25, 0, yScale + 50)
+                self:CreateAnimation(notifyBlock, 0.35, {Position = UDim2.new(0.5, 0, 0, 0)})
             end
             
-            spawnThread = task.spawn(function()
-                while true do
-                    task.wait()
-                    local baseSize = uiListLayout.AbsoluteContentSize.Y + 10
-                    dropdownItemFrame.Position = UDim2.fromOffset(parent.AbsolutePosition.X, parent.AbsolutePosition.Y + (parent.AbsoluteSize.Y * 5))
-                    self:CreateAnimation(dropdownItemFrame, 0.35, {Size = UDim2.new(0, 175, 0, math.clamp(baseSize, 0, 200))})
-                end
+            task.delay(0.1, function()
+                self:CreateAnimation(notifyBlock, 0.25, {BackgroundTransparency = 0.1})
+                self:CreateAnimation(uiStroke, 0.25, {Thickness = 2.5, Transparency = 0.9})
+                self:CreateAnimation(icon, 0.25, {ImageTransparency = 0})
+                self:CreateAnimation(headerText, 0.25, {TextTransparency = 0.2})
+                self:CreateAnimation(bodyText, 0.25, {TextTransparency = 0.3})
             end)
             
-            self:CreateAnimation(uiStroke, 0.35, {Transparency = 0})
-            self:CreateAnimation(dropShadow, 0.35, {ImageTransparency = 0.75})
-        else
-            if spawnThread then
-                task.cancel(spawnThread)
-                spawnThread = nil
-            end
+            updateScale()
             
-            self:CreateAnimation(dropdownItemFrame, 0.35, {Size = UDim2.new(0, 175, 0, 0)})
-            self:CreateAnimation(uiStroke, 0.35, {Transparency = 1})
-            self:CreateAnimation(dropShadow, 0.35, {ImageTransparency = 1})
-        end
-    end
-    
-    toggle(false)
-    
-    dropdownItemFrame.Name = self:RandomString()
-    dropdownItemFrame.Parent = window
-    dropdownItemFrame.AnchorPoint = Vector2.new(0, 0)
-    dropdownItemFrame.BackgroundColor3 = theme.Background
-    dropdownItemFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    dropdownItemFrame.BorderSizePixel = 0
-    dropdownItemFrame.ClipsDescendants = true
-    dropdownItemFrame.Position = UDim2.new(4, 0, 4, 0)
-    dropdownItemFrame.Size = UDim2.new(0, 175, 0, 100)
-    dropdownItemFrame.ZIndex = 100
-    
-    uiCorner.CornerRadius = UDim.new(0, 2)
-    uiCorner.Parent = dropdownItemFrame
-    
-    uiStroke.Color = theme.Border
-    uiStroke.Parent = dropdownItemFrame
-    
-    dropShadow.Name = self:RandomString()
-    dropShadow.Parent = dropdownItemFrame
-    dropShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    dropShadow.BackgroundTransparency = 1
-    dropShadow.BorderSizePixel = 0
-    dropShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    dropShadow.Rotation = 0.001
-    dropShadow.Size = UDim2.new(1, 47, 1, 47)
-    dropShadow.ZIndex = 99
-    dropShadow.Image = "rbxassetid://6014261993"
-    dropShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    dropShadow.ImageTransparency = 0.75
-    dropShadow.ScaleType = Enum.ScaleType.Slice
-    dropShadow.SliceCenter = Rect.new(49, 49, 450, 450)
-    
-    scrollingFrame.Parent = dropdownItemFrame
-    scrollingFrame.Active = true
-    scrollingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    scrollingFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    scrollingFrame.BackgroundTransparency = 1
-    scrollingFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    scrollingFrame.BorderSizePixel = 0
-    scrollingFrame.ClipsDescendants = false
-    scrollingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    scrollingFrame.Size = UDim2.new(1, -5, 1, -5)
-    scrollingFrame.ZIndex = 109
-    scrollingFrame.ScrollBarThickness = 0
-    
-    uiListLayout.Parent = scrollingFrame
-    uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    uiListLayout.Padding = UDim.new(0, 5)
-    
-    uiListLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-        scrollingFrame.CanvasSize = UDim2.fromOffset(0, uiListLayout.AbsoluteContentSize.Y + 4)
-    end)
-    
-    local function newButton()
-        local button = Instance.new("TextButton")
-        button.Name = self:RandomString()
-        button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        button.BackgroundTransparency = 1
-        button.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        button.BorderSizePixel = 0
-        button.Size = UDim2.new(1, 0, 0, 10)
-        button.ZIndex = 110
-        button.FontFace = self.Config.FontSemiBold
-        button.TextColor3 = theme.Main
-        button.TextSize = 12
-        button.TextXAlignment = Enum.TextXAlignment.Left
-        return button
-    end
-    
-    local func
-    local res = self:CreateResponse({
-        set_data = function(v) data = v end,
-        on_toggle = function(cb) func = cb end,
-        change_default = function(v) default = v end,
-        refresh = function()
-            for _, child in next, scrollingFrame:GetChildren() do
-                if child:IsA('TextButton') then
-                    child:Destroy()
-                end
-            end
-            
-            local selectedMem
-            for i, v in next, data do
-                local button = newButton()
-                button.Text = tostring(v)
-                button.Parent = scrollingFrame
+            task.delay(config.Duration + 0.25, function()
+                self:CreateAnimation(notifyBlock, 0.35, {Position = UDim2.new(0.5, 0, 1, 0)})
+                self:CreateAnimation(notifyBlock, 0.25, {BackgroundTransparency = 1})
+                self:CreateAnimation(uiStroke, 0.25, {Thickness = 1, Transparency = 1})
+                self:CreateAnimation(icon, 0.25, {ImageTransparency = 1})
+                self:CreateAnimation(headerText, 0.25, {TextTransparency = 1})
+                self:CreateAnimation(bodyText, 0.25, {TextTransparency = 1})
                 
-                if multiplier then
-                    if (typeof(default) == 'table' and (default[v] or table.find(default, v))) or default == v then
-                        selected[v] = true
-                        button.TextColor3 = theme.Main
-                    else
-                        button.TextColor3 = theme.TextSecondary
-                        selected[v] = false
-                    end
-                    
-                    button.MouseButton1Click:Connect(function()
-                        selected[v] = not selected[v]
-                        button.TextColor3 = selected[v] and theme.Main or theme.TextSecondary
-                        callback(selected)
-                    end)
-                else
-                    if v == default then
-                        selectedMem = button
-                        selected = v
-                        button.TextColor3 = theme.Main
-                    else
-                        button.TextColor3 = theme.TextSecondary
-                    end
-                    
-                    button.MouseButton1Click:Connect(function()
-                        if selectedMem then
-                            selectedMem.TextColor3 = theme.TextSecondary
-                        end
-                        button.TextColor3 = theme.Main
-                        selectedMem = button
-                        selected = v
-                        callback(v)
-                    end)
-                end
-            end
-            callback(selected)
+                task.delay(0.35, function()
+                    self:CreateAnimation(notify, 0.5, {Size = UDim2.new(0, 0, 0, 0)})
+                    task.wait(0.5)
+                    notify:Destroy()
+                end)
+            end)
         end,
     })
     
-    self:NewInput(parent, function()
-        if autoUpdate then
-            res:refresh()
-        end
-        func(true)
-        toggle(true)
-    end)
-    
-    UserInputService.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if not self:IsMouseOverFrame(dropdownItemFrame) then
-                func(false)
-                toggle(false)
-            end
-        end
-    end)
-    
+    self.__NOTIFIER_CACHE = res
     return res
 end
 
@@ -1331,141 +729,6 @@ function Aether:CreateElements(parent, zIndex, event, searchAPI)
                 end
             end,
             Flag = config.Flag and (config.Flag .. "Toggle"),
-            Option = (config.Option and function()
-                -- Create option menu
-                local function createOptionMenu(btn)
-                    self:CreateHover(btn, function(bool)
-                        self:CreateAnimation(btn, 0.5, {ImageTransparency = bool and 0.3 or 0.6})
-                    end)
-                    
-                    local bindable = Instance.new('BindableEvent')
-                    local ownWindow = self:GetWindowFromElement(btn)
-                    local extFrame = Instance.new("Frame")
-                    local corner = Instance.new("UICorner")
-                    local stroke = Instance.new("UIStroke")
-                    local shadow = Instance.new("ImageLabel")
-                    local scroll = Instance.new("ScrollingFrame")
-                    local layout = Instance.new("UIListLayout")
-                    local spaceBox = Instance.new("Frame")
-                    
-                    self:ScrollSignal(scroll, layout, 'Y')
-                    
-                    extFrame.Active = true
-                    extFrame.Name = self:RandomString()
-                    extFrame.Parent = ownWindow
-                    extFrame.AnchorPoint = Vector2.new(0.5, 0)
-                    extFrame.BackgroundColor3 = theme.BackgroundSecondary
-                    extFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-                    extFrame.BorderSizePixel = 0
-                    extFrame.ClipsDescendants = true
-                    extFrame.Position = UDim2.new(2, 0, 2, 0)
-                    extFrame.Size = UDim2.new(0, 200, 0, 0)
-                    extFrame.ZIndex = 100
-                    
-                    corner.CornerRadius = UDim.new(0, 2)
-                    corner.Parent = extFrame
-                    
-                    stroke.Color = theme.Border
-                    stroke.Parent = extFrame
-                    
-                    shadow.Name = self:RandomString()
-                    shadow.Parent = extFrame
-                    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-                    shadow.BackgroundTransparency = 1
-                    shadow.BorderSizePixel = 0
-                    shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-                    shadow.Rotation = 0.001
-                    shadow.Size = UDim2.new(1, 47, 1, 47)
-                    shadow.ZIndex = 99
-                    shadow.Image = "rbxassetid://6014261993"
-                    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-                    shadow.ImageTransparency = 0.75
-                    shadow.ScaleType = Enum.ScaleType.Slice
-                    shadow.SliceCenter = Rect.new(49, 49, 450, 450)
-                    
-                    scroll.Parent = extFrame
-                    scroll.Active = true
-                    scroll.AnchorPoint = Vector2.new(0.5, 0.5)
-                    scroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                    scroll.BackgroundTransparency = 1
-                    scroll.BorderColor3 = Color3.fromRGB(0, 0, 0)
-                    scroll.BorderSizePixel = 0
-                    scroll.ClipsDescendants = false
-                    scroll.Position = UDim2.new(0.5, 0, 0.5, 0)
-                    scroll.Size = UDim2.new(1, 0, 1, -5)
-                    scroll.ZIndex = 109
-                    scroll.ScrollBarThickness = 0
-                    
-                    layout.Parent = scroll
-                    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-                    layout.SortOrder = Enum.SortOrder.LayoutOrder
-                    layout.Padding = UDim.new(0, 5)
-                    
-                    spaceBox.Name = self:RandomString()
-                    spaceBox.Parent = scroll
-                    spaceBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                    spaceBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-                    spaceBox.BorderSizePixel = 0
-                    spaceBox.Size = UDim2.new(0, 0, 0, 3)
-                    
-                    local spawnThread
-                    local function toggleExt(bool)
-                        if bool then
-                            bindable:SetAttribute('V', true)
-                            bindable:Fire(true)
-                            
-                            local size = math.clamp(layout.AbsoluteContentSize.Y + 15, 0, 200)
-                            extFrame.Position = UDim2.fromOffset(btn.AbsolutePosition.X + 100, btn.AbsolutePosition.Y + (size / 2))
-                            self:CreateAnimation(extFrame, 0.45, {Size = UDim2.new(0, 200, 0, size)})
-                            self:CreateAnimation(shadow, 0.45, {ImageTransparency = 0.75})
-                            self:CreateAnimation(stroke, 0.45, {Transparency = 0})
-                            
-                            if spawnThread then
-                                task.cancel(spawnThread)
-                                spawnThread = nil
-                            end
-                            
-                            spawnThread = task.spawn(function()
-                                while true do
-                                    task.wait(0.1)
-                                    local size = math.clamp(layout.AbsoluteContentSize.Y + 15, 0, 200)
-                                    local pos = UDim2.fromOffset(btn.AbsolutePosition.X + 100, btn.AbsolutePosition.Y + (size / 2))
-                                    self:CreateAnimation(extFrame, 0.35, {Position = pos})
-                                end
-                            end)
-                        else
-                            if spawnThread then
-                                task.cancel(spawnThread)
-                                spawnThread = nil
-                            end
-                            
-                            bindable:SetAttribute('V', false)
-                            bindable:Fire(false)
-                            self:CreateAnimation(extFrame, 0.45, {Size = UDim2.new(0, 200, 0, 0)})
-                            self:CreateAnimation(shadow, 0.45, {ImageTransparency = 1})
-                            self:CreateAnimation(stroke, 0.45, {Transparency = 1})
-                        end
-                    end
-                    
-                    bindable:SetAttribute('V', false)
-                    toggleExt(false)
-                    
-                    btn.MouseButton1Click:Connect(function()
-                        toggleExt(true)
-                    end)
-                    
-                    UserInputService.InputBegan:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-                            if not self:IsMouseOverFrame(extFrame) and not self.Config.GlobalEnvironment.IS_HOLD_COLOR_PICKER then
-                                toggleExt(false)
-                            end
-                        end
-                    end)
-                    
-                    return self:CreateElements(scroll, scroll.ZIndex, bindable)
-                end
-                return createOptionMenu(optionButton)
-            end) or nil,
         })
         
         if config.Flag then
@@ -1663,10 +926,6 @@ function Aether:CreateElements(parent, zIndex, event, searchAPI)
                 end
             end,
             Flag = config.Flag and config.Flag .. "Slider",
-            Option = (config.Option and function()
-                -- Create option menu (similar to toggle option)
-                return nil
-            end) or nil,
         })
         
         if config.Flag then
@@ -1748,125 +1007,6 @@ function Aether:CreateElements(parent, zIndex, event, searchAPI)
             Signal = event.Event:Connect(opcToggle),
             Fire = config.Callback,
         })
-    end
-    
-    function elements:AddColorPicker(config)
-        config = config or {}
-        config.Name = config.Name or "Color Picker"
-        config.Option = config.Option or false
-        config.Default = config.Default or Color3.fromRGB(255, 255, 255)
-        config.Callback = config.Callback or function() end
-        config.Transparency = config.Transparency or 0
-        config.Flag = config.Flag or nil
-        
-        if searchAPI then
-            searchAPI.Memory(config.Name)
-        end
-        
-        local colorPicker = Instance.new("Frame")
-        local colorPickerName = Instance.new("TextLabel")
-        local valueFrame = Instance.new("Frame")
-        local uiCorner = Instance.new("UICorner")
-        local optionButton = Instance.new("ImageButton")
-        
-        colorPicker.Name = self:RandomString()
-        colorPicker.Parent = parent
-        colorPicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        colorPicker.BackgroundTransparency = 1
-        colorPicker.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        colorPicker.BorderSizePixel = 0
-        colorPicker.Size = UDim2.new(1, -25, 0, 17)
-        colorPicker.ZIndex = zIndex + 1
-        self:AddDragBlacklist(colorPicker)
-        
-        colorPickerName.Name = self:RandomString()
-        colorPickerName.Parent = colorPicker
-        colorPickerName.AnchorPoint = Vector2.new(0, 0.5)
-        colorPickerName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        colorPickerName.BackgroundTransparency = 1
-        colorPickerName.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        colorPickerName.BorderSizePixel = 0
-        colorPickerName.Position = UDim2.new(0, 0, 0.5, 0)
-        colorPickerName.Size = UDim2.new(1, 0, 0.8, 0)
-        colorPickerName.ZIndex = zIndex + 2
-        colorPickerName.FontFace = self.Config.FontSemiBold
-        colorPickerName.Text = config.Name
-        colorPickerName.TextColor3 = theme.Text
-        colorPickerName.TextSize = 13
-        colorPickerName.TextTransparency = 0.2
-        colorPickerName.TextXAlignment = Enum.TextXAlignment.Left
-        
-        valueFrame.Name = self:RandomString()
-        valueFrame.Parent = colorPicker
-        valueFrame.AnchorPoint = Vector2.new(1, 0.5)
-        valueFrame.BackgroundColor3 = config.Default
-        valueFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        valueFrame.BorderSizePixel = 0
-        valueFrame.Position = UDim2.new(1, -3, 0.5, 0)
-        valueFrame.Size = UDim2.new(0, 35, 0.7, 0)
-        valueFrame.ZIndex = zIndex + 3
-        
-        uiCorner.CornerRadius = UDim.new(0, 2)
-        uiCorner.Parent = valueFrame
-        
-        optionButton.Name = self:RandomString()
-        optionButton.Parent = valueFrame
-        optionButton.AnchorPoint = Vector2.new(0, 0.5)
-        optionButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        optionButton.BackgroundTransparency = 1
-        optionButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        optionButton.BorderSizePixel = 0
-        optionButton.Position = UDim2.new(0, -20, 0.5, 0)
-        optionButton.Size = UDim2.new(0, 13, 0, 13)
-        optionButton.SizeConstraint = Enum.SizeConstraint.RelativeYY
-        optionButton.Image = "http://www.roblox.com/asset/?id=14007344336"
-        optionButton.ImageTransparency = 0.6
-        optionButton.ZIndex = 7
-        
-        local res = self:CreateColorPicker(valueFrame, config.Transparency, function(rgb, opc)
-            valueFrame.BackgroundColor3 = rgb
-            valueFrame.BackgroundTransparency = opc
-            task.spawn(config.Callback, rgb, opc)
-        end)
-        
-        local function opcToggle(value)
-            if value then
-                self:CreateAnimation(colorPickerName, 0.45, {TextTransparency = 0.2})
-                self:CreateAnimation(valueFrame, 0.45, {Size = UDim2.new(0, 35, 0.7, 0)})
-                self:CreateAnimation(optionButton, 0.45, {ImageTransparency = (config.Option and 0.6) or 1})
-            else
-                self:CreateAnimation(colorPickerName, 0.45, {TextTransparency = 1})
-                self:CreateAnimation(valueFrame, 0.45, {Size = UDim2.new(0, 35, 0, 0)})
-                self:CreateAnimation(optionButton, 0.45, {ImageTransparency = 1})
-            end
-        end
-        
-        opcToggle(event:GetAttribute('V'))
-        
-        local response = self:CreateResponse({
-            Rename = function(newName) colorPickerName.Text = newName end,
-            Signal = event.Event:Connect(opcToggle),
-            SetValue = function(rgb, opc)
-                local isSame = valueFrame.BackgroundColor3 == rgb or valueFrame.BackgroundTransparency == opc
-                valueFrame.BackgroundColor3 = rgb
-                valueFrame.BackgroundTransparency = opc
-                res.set_opc(opc)
-                if not isSame then
-                    task.spawn(config.Callback, rgb, opc)
-                end
-            end,
-            GetValue = function()
-                return {Color = valueFrame.BackgroundColor3, Transparency = valueFrame.BackgroundTransparency}
-            end,
-            Flag = config.Flag and config.Flag .. "ColorPicker",
-            Option = (config.Option and function() return nil end) or nil,
-        })
-        
-        if config.Flag then
-            self.Config.WFlags[window][config.Flag .. "ColorPicker"] = response
-        end
-        
-        return response
     end
     
     function elements:AddDropdown(config)
@@ -2005,22 +1145,174 @@ function Aether:CreateElements(parent, zIndex, event, searchAPI)
         valueText.TextWrapped = true
         valueText.TextTruncate = Enum.TextTruncate.SplitWord
         
-        local res
-        res = self:CreateDropdown(valueFrame, config.Default, config.Multi, config.AutoUpdate, function(args)
-            config.Default = args
-            valueText.Text = dataParser(config.Default)
-            res:change_default(config.Default)
-            config.Callback(args)
+        local dropdownFrame = Instance.new("Frame")
+        local dropdownCorner = Instance.new("UICorner")
+        local dropdownStroke = Instance.new("UIStroke")
+        local dropdownShadow = Instance.new("ImageLabel")
+        local dropdownScroll = Instance.new("ScrollingFrame")
+        local dropdownLayout = Instance.new("UIListLayout")
+        
+        dropdownFrame.Name = self:RandomString()
+        dropdownFrame.Parent = window
+        dropdownFrame.AnchorPoint = Vector2.new(0, 0)
+        dropdownFrame.BackgroundColor3 = theme.Background
+        dropdownFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        dropdownFrame.BorderSizePixel = 0
+        dropdownFrame.ClipsDescendants = true
+        dropdownFrame.Position = UDim2.new(4, 0, 4, 0)
+        dropdownFrame.Size = UDim2.new(0, 175, 0, 0)
+        dropdownFrame.ZIndex = 100
+        
+        dropdownCorner.CornerRadius = UDim.new(0, 2)
+        dropdownCorner.Parent = dropdownFrame
+        
+        dropdownStroke.Color = theme.Border
+        dropdownStroke.Parent = dropdownFrame
+        
+        dropdownShadow.Name = self:RandomString()
+        dropdownShadow.Parent = dropdownFrame
+        dropdownShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        dropdownShadow.BackgroundTransparency = 1
+        dropdownShadow.BorderSizePixel = 0
+        dropdownShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+        dropdownShadow.Rotation = 0.001
+        dropdownShadow.Size = UDim2.new(1, 47, 1, 47)
+        dropdownShadow.ZIndex = 99
+        dropdownShadow.Image = "rbxassetid://6014261993"
+        dropdownShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        dropdownShadow.ImageTransparency = 0.75
+        dropdownShadow.ScaleType = Enum.ScaleType.Slice
+        dropdownShadow.SliceCenter = Rect.new(49, 49, 450, 450)
+        
+        dropdownScroll.Parent = dropdownFrame
+        dropdownScroll.Active = true
+        dropdownScroll.AnchorPoint = Vector2.new(0.5, 0.5)
+        dropdownScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        dropdownScroll.BackgroundTransparency = 1
+        dropdownScroll.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        dropdownScroll.BorderSizePixel = 0
+        dropdownScroll.ClipsDescendants = false
+        dropdownScroll.Position = UDim2.new(0.5, 0, 0.5, 0)
+        dropdownScroll.Size = UDim2.new(1, -5, 1, -5)
+        dropdownScroll.ZIndex = 109
+        dropdownScroll.ScrollBarThickness = 0
+        
+        dropdownLayout.Parent = dropdownScroll
+        dropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        dropdownLayout.Padding = UDim.new(0, 5)
+        
+        dropdownLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+            dropdownScroll.CanvasSize = UDim2.fromOffset(0, dropdownLayout.AbsoluteContentSize.Y + 4)
         end)
         
-        res:set_data(config.Values)
-        res:refresh()
+        local dropdownOpen = false
+        local dropdownThread
         
-        res:on_toggle(function(b)
-            if b then
-                self:CreateAnimation(icon, 0.35, {Rotation = -180, ImageColor3 = theme.Main})
+        local function toggleDropdown(open)
+            if open then
+                if dropdownThread then
+                    task.cancel(dropdownThread)
+                end
+                
+                dropdownThread = task.spawn(function()
+                    while true do
+                        task.wait()
+                        local baseSize = dropdownLayout.AbsoluteContentSize.Y + 10
+                        dropdownFrame.Position = UDim2.fromOffset(valueFrame.AbsolutePosition.X, valueFrame.AbsolutePosition.Y + (valueFrame.AbsoluteSize.Y * 2))
+                        self:CreateAnimation(dropdownFrame, 0.35, {Size = UDim2.new(0, 175, 0, math.clamp(baseSize, 0, 200))})
+                    end
+                end)
+                
+                self:CreateAnimation(dropdownStroke, 0.35, {Transparency = 0})
+                self:CreateAnimation(dropdownShadow, 0.35, {ImageTransparency = 0.75})
             else
-                self:CreateAnimation(icon, 0.35, {Rotation = 0, ImageColor3 = theme.Text})
+                if dropdownThread then
+                    task.cancel(dropdownThread)
+                    dropdownThread = nil
+                end
+                
+                self:CreateAnimation(dropdownFrame, 0.35, {Size = UDim2.new(0, 175, 0, 0)})
+                self:CreateAnimation(dropdownStroke, 0.35, {Transparency = 1})
+                self:CreateAnimation(dropdownShadow, 0.35, {ImageTransparency = 1})
+            end
+        end
+        
+        local function refreshDropdown()
+            for _, child in ipairs(dropdownScroll:GetChildren()) do
+                if child:IsA('TextButton') then
+                    child:Destroy()
+                end
+            end
+            
+            local selectedMem
+            for _, val in ipairs(config.Values) do
+                local btn = Instance.new("TextButton")
+                btn.Name = self:RandomString()
+                btn.Parent = dropdownScroll
+                btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                btn.BackgroundTransparency = 1
+                btn.BorderColor3 = Color3.fromRGB(0, 0, 0)
+                btn.BorderSizePixel = 0
+                btn.Size = UDim2.new(1, 0, 0, 10)
+                btn.ZIndex = 110
+                btn.FontFace = self.Config.FontSemiBold
+                btn.TextColor3 = theme.Main
+                btn.TextSize = 12
+                btn.TextXAlignment = Enum.TextXAlignment.Left
+                btn.Text = "  " .. tostring(val)
+                
+                if config.Multi then
+                    if (typeof(config.Default) == 'table' and config.Default[val]) or config.Default == val then
+                        btn.TextColor3 = theme.Main
+                    else
+                        btn.TextColor3 = theme.TextSecondary
+                    end
+                    
+                    btn.MouseButton1Click:Connect(function()
+                        if typeof(config.Default) ~= 'table' then
+                            config.Default = {}
+                        end
+                        config.Default[val] = not config.Default[val]
+                        btn.TextColor3 = config.Default[val] and theme.Main or theme.TextSecondary
+                        config.Callback(config.Default)
+                        valueText.Text = dataParser(config.Default)
+                    end)
+                else
+                    if val == config.Default then
+                        selectedMem = btn
+                        btn.TextColor3 = theme.Main
+                    else
+                        btn.TextColor3 = theme.TextSecondary
+                    end
+                    
+                    btn.MouseButton1Click:Connect(function()
+                        if selectedMem then
+                            selectedMem.TextColor3 = theme.TextSecondary
+                        end
+                        btn.TextColor3 = theme.Main
+                        selectedMem = btn
+                        config.Default = val
+                        config.Callback(val)
+                        valueText.Text = dataParser(config.Default)
+                        toggleDropdown(false)
+                    end)
+                end
+            end
+        end
+        
+        refreshDropdown()
+        
+        self:NewInput(valueFrame, function()
+            dropdownOpen = not dropdownOpen
+            toggleDropdown(dropdownOpen)
+        end)
+        
+        UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                if not self:IsMouseOverFrame(dropdownFrame) and not self:IsMouseOverFrame(valueFrame) then
+                    dropdownOpen = false
+                    toggleDropdown(false)
+                end
             end
         end)
         
@@ -2037,6 +1329,7 @@ function Aether:CreateElements(parent, zIndex, event, searchAPI)
                 self:CreateAnimation(icon, 0.45, {ImageTransparency = 1})
                 self:CreateAnimation(valueText, 0.45, {TextTransparency = 1})
                 self:CreateAnimation(optionButton, 0.45, {ImageTransparency = 1})
+                toggleDropdown(false)
             end
         end
         
@@ -2052,18 +1345,14 @@ function Aether:CreateElements(parent, zIndex, event, searchAPI)
             SetValue = function(def)
                 config.Default = def
                 valueText.Text = dataParser(config.Default)
-                res:change_default(config.Default)
+                refreshDropdown()
                 config.Callback(def)
             end,
-            SetData = function(def)
-                config.Values = def
-                res:set_data(config.Values)
-                if not config.AutoUpdate then
-                    res:refresh()
-                end
+            SetData = function(values)
+                config.Values = values
+                refreshDropdown()
             end,
             Flag = config.Flag and config.Flag .. "Dropdown",
-            Option = (config.Option and function() return nil end) or nil,
         })
         
         if config.Flag then
@@ -2073,345 +1362,7 @@ function Aether:CreateElements(parent, zIndex, event, searchAPI)
         return response
     end
     
-    function elements:AddKeybind(config)
-        config = config or {}
-        config.Name = config.Name or "Keybind"
-        config.Option = config.Option or false
-        config.Default = config.Default or nil
-        config.Callback = config.Callback or function() end
-        
-        local keys = {
-            One = '1', Two = '2', Three = '3', Four = '4', Five = '5',
-            Six = '6', Seven = '7', Eight = '8', Nine = '9', Zero = '0',
-            Minus = "-", Plus = "+", BackSlash = "\\", Slash = "/", Period = '.',
-            Semicolon = ';', Colon = ":", LeftControl = "LCtrl", RightControl = "RCtrl",
-            LeftShift = "LShift", RightShift = "RShift", Return = "Enter",
-            LeftBracket = "[", RightBracket = "]", Quote = "'", Comma = ",",
-            Equals = "=", LeftSuper = "Super", RightSuper = "Super"
-        }
-        
-        local function getItem(item)
-            if item then
-                if typeof(item) == 'EnumItem' then
-                    return keys[item.Name] or item.Name
-                else
-                    return keys[tostring(item)] or tostring(item)
-                end
-            else
-                return 'None'
-            end
-        end
-        
-        if searchAPI then
-            searchAPI.Memory(config.Name)
-        end
-        
-        local keybind = Instance.new("Frame")
-        local keybindName = Instance.new("TextLabel")
-        local valueFrame = Instance.new("Frame")
-        local uiCorner = Instance.new("UICorner")
-        local optionButton = Instance.new("ImageButton")
-        local valueText = Instance.new("TextLabel")
-        
-        keybind.Name = self:RandomString()
-        keybind.Parent = parent
-        keybind.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        keybind.BackgroundTransparency = 1
-        keybind.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        keybind.BorderSizePixel = 0
-        keybind.Size = UDim2.new(1, -25, 0, 17)
-        keybind.ZIndex = zIndex + 1
-        self:AddDragBlacklist(keybind)
-        
-        keybindName.Name = self:RandomString()
-        keybindName.Parent = keybind
-        keybindName.AnchorPoint = Vector2.new(0, 0.5)
-        keybindName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        keybindName.BackgroundTransparency = 1
-        keybindName.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        keybindName.BorderSizePixel = 0
-        keybindName.Position = UDim2.new(0, 0, 0.5, 0)
-        keybindName.Size = UDim2.new(1, 0, 0.8, 0)
-        keybindName.ZIndex = zIndex + 2
-        keybindName.FontFace = self.Config.FontSemiBold
-        keybindName.Text = config.Name
-        keybindName.TextColor3 = theme.Text
-        keybindName.TextSize = 13
-        keybindName.TextTransparency = 0.2
-        keybindName.TextXAlignment = Enum.TextXAlignment.Left
-        self:ProtectText(keybindName, config.Name)
-        
-        valueFrame.Name = self:RandomString()
-        valueFrame.Parent = keybind
-        valueFrame.AnchorPoint = Vector2.new(1, 0.5)
-        valueFrame.BackgroundColor3 = theme.BackgroundDark
-        valueFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        valueFrame.BorderSizePixel = 0
-        valueFrame.Position = UDim2.new(1, -3, 0.5, 0)
-        valueFrame.Size = UDim2.new(0, 75, 0.85, 0)
-        valueFrame.ZIndex = zIndex + 2
-        
-        uiCorner.CornerRadius = UDim.new(0, 2)
-        uiCorner.Parent = valueFrame
-        
-        optionButton.Name = self:RandomString()
-        optionButton.Parent = valueFrame
-        optionButton.AnchorPoint = Vector2.new(0, 0.5)
-        optionButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        optionButton.BackgroundTransparency = 1
-        optionButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        optionButton.BorderSizePixel = 0
-        optionButton.Position = UDim2.new(0, -20, 0.5, 0)
-        optionButton.Size = UDim2.new(0, 13, 0, 13)
-        optionButton.SizeConstraint = Enum.SizeConstraint.RelativeYY
-        optionButton.Image = "http://www.roblox.com/asset/?id=14007344336"
-        optionButton.ImageTransparency = 0.6
-        optionButton.Visible = config.Option or false
-        
-        valueText.Name = self:RandomString()
-        valueText.Parent = valueFrame
-        valueText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        valueText.BackgroundTransparency = 1
-        valueText.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        valueText.BorderSizePixel = 0
-        valueText.Size = UDim2.new(1, 0, 1, 0)
-        valueText.ZIndex = zIndex + 3
-        valueText.FontFace = self.Config.FontSemiBold
-        valueText.Text = getItem(config.Default)
-        valueText.TextColor3 = theme.Text
-        valueText.TextSize = 9
-        valueText.TextStrokeTransparency = 0.85
-        valueText.TextTransparency = 0.4
-        
-        local isBinding = false
-        self:NewInput(valueFrame, function()
-            if isBinding then return end
-            valueText.Text = "..."
-            local selected = nil
-            while not selected do
-                local key = UserInputService.InputBegan:Wait()
-                if key.KeyCode ~= Enum.KeyCode.Unknown then
-                    selected = key.KeyCode
-                else
-                    if key.UserInputType == Enum.UserInputType.MouseButton1 then
-                        selected = "MouseLeft"
-                    elseif key.UserInputType == Enum.UserInputType.MouseButton2 then
-                        selected = "MouseRight"
-                    end
-                end
-            end
-            config.Default = selected
-            valueText.Text = getItem(selected)
-            isBinding = false
-            config.Callback(typeof(selected) == "string" and selected or selected.Name)
-        end)
-        
-        local function opcToggle(value)
-            if value then
-                self:CreateAnimation(keybindName, 0.45, {TextTransparency = 0.2})
-                self:CreateAnimation(valueFrame, 0.45, {BackgroundTransparency = 0})
-                self:CreateAnimation(valueText, 0.45, {TextStrokeTransparency = 0.85, TextTransparency = 0.4})
-                self:CreateAnimation(optionButton, 0.45, {ImageTransparency = (config.Option and 0.6) or 1})
-            else
-                self:CreateAnimation(keybindName, 0.45, {TextTransparency = 1})
-                self:CreateAnimation(valueFrame, 0.45, {BackgroundTransparency = 1})
-                self:CreateAnimation(valueText, 0.45, {TextStrokeTransparency = 1, TextTransparency = 1})
-                self:CreateAnimation(optionButton, 0.45, {ImageTransparency = 1})
-            end
-        end
-        
-        opcToggle(event:GetAttribute('V'))
-        
-        local response = self:CreateResponse({
-            Rename = function(newName)
-                keybindName.Text = newName
-                self:ProtectText(keybindName, newName)
-            end,
-            GetValue = function() return config.Default end,
-            Signal = event.Event:Connect(opcToggle),
-            SetValue = function(def)
-                local isSame = config.Default == def
-                config.Default = def
-                valueText.Text = getItem(config.Default)
-                if not isSame then
-                    config.Callback(config.Default)
-                end
-            end,
-            Flag = config.Flag and config.Flag .. "Keybind",
-            Option = (config.Option and function() return nil end) or nil,
-        })
-        
-        if config.Flag then
-            self.Config.WFlags[window][config.Flag .. "Keybind"] = response
-        end
-        
-        return response
-    end
-    
     return elements
-end
-
--- ============================================
--- CREATE NOTIFIER
--- ============================================
-
-function Aether:CreateNotifier()
-    if self.__NOTIFIER_CACHE then return self.__NOTIFIER_CACHE end
-    
-    local notifyGui = Instance.new("ScreenGui")
-    local layout = Instance.new("Frame")
-    local uiListLayout = Instance.new("UIListLayout")
-    local theme = self:GetTheme()
-    
-    notifyGui.Name = self:RandomString()
-    notifyGui.Parent = CoreGui
-    notifyGui.ResetOnSpawn = false
-    notifyGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    notifyGui.IgnoreGuiInset = true
-    
-    layout.Name = self:RandomString()
-    layout.Parent = notifyGui
-    layout.AnchorPoint = Vector2.new(1, 0)
-    layout.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    layout.BackgroundTransparency = 1
-    layout.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    layout.BorderSizePixel = 0
-    layout.Position = UDim2.new(1, -5, 0, 5)
-    layout.Size = UDim2.new(0, 150, 0, 50)
-    
-    uiListLayout.Parent = layout
-    uiListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    
-    local res = self:CreateResponse({
-        Notify = function(config)
-            config = config or {}
-            config.Icon = config.Icon or "settings"
-            config.Content = config.Content or nil
-            config.Title = config.Title or "Notification"
-            config.Duration = config.Duration or 5
-            
-            local notify = Instance.new("Frame")
-            local notifyBlock = Instance.new("Frame")
-            local uiCorner = Instance.new("UICorner")
-            local uiStroke = Instance.new("UIStroke")
-            local icon = Instance.new("ImageLabel")
-            local headerText = Instance.new("TextLabel")
-            local bodyText = Instance.new("TextLabel")
-            
-            notify.Name = self:RandomString()
-            notify.Parent = layout
-            notify.BackgroundColor3 = theme.Background
-            notify.BackgroundTransparency = 1
-            notify.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            notify.BorderSizePixel = 0
-            notify.Size = UDim2.new(0, 0, 0, 0)
-            
-            notifyBlock.Name = self:RandomString()
-            notifyBlock.Parent = notify
-            notifyBlock.AnchorPoint = Vector2.new(0.5, 0)
-            notifyBlock.BackgroundColor3 = theme.Background
-            notifyBlock.BackgroundTransparency = 1
-            notifyBlock.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            notifyBlock.BorderSizePixel = 0
-            notifyBlock.Position = UDim2.new(0.5, 0, -1, 0)
-            notifyBlock.Size = UDim2.new(1, 0, 1, -12)
-            notifyBlock.ClipsDescendants = true
-            notifyBlock.ZIndex = 54
-            
-            uiCorner.CornerRadius = UDim.new(0, 3)
-            uiCorner.Parent = notifyBlock
-            
-            uiStroke.Thickness = 1
-            uiStroke.Transparency = 1
-            uiStroke.Parent = notifyBlock
-            
-            icon.Name = self:RandomString()
-            icon.Parent = notifyBlock
-            icon.BackgroundColor3 = theme.Main
-            icon.BackgroundTransparency = 1
-            icon.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            icon.BorderSizePixel = 0
-            icon.Position = UDim2.new(0, 7, 0, 7)
-            icon.Size = UDim2.new(0, 18, 0, 18)
-            icon.Image = self:GetIcon(config.Icon)
-            icon.ImageColor3 = theme.Main
-            icon.ImageTransparency = 1
-            icon.ZIndex = 55
-            
-            headerText.Name = self:RandomString()
-            headerText.Parent = notifyBlock
-            headerText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            headerText.BackgroundTransparency = 1
-            headerText.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            headerText.BorderSizePixel = 0
-            headerText.Position = UDim2.new(0, 30, 0, 7)
-            headerText.Size = UDim2.new(1, 0, 0, 15)
-            headerText.ZIndex = 55
-            headerText.FontFace = self.Config.FontSemiBold
-            headerText.Text = config.Title
-            headerText.TextColor3 = theme.Main
-            headerText.TextSize = 13
-            headerText.TextTransparency = 1
-            headerText.TextXAlignment = Enum.TextXAlignment.Left
-            
-            bodyText.Name = self:RandomString()
-            bodyText.Parent = notifyBlock
-            bodyText.AnchorPoint = Vector2.new(0, 1)
-            bodyText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            bodyText.BackgroundTransparency = 1
-            bodyText.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            bodyText.BorderSizePixel = 0
-            bodyText.Position = UDim2.new(0, 10, 1, 0)
-            bodyText.Size = UDim2.new(1, -15, 1, -29)
-            bodyText.ZIndex = 55
-            bodyText.FontFace = self.Config.FontSemiBold
-            bodyText.Text = config.Content or ""
-            bodyText.TextColor3 = theme.TextSecondary
-            bodyText.TextSize = 12
-            bodyText.TextTransparency = 1
-            bodyText.TextWrapped = true
-            bodyText.TextXAlignment = Enum.TextXAlignment.Left
-            bodyText.TextYAlignment = Enum.TextYAlignment.Top
-            
-            local function updateScale()
-                local titleScale = self:GetTextSize(headerText.Text, headerText.TextSize, Enum.Font.GothamBold)
-                local contentScale = self:GetTextSize(bodyText.Text, bodyText.TextSize, Enum.Font.GothamMedium)
-                local xScale = (titleScale.X > contentScale.X and titleScale.X) or contentScale.X
-                local yScale = (titleScale.Y > contentScale.Y and titleScale.Y) or contentScale.Y
-                notify.Size = UDim2.new(0, xScale + 25, 0, yScale + 50)
-                self:CreateAnimation(notifyBlock, 0.35, {Position = UDim2.new(0.5, 0, 0, 0)})
-            end
-            
-            task.delay(0.1, function()
-                self:CreateAnimation(notifyBlock, 0.25, {BackgroundTransparency = 0.1})
-                self:CreateAnimation(uiStroke, 0.25, {Thickness = 2.5, Transparency = 0.9})
-                self:CreateAnimation(icon, 0.25, {ImageTransparency = 0})
-                self:CreateAnimation(headerText, 0.25, {TextTransparency = 0.2})
-                self:CreateAnimation(bodyText, 0.25, {TextTransparency = 0.3})
-            end)
-            
-            updateScale()
-            
-            task.delay(config.Duration + 0.25, function()
-                self:CreateAnimation(notifyBlock, 0.35, {Position = UDim2.new(0.5, 0, 1, 0)})
-                self:CreateAnimation(notifyBlock, 0.25, {BackgroundTransparency = 1})
-                self:CreateAnimation(uiStroke, 0.25, {Thickness = 1, Transparency = 1})
-                self:CreateAnimation(icon, 0.25, {ImageTransparency = 1})
-                self:CreateAnimation(headerText, 0.25, {TextTransparency = 1})
-                self:CreateAnimation(bodyText, 0.25, {TextTransparency = 1})
-                
-                task.delay(0.35, function()
-                    self:CreateAnimation(notify, 0.5, {Size = UDim2.new(0, 0, 0, 0)})
-                    task.wait(0.5)
-                    notify:Destroy()
-                end)
-            end)
-        end,
-    })
-    
-    self.__NOTIFIER_CACHE = res
-    return res
 end
 
 -- ============================================
@@ -2436,7 +1387,7 @@ function Aether:CreateWindow(windowConfig)
     window.Notifier = self.__NOTIFIER_CACHE or self:CreateNotifier()
     local theme = self:GetTheme()
     
-    -- Create GUI elements (similar to original but with theme support)
+    -- Create GUI
     local gui = Instance.new("ScreenGui")
     local mainFrame = Instance.new("Frame")
     local uiCorner = Instance.new("UICorner")
@@ -2538,7 +1489,7 @@ function Aether:CreateWindow(windowConfig)
     headerText.TextStrokeColor3 = theme.Main
     headerText.TextStrokeTransparency = 0.64
     
-    -- Menu buttons
+    -- Menu buttons container
     menuButtonCont.Name = self:RandomString()
     menuButtonCont.Parent = header
     menuButtonCont.AnchorPoint = Vector2.new(0, 0.5)
@@ -2716,7 +1667,9 @@ function Aether:CreateWindow(windowConfig)
         
         if bool then
             for _, menu in next, window.Menus do
-                menu.ValueSelect(false)
+                if menu.ValueSelect then
+                    menu.ValueSelect(false)
+                end
             end
             
             if window.MenuSelected then
@@ -2740,7 +1693,9 @@ function Aether:CreateWindow(windowConfig)
             table.clear(self.Config.DragBlacklist)
             
             for _, menu in next, window.Menus do
-                menu.ValueSelect(false)
+                if menu.ValueSelect then
+                    menu.ValueSelect(false)
+                end
             end
             
             self:CreateAnimation(userIconStroke, 0.35, {Thickness = 0, Transparency = 1})
@@ -2767,7 +1722,6 @@ function Aether:CreateWindow(windowConfig)
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
     
     table.insert(self.Config.Windows, gui)
-    protect_gui(gui)
     
     -- Keybind
     UserInputService.InputBegan:Connect(function(input, isTyping)
@@ -2798,8 +1752,6 @@ function Aether:CreateWindow(windowConfig)
     
     function window:RefreshTheme(newTheme)
         theme = newTheme
-        
-        -- Update all theme-dependent colors
         mainFrame.BackgroundColor3 = theme.Background
         header.BackgroundColor3 = theme.BackgroundTertiary
         headerLine.BackgroundColor3 = theme.Border
@@ -2809,31 +1761,9 @@ function Aether:CreateWindow(windowConfig)
         userName.TextColor3 = theme.Text
         expireDays.TextColor3 = theme.Text
         userIconStroke.Color = theme.Border
-        
-        -- Update all existing elements (recursive)
-        local function updateElementColors(element)
-            if element:IsA("TextLabel") or element:IsA("TextButton") then
-                if element.TextColor3 ~= theme.Main and element.TextColor3 ~= theme.Danger then
-                    element.TextColor3 = theme.Text
-                end
-            elseif element:IsA("Frame") then
-                if element.BackgroundColor3 == self.Colors.Background or element.BackgroundColor3 == self.Colors.BackgroundSecondary then
-                    element.BackgroundColor3 = theme.Background
-                end
-            end
-        end
-        
-        -- Apply recursively
-        local function traverse(instance)
-            updateElementColors(instance)
-            for _, child in ipairs(instance:GetChildren()) do
-                traverse(child)
-            end
-        end
-        
-        traverse(gui)
     end
     
+    -- Add Menu function
     function window:AddMenu(menuConfig)
         menuConfig = menuConfig or {}
         menuConfig.Name = menuConfig.Name or "EXAMPLE"
@@ -3067,445 +1997,7 @@ function Aether:CreateWindow(windowConfig)
             end
         end)
         
-        -- Menu methods
-        function menuLib:AddPreview(previewConfig)
-            previewConfig = previewConfig or {}
-            previewConfig.Name = previewConfig.Name or "PREVIEW"
-            previewConfig.Position = previewConfig.Position or "left"
-            previewConfig.Height = previewConfig.Height or 0
-            
-            local preview = Instance.new("Frame")
-            local previewName = Instance.new("TextLabel")
-            local main = Instance.new("Frame")
-            local uiStroke = Instance.new("UIStroke")
-            local uiCorner = Instance.new("UICorner")
-            local mainBlock = Instance.new("Frame")
-            
-            preview.Name = "Preview"
-            preview.Parent = (string.lower(previewConfig.Position) == 'left' and leftScroll) or (string.lower(previewConfig.Position) == 'center' and centerScroll) or rightScroll
-            preview.BackgroundColor3 = theme.Background
-            preview.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            preview.BorderSizePixel = 0
-            preview.ClipsDescendants = true
-            preview.ZIndex = 15
-            preview.Size = UDim2.new(1, 0, 0, 25 + previewConfig.Height)
-            
-            previewName.Name = "PreviewName"
-            previewName.Parent = preview
-            previewName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            previewName.BackgroundTransparency = 1
-            previewName.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            previewName.BorderSizePixel = 0
-            previewName.Position = UDim2.new(0, 10, 0, 0)
-            previewName.Size = UDim2.new(1, 0, 0, 15)
-            previewName.ZIndex = 19
-            previewName.FontFace = self.Config.FontSemiBold
-            previewName.Text = previewConfig.Name
-            previewName.TextColor3 = theme.Text
-            previewName.TextSize = 15
-            previewName.TextStrokeTransparency = 0.75
-            previewName.TextXAlignment = Enum.TextXAlignment.Left
-            
-            main.Name = "Main"
-            main.Parent = preview
-            main.AnchorPoint = Vector2.new(0.5, 1)
-            main.BackgroundColor3 = theme.BackgroundSecondary
-            main.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            main.BorderSizePixel = 0
-            main.Position = UDim2.new(0.5, 0, 1, -1)
-            main.Size = UDim2.new(1, -5, 1, -10)
-            main.ZIndex = 17
-            
-            uiStroke.Color = theme.Border
-            uiStroke.Parent = main
-            
-            uiCorner.CornerRadius = UDim.new(0, 2)
-            uiCorner.Parent = main
-            
-            mainBlock.Name = "MainBlock"
-            mainBlock.Parent = main
-            mainBlock.AnchorPoint = Vector2.new(0.5, 0.5)
-            mainBlock.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            mainBlock.BackgroundTransparency = 1
-            mainBlock.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            mainBlock.BorderSizePixel = 0
-            mainBlock.Position = UDim2.new(0.5, 0, 0.5, 0)
-            mainBlock.Size = UDim2.new(1, -5, 1, -5)
-            mainBlock.ZIndex = 18
-            
-            local function togglePreview(value)
-                if value then
-                    self:CreateAnimation(preview, 0.5, {BackgroundTransparency = 0})
-                    self:CreateAnimation(previewName, 0.5, {TextStrokeTransparency = 0.75, TextTransparency = 0})
-                    self:CreateAnimation(main, 0.5, {BackgroundTransparency = 0})
-                    self:CreateAnimation(uiStroke, 0.5, {Transparency = 0})
-                    self:CreateAnimation(mainBlock, 0.5, {Size = UDim2.new(1, -5, 1, -5)})
-                else
-                    self:CreateAnimation(preview, 0.5, {BackgroundTransparency = 1})
-                    self:CreateAnimation(previewName, 0.5, {TextStrokeTransparency = 1, TextTransparency = 1})
-                    self:CreateAnimation(main, 0.5, {BackgroundTransparency = 1})
-                    self:CreateAnimation(uiStroke, 0.5, {Transparency = 1})
-                    self:CreateAnimation(mainBlock, 0.5, {Size = UDim2.new(0, 0, 0, 0)})
-                end
-            end
-            
-            togglePreview(bindEvent:GetAttribute('V'))
-            bindEvent.Event:Connect(togglePreview)
-            
-            return mainBlock
-        end
-        
-        function menuLib:AddListBox(listboxConfig)
-            listboxConfig = listboxConfig or {}
-            listboxConfig.Name = listboxConfig.Name or "LIST BOX"
-            listboxConfig.Position = listboxConfig.Position or "left"
-            listboxConfig.Height = listboxConfig.Height or 0
-            listboxConfig.Values = listboxConfig.Values or {}
-            listboxConfig.Multi = listboxConfig.Multi or false
-            listboxConfig.Default = listboxConfig.Default or ((listboxConfig.Multi and nil) or {})
-            listboxConfig.Callback = listboxConfig.Callback or function() end
-            
-            table.insert(window.ElementContents, {
-                Name = listboxConfig.Name,
-                Path = menuConfig.Name .. " > " .. listboxConfig.Name,
-                _TAB = menuObj
-            })
-            
-            local listBox = Instance.new("Frame")
-            local elements = Instance.new("Frame")
-            local uiStroke = Instance.new("UIStroke")
-            local uiCorner = Instance.new("UICorner")
-            local searchBox = Instance.new("Frame")
-            local textBox = Instance.new("TextBox")
-            local searchCorner = Instance.new("UICorner")
-            local searchStroke = Instance.new("UIStroke")
-            local optionButton = Instance.new("ImageButton")
-            local scrollFrame = Instance.new("ScrollingFrame")
-            local scrollCorner = Instance.new("UICorner")
-            local scrollStroke = Instance.new("UIStroke")
-            local listLayout = Instance.new("UIListLayout")
-            local spaceBox = Instance.new("Frame")
-            local listName = Instance.new("TextLabel")
-            
-            listBox.Name = self:RandomString()
-            listBox.Parent = (string.lower(listboxConfig.Position) == 'left' and leftScroll) or (string.lower(listboxConfig.Position) == 'center' and centerScroll) or rightScroll
-            listBox.BackgroundColor3 = theme.Background
-            listBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            listBox.BorderSizePixel = 0
-            listBox.ClipsDescendants = true
-            listBox.Size = UDim2.new(1, 0, 0, 350)
-            listBox.ZIndex = 10
-            
-            self:AddDragBlacklist(scrollFrame)
-            
-            elements.Name = self:RandomString()
-            elements.Parent = listBox
-            elements.AnchorPoint = Vector2.new(0.5, 1)
-            elements.BackgroundColor3 = theme.BackgroundSecondary
-            elements.BackgroundTransparency = 0
-            elements.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            elements.BorderSizePixel = 0
-            elements.Position = UDim2.new(0.5, 0, 1, -1)
-            elements.Size = UDim2.new(1, -5, 1, -10)
-            elements.ZIndex = 10
-            
-            uiStroke.Color = theme.Border
-            uiStroke.Parent = elements
-            
-            uiCorner.CornerRadius = UDim.new(0, 2)
-            uiCorner.Parent = elements
-            
-            searchBox.Name = self:RandomString()
-            searchBox.Parent = elements
-            searchBox.BackgroundColor3 = theme.BackgroundDark
-            searchBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            searchBox.BorderSizePixel = 0
-            searchBox.ClipsDescendants = true
-            searchBox.Position = UDim2.new(0, 10, 0, 15)
-            searchBox.Size = UDim2.new(0, 195, 0, 16)
-            searchBox.ZIndex = 10
-            
-            textBox.Parent = searchBox
-            textBox.BackgroundColor3 = theme.BackgroundDark
-            textBox.BackgroundTransparency = 1
-            textBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            textBox.BorderSizePixel = 0
-            textBox.Position = UDim2.new(0, 5, 0, 0)
-            textBox.Size = UDim2.new(1, -10, 0, 16)
-            textBox.ZIndex = 11
-            textBox.ClearTextOnFocus = false
-            textBox.FontFace = self.Config.FontSemiBold
-            textBox.PlaceholderText = "Start typing..."
-            textBox.Text = ""
-            textBox.TextColor3 = theme.Text
-            textBox.TextSize = 11
-            textBox.TextXAlignment = Enum.TextXAlignment.Left
-            
-            searchCorner.CornerRadius = UDim.new(0, 3)
-            searchCorner.Parent = searchBox
-            
-            searchStroke.Transparency = 0.75
-            searchStroke.Color = theme.Border
-            searchStroke.Parent = searchBox
-            
-            optionButton.Name = self:RandomString()
-            optionButton.Parent = elements
-            optionButton.AnchorPoint = Vector2.new(1, 0)
-            optionButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            optionButton.BackgroundTransparency = 1
-            optionButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            optionButton.BorderSizePixel = 0
-            optionButton.Position = UDim2.new(1, -10, 0, 16)
-            optionButton.Size = UDim2.new(0, 13, 0, 13)
-            optionButton.SizeConstraint = Enum.SizeConstraint.RelativeYY
-            optionButton.ZIndex = 11
-            optionButton.Image = "http://www.roblox.com/asset/?id=14007344336"
-            optionButton.ImageTransparency = 0.6
-            optionButton.Visible = listboxConfig.Option or false
-            
-            scrollFrame.Parent = elements
-            scrollFrame.Active = true
-            scrollFrame.AnchorPoint = Vector2.new(0.5, 0)
-            scrollFrame.BackgroundColor3 = theme.BackgroundDark
-            scrollFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            scrollFrame.BorderSizePixel = 0
-            scrollFrame.Position = UDim2.new(0.5, 0, 0, 40)
-            scrollFrame.Size = UDim2.new(1, -20, 1, -50)
-            scrollFrame.ZIndex = 11
-            scrollFrame.ScrollBarThickness = 0
-            
-            scrollCorner.CornerRadius = UDim.new(0, 3)
-            scrollCorner.Parent = scrollFrame
-            
-            scrollStroke.Transparency = 0.75
-            scrollStroke.Color = theme.Border
-            scrollStroke.Parent = scrollFrame
-            
-            listLayout.Parent = scrollFrame
-            listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            listLayout.Padding = UDim.new(0, 5)
-            
-            listLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-                local all = (#scrollFrame:GetChildren() - 1)
-                local scale = math.clamp((all * (10 + listLayout.Padding.Offset)) + (listboxConfig.Height + listLayout.Padding.Offset), 25, 400)
-                
-                if menuConfig.AutoFill then
-                    listBox.Size = UDim2.new(1, 0, 0, scale / 2.5)
-                else
-                    listBox.Size = UDim2.new(1, 0, 0, scale)
-                end
-                
-                scrollFrame.CanvasSize = UDim2.fromOffset(0, listLayout.AbsoluteContentSize.Y)
-            end)
-            
-            spaceBox.Name = self:RandomString()
-            spaceBox.Parent = scrollFrame
-            spaceBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            spaceBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            spaceBox.BorderSizePixel = 0
-            spaceBox.Size = UDim2.new(0, 0, 0, 1)
-            
-            listName.Name = self:RandomString()
-            listName.Parent = listBox
-            listName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            listName.BackgroundTransparency = 1
-            listName.BorderColor3 = Color3.fromRGB(0, 0, 0)
-            listName.BorderSizePixel = 0
-            listName.Position = UDim2.new(0, 10, 0, 0)
-            listName.Size = UDim2.new(1, 0, 0, 15)
-            listName.ZIndex = 10
-            listName.FontFace = self.Config.FontSemiBold
-            listName.Text = listboxConfig.Name
-            listName.TextColor3 = theme.Text
-            listName.TextSize = 15
-            listName.TextStrokeTransparency = 0.75
-            listName.TextXAlignment = Enum.TextXAlignment.Left
-            
-            local function newButton()
-                local button = Instance.new("TextButton")
-                button.Name = self:RandomString()
-                button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                button.BackgroundTransparency = 1
-                button.BorderColor3 = Color3.fromRGB(0, 0, 0)
-                button.BorderSizePixel = 0
-                button.Size = UDim2.new(1, 0, 0, 10)
-                button.ZIndex = 15
-                button.FontFace = self.Config.FontSemiBold
-                button.TextColor3 = theme.Main
-                button.TextSize = 12
-                button.TextTransparency = 0.5
-                button.TextXAlignment = Enum.TextXAlignment.Left
-                return button
-            end
-            
-            local function toggleListBox(value)
-                if value then
-                    self:CreateAnimation(listBox, 0.5, {BackgroundTransparency = 0})
-                    self:CreateAnimation(uiStroke, 0.5, {Transparency = 0})
-                    self:CreateAnimation(searchStroke, 0.5, {Transparency = 0.75})
-                    self:CreateAnimation(scrollStroke, 0.5, {Transparency = 0.75})
-                    self:CreateAnimation(searchBox, 0.5, {BackgroundTransparency = 0})
-                    self:CreateAnimation(textBox, 0.5, {TextTransparency = 0})
-                    self:CreateAnimation(optionButton, 0.45, {ImageTransparency = (listboxConfig.Option and 0.6) or 1})
-                    self:CreateAnimation(scrollFrame, 0.45, {BackgroundTransparency = 0, Position = UDim2.new(0.5, 0, 0, 40)})
-                    self:CreateAnimation(listName, 0.5, {TextStrokeTransparency = 0.75, TextTransparency = 0})
-                    
-                    for _, child in ipairs(scrollFrame:GetChildren()) do
-                        if child:IsA('TextButton') then
-                            self:CreateAnimation(child, 0.45, {TextTransparency = 0.5})
-                        end
-                    end
-                else
-                    for _, child in ipairs(scrollFrame:GetChildren()) do
-                        if child:IsA('TextButton') then
-                            self:CreateAnimation(child, 0.45, {TextTransparency = 1})
-                        end
-                    end
-                    
-                    self:CreateAnimation(listBox, 0.5, {BackgroundTransparency = 1})
-                    self:CreateAnimation(uiStroke, 0.5, {Transparency = 1})
-                    self:CreateAnimation(searchStroke, 0.5, {Transparency = 1})
-                    self:CreateAnimation(scrollStroke, 0.5, {Transparency = 1})
-                    self:CreateAnimation(searchBox, 0.5, {BackgroundTransparency = 1})
-                    self:CreateAnimation(textBox, 0.5, {TextTransparency = 1})
-                    self:CreateAnimation(optionButton, 0.45, {ImageTransparency = 1})
-                    self:CreateAnimation(scrollFrame, 0.45, {BackgroundTransparency = 1, Position = UDim2.new(0.5, 0, 0, 40)})
-                    self:CreateAnimation(listName, 0.5, {TextStrokeTransparency = 1, TextTransparency = 1})
-                end
-            end
-            
-            toggleListBox(bindEvent:GetAttribute('V'))
-            bindEvent.Event:Connect(toggleListBox)
-            
-            local searchDelay = tick()
-            textBox:GetPropertyChangedSignal('Text'):Connect(function()
-                searchDelay = tick()
-                
-                if not textBox.Text:byte() then
-                    for _, child in ipairs(scrollFrame:GetChildren()) do
-                        if child:IsA('TextButton') then
-                            child.Visible = true
-                        end
-                    end
-                    return
-                end
-                
-                task.delay(0.25, function()
-                    if (tick() - searchDelay) > 0.25 then
-                        for _, child in ipairs(scrollFrame:GetChildren()) do
-                            if child:IsA('TextButton') then
-                                if string.find(string.lower(child.Text), string.lower(textBox.Text), 1, true) then
-                                    child.Visible = true
-                                else
-                                    child.Visible = false
-                                end
-                            end
-                        end
-                    end
-                end)
-            end)
-            
-            local res
-            res = self:CreateResponse({
-                Refresh = function()
-                    for _, child in ipairs(scrollFrame:GetChildren()) do
-                        if child:IsA('TextButton') then
-                            child:Destroy()
-                        end
-                    end
-                    
-                    local selectedMem
-                    for _, value in ipairs(listboxConfig.Values) do
-                        local button = newButton()
-                        button.Text = string.rep(" ", 2) .. tostring(value)
-                        button.Parent = scrollFrame
-                        
-                        if listboxConfig.Multi then
-                            if (typeof(listboxConfig.Default) == 'table' and (listboxConfig.Default[value] or table.find(listboxConfig.Default, value))) or listboxConfig.Default == value then
-                                listboxConfig.Default[value] = true
-                                button.TextColor3 = theme.Main
-                                button.TextTransparency = 0
-                            else
-                                button.TextColor3 = theme.TextSecondary
-                                button.TextTransparency = 0.5
-                                listboxConfig.Default[value] = false
-                            end
-                            
-                            self:CreateHover(button, function(bool)
-                                if not listboxConfig.Default[value] then
-                                    self:CreateAnimation(button, 0.25, {TextTransparency = bool and 0 or 0.5})
-                                end
-                            end)
-                            
-                            button.MouseButton1Click:Connect(function()
-                                listboxConfig.Default[value] = not listboxConfig.Default[value]
-                                
-                                if listboxConfig.Default[value] then
-                                    button.TextColor3 = theme.Main
-                                    button.TextTransparency = 0
-                                else
-                                    button.TextColor3 = theme.TextSecondary
-                                    button.TextTransparency = 0.5
-                                end
-                                
-                                listboxConfig.Callback(listboxConfig.Default)
-                            end)
-                        else
-                            if value == listboxConfig.Default then
-                                selectedMem = button
-                                listboxConfig.Default = value
-                                button.TextColor3 = theme.Main
-                                button.TextTransparency = 0
-                            else
-                                button.TextColor3 = theme.TextSecondary
-                                button.TextTransparency = 0.5
-                            end
-                            
-                            self:CreateHover(button, function(bool)
-                                if listboxConfig.Default ~= value then
-                                    self:CreateAnimation(button, 0.25, {TextTransparency = bool and 0 or 0.5})
-                                end
-                            end)
-                            
-                            button.MouseButton1Click:Connect(function()
-                                if selectedMem then
-                                    selectedMem.TextColor3 = theme.TextSecondary
-                                    selectedMem.TextTransparency = 0.5
-                                end
-                                
-                                button.TextTransparency = 0
-                                button.TextColor3 = theme.Main
-                                selectedMem = button
-                                listboxConfig.Default = value
-                                listboxConfig.Callback(value)
-                            end)
-                        end
-                    end
-                    
-                    listboxConfig.Callback(listboxConfig.Default)
-                end,
-                SetValues = function(values) listboxConfig.Values = values end,
-                SetDefault = function(default) listboxConfig.Default = default end,
-                GetValue = function() return listboxConfig.Default end,
-                Flag = listboxConfig.Flag and listboxConfig.Flag .. "ListBox",
-                SetValue = function(value)
-                    listboxConfig.Default = value
-                    res:Refresh()
-                    listboxConfig.Callback(listboxConfig.Default)
-                end,
-                Option = (listboxConfig.Option and function() return nil end) or nil,
-            })
-            
-            res:Refresh()
-            
-            if listboxConfig.Flag then
-                self.Config.WFlags[gui][listboxConfig.Flag .. "ListBox"] = res
-            end
-            
-            return res
-        end
-        
+        -- Section and Preview methods
         function menuLib:AddSection(sectionConfig)
             sectionConfig = sectionConfig or {}
             sectionConfig.Name = sectionConfig.Name or "SECTION"
@@ -3614,10 +2106,97 @@ function Aether:CreateWindow(windowConfig)
             })
         end
         
+        function menuLib:AddPreview(previewConfig)
+            previewConfig = previewConfig or {}
+            previewConfig.Name = previewConfig.Name or "PREVIEW"
+            previewConfig.Position = previewConfig.Position or "left"
+            previewConfig.Height = previewConfig.Height or 0
+            
+            local preview = Instance.new("Frame")
+            local previewName = Instance.new("TextLabel")
+            local main = Instance.new("Frame")
+            local uiStroke = Instance.new("UIStroke")
+            local uiCorner = Instance.new("UICorner")
+            local mainBlock = Instance.new("Frame")
+            
+            preview.Name = "Preview"
+            preview.Parent = (string.lower(previewConfig.Position) == 'left' and leftScroll) or (string.lower(previewConfig.Position) == 'center' and centerScroll) or rightScroll
+            preview.BackgroundColor3 = theme.Background
+            preview.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            preview.BorderSizePixel = 0
+            preview.ClipsDescendants = true
+            preview.ZIndex = 15
+            preview.Size = UDim2.new(1, 0, 0, 25 + previewConfig.Height)
+            
+            previewName.Name = "PreviewName"
+            previewName.Parent = preview
+            previewName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            previewName.BackgroundTransparency = 1
+            previewName.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            previewName.BorderSizePixel = 0
+            previewName.Position = UDim2.new(0, 10, 0, 0)
+            previewName.Size = UDim2.new(1, 0, 0, 15)
+            previewName.ZIndex = 19
+            previewName.FontFace = self.Config.FontSemiBold
+            previewName.Text = previewConfig.Name
+            previewName.TextColor3 = theme.Text
+            previewName.TextSize = 15
+            previewName.TextStrokeTransparency = 0.75
+            previewName.TextXAlignment = Enum.TextXAlignment.Left
+            
+            main.Name = "Main"
+            main.Parent = preview
+            main.AnchorPoint = Vector2.new(0.5, 1)
+            main.BackgroundColor3 = theme.BackgroundSecondary
+            main.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            main.BorderSizePixel = 0
+            main.Position = UDim2.new(0.5, 0, 1, -1)
+            main.Size = UDim2.new(1, -5, 1, -10)
+            main.ZIndex = 17
+            
+            uiStroke.Color = theme.Border
+            uiStroke.Parent = main
+            
+            uiCorner.CornerRadius = UDim.new(0, 2)
+            uiCorner.Parent = main
+            
+            mainBlock.Name = "MainBlock"
+            mainBlock.Parent = main
+            mainBlock.AnchorPoint = Vector2.new(0.5, 0.5)
+            mainBlock.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            mainBlock.BackgroundTransparency = 1
+            mainBlock.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            mainBlock.BorderSizePixel = 0
+            mainBlock.Position = UDim2.new(0.5, 0, 0.5, 0)
+            mainBlock.Size = UDim2.new(1, -5, 1, -5)
+            mainBlock.ZIndex = 18
+            
+            local function togglePreview(value)
+                if value then
+                    self:CreateAnimation(preview, 0.5, {BackgroundTransparency = 0})
+                    self:CreateAnimation(previewName, 0.5, {TextStrokeTransparency = 0.75, TextTransparency = 0})
+                    self:CreateAnimation(main, 0.5, {BackgroundTransparency = 0})
+                    self:CreateAnimation(uiStroke, 0.5, {Transparency = 0})
+                    self:CreateAnimation(mainBlock, 0.5, {Size = UDim2.new(1, -5, 1, -5)})
+                else
+                    self:CreateAnimation(preview, 0.5, {BackgroundTransparency = 1})
+                    self:CreateAnimation(previewName, 0.5, {TextStrokeTransparency = 1, TextTransparency = 1})
+                    self:CreateAnimation(main, 0.5, {BackgroundTransparency = 1})
+                    self:CreateAnimation(uiStroke, 0.5, {Transparency = 1})
+                    self:CreateAnimation(mainBlock, 0.5, {Size = UDim2.new(0, 0, 0, 0)})
+                end
+            end
+            
+            togglePreview(bindEvent:GetAttribute('V'))
+            bindEvent.Event:Connect(togglePreview)
+            
+            return mainBlock
+        end
+        
         return menuLib
     end
     
-    -- Add bottom buttons
+    -- Bottom buttons
     local infoButton = Instance.new("ImageButton")
     local searchButton = Instance.new("ImageButton")
     local saveButton = Instance.new("ImageButton")
@@ -3677,262 +2256,11 @@ function Aether:CreateWindow(windowConfig)
         infoButton.MouseButton1Click:Connect(callback)
     end
     
-    -- Search system
-    local searchFrame = Instance.new("Frame")
-    local searchStroke = Instance.new("UIStroke")
-    local searchCorner = Instance.new("UICorner")
-    local searchShadow = Instance.new("ImageLabel")
-    local searchBox = Instance.new("Frame")
-    local searchBoxCorner = Instance.new("UICorner")
-    local searchBoxStroke = Instance.new("UIStroke")
-    local searchTextBox = Instance.new("TextBox")
-    local searchScroll = Instance.new("ScrollingFrame")
-    local searchLayout = Instance.new("UIListLayout")
-    local searchScale = UDim2.new(0, 295, 0, 295)
-    
-    self:AddDragBlacklist(searchFrame)
-    
-    local function searchToggle(value)
-        if value then
-            searchFrame.Position = UDim2.fromOffset(searchButton.AbsolutePosition.X - 5, searchButton.AbsolutePosition.Y + (searchButton.AbsoluteSize.Y * 3))
-            self:CreateAnimation(searchFrame, 0.35, {Size = searchScale})
-            self:CreateAnimation(searchShadow, 0.35, {ImageTransparency = 0.75})
-            self:CreateAnimation(searchBox, 0.35, {BackgroundTransparency = 0})
-            self:CreateAnimation(searchBoxStroke, 0.5, {Transparency = 0.65})
-            self:CreateAnimation(searchStroke, 0.5, {Transparency = 0})
-            self:CreateAnimation(searchTextBox, 0.5, {TextTransparency = 0})
-        else
-            self:CreateAnimation(searchStroke, 0.5, {Transparency = 1})
-            self:CreateAnimation(searchFrame, 0.35, {Size = UDim2.new(searchScale.X.Scale, searchScale.X.Offset, 0, 0)})
-            self:CreateAnimation(searchShadow, 0.35, {ImageTransparency = 1})
-            self:CreateAnimation(searchBox, 0.5, {BackgroundTransparency = 1})
-            self:CreateAnimation(searchBoxStroke, 0.5, {Transparency = 1})
-            self:CreateAnimation(searchTextBox, 0.5, {TextTransparency = 1})
-            
-            for _, child in ipairs(searchScroll:GetChildren()) do
-                if child:IsA('Frame') then
-                    child:Destroy()
-                end
-            end
-        end
+    function window:SetVisible(visible)
+        window.Toggle = visible
+        toggleUI(visible)
     end
     
-    searchFrame.Name = self:RandomString()
-    searchFrame.Parent = gui
-    searchFrame.AnchorPoint = Vector2.new(0, 1)
-    searchFrame.BackgroundColor3 = theme.Background
-    searchFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    searchFrame.BorderSizePixel = 0
-    searchFrame.Position = UDim2.new(4, 0, 4, 0)
-    searchFrame.Size = searchScale
-    searchFrame.ZIndex = 100
-    searchFrame.ClipsDescendants = true
-    
-    searchStroke.Color = theme.Border
-    searchStroke.Parent = searchFrame
-    
-    searchCorner.CornerRadius = UDim.new(0, 2)
-    searchCorner.Parent = searchFrame
-    
-    searchShadow.Name = self:RandomString()
-    searchShadow.Parent = searchFrame
-    searchShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    searchShadow.BackgroundTransparency = 1
-    searchShadow.BorderSizePixel = 0
-    searchShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    searchShadow.Rotation = 0.01
-    searchShadow.Size = UDim2.new(1, 47, 1, 47)
-    searchShadow.ZIndex = 99
-    searchShadow.Image = "rbxassetid://6014261993"
-    searchShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    searchShadow.ImageTransparency = 0.75
-    searchShadow.ScaleType = Enum.ScaleType.Slice
-    searchShadow.SliceCenter = Rect.new(49, 49, 450, 450)
-    
-    searchBox.Name = self:RandomString()
-    searchBox.Parent = searchFrame
-    searchBox.AnchorPoint = Vector2.new(0.5, 0)
-    searchBox.BackgroundColor3 = theme.BackgroundDark
-    searchBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    searchBox.BorderSizePixel = 0
-    searchBox.Position = UDim2.new(0.5, 0, 0, 9)
-    searchBox.Size = UDim2.new(1, -15, 0, 25)
-    searchBox.ZIndex = 101
-    
-    searchBoxCorner.CornerRadius = UDim.new(0, 2)
-    searchBoxCorner.Parent = searchBox
-    
-    searchBoxStroke.Transparency = 0.65
-    searchBoxStroke.Color = theme.Border
-    searchBoxStroke.Parent = searchBox
-    
-    searchTextBox.Parent = searchBox
-    searchTextBox.AnchorPoint = Vector2.new(0.5, 0.5)
-    searchTextBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    searchTextBox.BackgroundTransparency = 1
-    searchTextBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    searchTextBox.BorderSizePixel = 0
-    searchTextBox.Position = UDim2.new(0.5, 0, 0.5, 0)
-    searchTextBox.Size = UDim2.new(1, -15, 1, -5)
-    searchTextBox.ZIndex = 102
-    searchTextBox.ClearTextOnFocus = false
-    searchTextBox.FontFace = self.Config.FontSemiBold
-    searchTextBox.PlaceholderText = "Search"
-    searchTextBox.Text = ""
-    searchTextBox.TextColor3 = theme.Text
-    searchTextBox.TextSize = 12
-    searchTextBox.TextXAlignment = Enum.TextXAlignment.Left
-    
-    searchScroll.Parent = searchFrame
-    searchScroll.Active = true
-    searchScroll.AnchorPoint = Vector2.new(0.5, 0)
-    searchScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    searchScroll.BackgroundTransparency = 1
-    searchScroll.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    searchScroll.BorderSizePixel = 0
-    searchScroll.Position = UDim2.new(0.5, 0, 0, 40)
-    searchScroll.Size = UDim2.new(1, -15, 1, -45)
-    searchScroll.ZIndex = 102
-    searchScroll.ScrollBarThickness = 0
-    
-    searchLayout.Parent = searchScroll
-    searchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    searchLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    searchLayout.Padding = UDim.new(0, 4)
-    
-    searchLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-        searchScroll.CanvasSize = UDim2.fromOffset(0, searchLayout.AbsoluteContentSize.Y)
-    end)
-    
-    searchToggle(false)
-    
-    self:CreateHover(searchButton, function(bool)
-        self:CreateAnimation(searchButton, 0.5, {ImageTransparency = bool and 0.1 or 0.5})
-    end)
-    
-    local searchInfo = {}
-    
-    local function getSearchButton(name, path, tabWarp)
-        local resultFrame = Instance.new("Frame")
-        local corner = Instance.new("UICorner")
-        local featureName = Instance.new("TextLabel")
-        local featurePath = Instance.new("TextLabel")
-        
-        resultFrame.Name = self:RandomString()
-        resultFrame.Parent = searchScroll
-        resultFrame.BackgroundColor3 = theme.BackgroundDark
-        resultFrame.BackgroundTransparency = 1
-        resultFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        resultFrame.BorderSizePixel = 0
-        resultFrame.Size = UDim2.new(1, 0, 0, 42)
-        resultFrame.ZIndex = 103
-        
-        corner.CornerRadius = UDim.new(0, 4)
-        corner.Parent = resultFrame
-        
-        featureName.Name = self:RandomString()
-        featureName.Parent = resultFrame
-        featureName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        featureName.BackgroundTransparency = 1
-        featureName.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        featureName.BorderSizePixel = 0
-        featureName.Position = UDim2.new(0, 6, 0, 5)
-        featureName.Size = UDim2.new(1, 0, 0, 15)
-        featureName.ZIndex = 104
-        featureName.FontFace = self.Config.FontSemiBold
-        featureName.Text = name
-        featureName.TextColor3 = theme.Text
-        featureName.TextSize = 14
-        featureName.TextXAlignment = Enum.TextXAlignment.Left
-        
-        featurePath.Name = self:RandomString()
-        featurePath.Parent = resultFrame
-        featurePath.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        featurePath.BackgroundTransparency = 1
-        featurePath.BorderColor3 = Color3.fromRGB(0, 0, 0)
-        featurePath.BorderSizePixel = 0
-        featurePath.Position = UDim2.new(0, 6, 0, 22)
-        featurePath.Size = UDim2.new(1, 0, 0, 15)
-        featurePath.ZIndex = 104
-        featurePath.FontFace = self.Config.FontSemiBold
-        featurePath.Text = path
-        featurePath.TextColor3 = theme.TextSecondary
-        featurePath.TextSize = 12
-        featurePath.TextTransparency = 0.5
-        featurePath.TextXAlignment = Enum.TextXAlignment.Left
-        
-        local button = self:NewInput(resultFrame)
-        
-        self:CreateHover(button, function(bool)
-            self:CreateAnimation(resultFrame, 0.5, {BackgroundTransparency = bool and 0 or 1})
-        end)
-        
-        button.MouseButton1Click:Connect(function()
-            if tabWarp then
-                for _, menu in next, window.Menus do
-                    if menu.Root == tabWarp.Root then
-                        window.MenuSelected = menu
-                        menu.ValueSelect(true)
-                    else
-                        menu.ValueSelect(false)
-                    end
-                end
-            end
-        end)
-        
-        return resultFrame
-    end
-    
-    searchButton.MouseButton1Click:Connect(function()
-        searchTextBox.Text = ""
-        searchToggle(true)
-        table.clear(searchInfo)
-        
-        for _, child in ipairs(searchScroll:GetChildren()) do
-            if child:IsA('Frame') then
-                child:Destroy()
-            end
-        end
-        
-        for _, element in ipairs(window.ElementContents) do
-            local button = getSearchButton(element.Name, element.Path, element._TAB)
-            searchInfo[element.Path .. " - " .. self:RandomString()] = {root = button}
-        end
-    end)
-    
-    local searchDelay = tick()
-    searchTextBox:GetPropertyChangedSignal('Text'):Connect(function()
-        searchDelay = tick()
-        
-        if not searchTextBox.Text:byte() then
-            for _, info in next, searchInfo do
-                info.root.Visible = true
-            end
-            return
-        end
-        
-        task.delay(0.5, function()
-            if (tick() - searchDelay) > 0.5 then
-                for key, info in next, searchInfo do
-                    if string.find(string.lower(key), string.lower(searchTextBox.Text), 1, true) then
-                        info.root.Visible = true
-                    else
-                        info.root.Visible = false
-                    end
-                end
-            end
-        end)
-    end)
-    
-    UserInputService.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if not self:IsMouseOverFrame(searchFrame) then
-                searchToggle(false)
-            end
-        end
-    end)
-    
-    -- Create button for mobile/toggle
     function window:GetButton()
         local backpack = Instance.new("ImageButton")
         local corner = Instance.new("UICorner")
@@ -3945,10 +2273,6 @@ function Aether:CreateWindow(windowConfig)
         local iconFrame = Instance.new("Frame")
         local iconLayout = Instance.new("UIListLayout")
         local integrationIcon = Instance.new("ImageLabel")
-        local selectedHighlighter = Instance.new("Frame")
-        local highlighterCorner = Instance.new("UICorner")
-        local highlighter = Instance.new("Frame")
-        local highlighterCorner2 = Instance.new("UICorner")
         
         backpack.Name = "AETHER" .. self:RandomString()
         backpack.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -4019,34 +2343,6 @@ function Aether:CreateWindow(windowConfig)
         integrationIcon.Image = "http://www.roblox.com/asset/?id=11290237405"
         integrationIcon.ImageColor3 = theme.Text
         
-        selectedHighlighter.Name = "SelectedHighlighter"
-        selectedHighlighter.Parent = iconHost
-        selectedHighlighter.AnchorPoint = Vector2.new(0.5, 0.5)
-        selectedHighlighter.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        selectedHighlighter.BackgroundTransparency = 0.85
-        selectedHighlighter.BorderSizePixel = 0
-        selectedHighlighter.Position = UDim2.new(0.5, 0, 0.5, 0)
-        selectedHighlighter.Size = UDim2.new(0, 36, 0, 36)
-        selectedHighlighter.Visible = false
-        
-        highlighterCorner.CornerRadius = UDim.new(1, 0)
-        highlighterCorner.Name = "corner"
-        highlighterCorner.Parent = selectedHighlighter
-        
-        highlighter.Name = "Highlighter"
-        highlighter.Parent = iconHost
-        highlighter.AnchorPoint = Vector2.new(0.5, 0.5)
-        highlighter.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        highlighter.BackgroundTransparency = 0.85
-        highlighter.BorderSizePixel = 0
-        highlighter.Position = UDim2.new(0.5, 0, 0.5, 0)
-        highlighter.Size = UDim2.new(0, 36, 0, 36)
-        highlighter.Visible = false
-        
-        highlighterCorner2.CornerRadius = UDim.new(1, 0)
-        highlighterCorner2.Name = "corner"
-        highlighterCorner2.Parent = highlighter
-        
         backpack.MouseButton1Click:Connect(function()
             window.Toggle = not window.Toggle
             toggleUI(window.Toggle)
@@ -4066,11 +2362,6 @@ function Aether:CreateWindow(windowConfig)
         end)
         
         return backpack
-    end
-    
-    function window:SetVisible(visible)
-        window.Toggle = visible
-        toggleUI(visible)
     end
     
     toggleUI(true)
