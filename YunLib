@@ -130,6 +130,10 @@ function initLibrary()
         end
     end
 
+    function library:GetColor()
+        return library.color
+    end
+
     function library:SetKey(key)
         library.keybind = key
     end
