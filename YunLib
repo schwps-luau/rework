@@ -117,7 +117,6 @@ function initLibrary()
     }
 
     local coloredGradients = {}
-    local columnSizes = {} -- хранит размеры колонок для каждой вкладки
 
     function library:SetColor(color)
         library.color = color
@@ -524,15 +523,31 @@ function initLibrary()
                 Parent = tab
             })
 
-            -- КОЛОНКА 1
+            -- ВЕРХНИЙ РЯД (колонки 1 и 2)
+            local topRow = utility.create("Frame", {
+                Size = UDim2.new(1, 0, 0.5, -3),
+                Position = UDim2.new(0, 0, 0, 0),
+                BackgroundTransparency = 1,
+                Parent = columnsContainer
+            })
+
+            -- НИЖНИЙ РЯД (колонки 3 и 4)
+            local bottomRow = utility.create("Frame", {
+                Size = UDim2.new(1, 0, 0.5, -3),
+                Position = UDim2.new(0, 0, 0.5, 3),
+                BackgroundTransparency = 1,
+                Parent = columnsContainer
+            })
+
+            -- КОЛОНКА 1 (верхняя левая)
             local column1 = utility.create("ScrollingFrame", {
-                Size = UDim2.new(0, 0, 1, 0),
+                Size = UDim2.new(0.5, -2, 1, 0),
                 Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1,
                 Active = true,
                 BorderSizePixel = 0,
                 ScrollBarThickness = 0,
-                Parent = columnsContainer
+                Parent = topRow
             })
             local column1List = utility.create("UIListLayout", {
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -541,17 +556,18 @@ function initLibrary()
             })
             column1List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 column1.CanvasSize = UDim2.new(0, 0, 0, column1List.AbsoluteContentSize.Y)
+                updateLayout()
             end)
 
-            -- КОЛОНКА 2
+            -- КОЛОНКА 2 (верхняя правая)
             local column2 = utility.create("ScrollingFrame", {
-                Size = UDim2.new(0, 0, 1, 0),
-                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(0.5, -2, 1, 0),
+                Position = UDim2.new(0.5, 2, 0, 0),
                 BackgroundTransparency = 1,
                 Active = true,
                 BorderSizePixel = 0,
                 ScrollBarThickness = 0,
-                Parent = columnsContainer
+                Parent = topRow
             })
             local column2List = utility.create("UIListLayout", {
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -560,17 +576,18 @@ function initLibrary()
             })
             column2List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 column2.CanvasSize = UDim2.new(0, 0, 0, column2List.AbsoluteContentSize.Y)
+                updateLayout()
             end)
 
-            -- КОЛОНКА 3
+            -- КОЛОНКА 3 (нижняя левая)
             local column3 = utility.create("ScrollingFrame", {
-                Size = UDim2.new(0, 0, 1, 0),
+                Size = UDim2.new(0.5, -2, 1, 0),
                 Position = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1,
                 Active = true,
                 BorderSizePixel = 0,
                 ScrollBarThickness = 0,
-                Parent = columnsContainer
+                Parent = bottomRow
             })
             local column3List = utility.create("UIListLayout", {
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -579,17 +596,18 @@ function initLibrary()
             })
             column3List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 column3.CanvasSize = UDim2.new(0, 0, 0, column3List.AbsoluteContentSize.Y)
+                updateLayout()
             end)
 
-            -- КОЛОНКА 4
+            -- КОЛОНКА 4 (нижняя правая)
             local column4 = utility.create("ScrollingFrame", {
-                Size = UDim2.new(0, 0, 1, 0),
-                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(0.5, -2, 1, 0),
+                Position = UDim2.new(0.5, 2, 0, 0),
                 BackgroundTransparency = 1,
                 Active = true,
                 BorderSizePixel = 0,
                 ScrollBarThickness = 0,
-                Parent = columnsContainer
+                Parent = bottomRow
             })
             local column4List = utility.create("UIListLayout", {
                 SortOrder = Enum.SortOrder.LayoutOrder,
@@ -598,65 +616,94 @@ function initLibrary()
             })
             column4List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 column4.CanvasSize = UDim2.new(0, 0, 0, column4List.AbsoluteContentSize.Y)
+                updateLayout()
             end)
 
             -- Хранилище размеров колонок для этой вкладки
-            local tabColumnSizes = {full = {}, half = {}}
+            local tabColumnSizes = {}
 
             -- Функция обновления расположения колонок
-            local function updateColumnLayout()
+            local function updateLayout()
                 local totalWidth = columnsContainer.AbsoluteSize.X
                 if totalWidth < 100 then totalWidth = sizeX end
                 
-                -- Считаем количество full и half колонок
-                local fullCount = 0
-                local halfCount = 0
+                -- Считаем количество колонок в верхнем и нижнем ряду
+                local topCount = 0
+                local bottomCount = 0
                 
-                for i = 1, 4 do
-                    if tabColumnSizes.full[i] then
-                        fullCount = fullCount + 1
-                    elseif tabColumnSizes.half[i] then
-                        halfCount = halfCount + 1
-                    end
-                end
+                if tabColumnSizes[1] then topCount = topCount + 1 end
+                if tabColumnSizes[2] then topCount = topCount + 1 end
+                if tabColumnSizes[3] then bottomCount = bottomCount + 1 end
+                if tabColumnSizes[4] then bottomCount = bottomCount + 1 end
                 
-                -- Вычисляем ширину для full и half колонок
-                local fullWidth = 0
-                local halfWidth = 0
-                
-                if fullCount > 0 and halfCount > 0 then
-                    -- Если есть и full и half, full занимают 70% ширины, half 30%
-                    fullWidth = (totalWidth - (fullCount + halfCount - 1) * 4) * 0.7 / fullCount
-                    halfWidth = (totalWidth - (fullCount + halfCount - 1) * 4) * 0.3 / halfCount
-                elseif fullCount > 0 then
-                    -- Только full колонки
-                    fullWidth = (totalWidth - (fullCount - 1) * 4) / fullCount
-                elseif halfCount > 0 then
-                    -- Только half колонки
-                    halfWidth = (totalWidth - (halfCount - 1) * 4) / halfCount
-                end
-                
-                -- Позиционируем колонки
-                local currentX = 0
-                local columns = {column1, column2, column3, column4}
-                
-                for i = 1, 4 do
-                    local col = columns[i]
-                    local width = 0
-                    
-                    if tabColumnSizes.full[i] then
-                        width = fullWidth
-                    elseif tabColumnSizes.half[i] then
-                        width = halfWidth
+                -- Показываем/скрываем ряды в зависимости от наличия колонок
+                if topCount == 0 then
+                    topRow.Visible = false
+                    bottomRow.Position = UDim2.new(0, 0, 0, 0)
+                    bottomRow.Size = UDim2.new(1, 0, 1, 0)
+                else
+                    topRow.Visible = true
+                    if bottomCount == 0 then
+                        topRow.Size = UDim2.new(1, 0, 1, 0)
+                        bottomRow.Visible = false
                     else
-                        col.Visible = false
-                        continue
+                        topRow.Size = UDim2.new(1, 0, 0.5, -3)
+                        bottomRow.Size = UDim2.new(1, 0, 0.5, -3)
+                        bottomRow.Position = UDim2.new(0, 0, 0.5, 3)
+                        bottomRow.Visible = true
                     end
-                    
-                    col.Visible = true
-                    col.Size = UDim2.new(0, width, 1, 0)
-                    col.Position = UDim2.new(0, currentX, 0, 0)
-                    currentX = currentX + width + 4
+                end
+                
+                -- Настраиваем ширину колонок в верхнем ряду
+                if topCount > 0 then
+                    local colWidth = (totalWidth - (topCount - 1) * 4) / topCount
+                    if tabColumnSizes[1] then
+                        column1.Size = UDim2.new(0, colWidth, 1, 0)
+                        column1.Position = UDim2.new(0, 0, 0, 0)
+                        column1.Visible = true
+                        local xPos = colWidth + 4
+                        if tabColumnSizes[2] then
+                            column2.Size = UDim2.new(0, colWidth, 1, 0)
+                            column2.Position = UDim2.new(0, xPos, 0, 0)
+                            column2.Visible = true
+                        else
+                            column2.Visible = false
+                        end
+                    elseif tabColumnSizes[2] then
+                        column2.Size = UDim2.new(0, colWidth, 1, 0)
+                        column2.Position = UDim2.new(0, 0, 0, 0)
+                        column2.Visible = true
+                        column1.Visible = false
+                    end
+                else
+                    column1.Visible = false
+                    column2.Visible = false
+                end
+                
+                -- Настраиваем ширину колонок в нижнем ряду
+                if bottomCount > 0 then
+                    local colWidth = (totalWidth - (bottomCount - 1) * 4) / bottomCount
+                    if tabColumnSizes[3] then
+                        column3.Size = UDim2.new(0, colWidth, 1, 0)
+                        column3.Position = UDim2.new(0, 0, 0, 0)
+                        column3.Visible = true
+                        local xPos = colWidth + 4
+                        if tabColumnSizes[4] then
+                            column4.Size = UDim2.new(0, colWidth, 1, 0)
+                            column4.Position = UDim2.new(0, xPos, 0, 0)
+                            column4.Visible = true
+                        else
+                            column4.Visible = false
+                        end
+                    elseif tabColumnSizes[4] then
+                        column4.Size = UDim2.new(0, colWidth, 1, 0)
+                        column4.Position = UDim2.new(0, 0, 0, 0)
+                        column4.Visible = true
+                        column3.Visible = false
+                    end
+                else
+                    column3.Visible = false
+                    column4.Visible = false
                 end
                 
                 -- Обновляем CanvasSize
@@ -679,7 +726,7 @@ function initLibrary()
                 end
                 tab.Visible = true
                 wait(0.1)
-                updateColumnLayout()
+                updateLayout()
             end
 
             tabToggle.MouseButton1Click:Connect(openTab)
@@ -689,7 +736,7 @@ function initLibrary()
             runService.RenderStepped:Connect(function()
                 if topbar.AbsoluteSize ~= lastSize then
                     lastSize = topbar.AbsoluteSize
-                    updateColumnLayout()
+                    updateLayout()
                 end
             end)
 
@@ -700,7 +747,7 @@ function initLibrary()
             end
 
             function tabTypes:UpdateLayout()
-                updateColumnLayout()
+                updateLayout()
             end
 
             -- СЕКЦИИ
@@ -708,16 +755,9 @@ function initLibrary()
                 local options = utility.table(opts)
                 local name = options.name or "Section"
                 local column = options.column or 1
-                local size = options.size or "half" -- "full" или "half"
                 
-                -- Сохраняем размер колонки
-                if size == "full" then
-                    tabColumnSizes.full[column] = true
-                    tabColumnSizes.half[column] = false
-                else
-                    tabColumnSizes.full[column] = false
-                    tabColumnSizes.half[column] = true
-                end
+                -- Сохраняем что колонка активна
+                tabColumnSizes[column] = true
                 
                 local columnFrame
                 if column == 1 then
@@ -786,7 +826,7 @@ function initLibrary()
 
                 sectionContentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                     sectionHolder.Size = UDim2.new(1, 0, 0, sectionContentList.AbsoluteContentSize.Y + 38)
-                    updateColumnLayout()
+                    updateLayout()
                 end)
 
                 local sectionTypes = utility.table()
@@ -809,7 +849,7 @@ function initLibrary()
                             child:Destroy()
                         end
                     end
-                    updateColumnLayout()
+                    updateLayout()
                 end
 
                 function sectionTypes:Remove()
@@ -823,11 +863,9 @@ function initLibrary()
                         end
                     end
                     if not hasSections then
-                        -- Если секций нет, убираем колонку
-                        tabColumnSizes.full[column] = false
-                        tabColumnSizes.half[column] = false
+                        tabColumnSizes[column] = false
                     end
-                    updateColumnLayout()
+                    updateLayout()
                 end
 
                 -- LABEL
