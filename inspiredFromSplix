@@ -1,73 +1,1134 @@
-local AetherUI = loadstring(game:HttpGet("your-url.lua"))()
+--[[
+    Aether UI Library
+    Modern exploit UI with dark theme, borders, and smooth animations
+    Style inspired by Splix UI
+]]
 
--- Create main window
-local ui = AetherUI.new("AETHER", UDim2.new(0, 550, 0, 650))
+local AetherUI = {}
+AetherUI.__index = AetherUI
 
--- Create tabs
-local combatTab = ui:Tab("COMBAT")
-local visualsTab = ui:Tab("VISUALS")
-local playerTab = ui:Tab("PLAYER")
-local settingsTab = ui:Tab("SETTINGS")
+-- Services
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
 
--- Combat Section (Left panel)
-local combatLeft = AetherUI:Section(combatTab, "Aimbot", "left")
-local combatRight = AetherUI:Section(combatTab, "Triggerbot", "right")
+-- Color Scheme
+AetherUI.Colors = {
+    Background = Color3.fromRGB(20, 20, 20),
+    Surface = Color3.fromRGB(24, 24, 24),
+    Card = Color3.fromRGB(30, 30, 30),
+    Border = Color3.fromRGB(56, 56, 56),
+    BorderDark = Color3.fromRGB(12, 12, 12),
+    Accent = Color3.fromRGB(225, 58, 81),
+    AccentHover = Color3.fromRGB(245, 78, 101),
+    Text = Color3.fromRGB(255, 255, 255),
+    TextSecondary = Color3.fromRGB(178, 178, 178),
+    Success = Color3.fromRGB(70, 190, 90),
+    Danger = Color3.fromRGB(230, 70, 70),
+}
+
+-- Utility Functions
+local function create(parent, class, props)
+    local obj = Instance.new(class)
+    for k, v in pairs(props) do
+        obj[k] = v
+    end
+    obj.Parent = parent
+    return obj
+end
+
+local function addCorner(frame, radius)
+    local corner = create(frame, "UICorner", {
+        CornerRadius = UDim.new(0, radius or 0)
+    })
+    return corner
+end
+
+local function addGradient(frame, rotation)
+    local gradient = create(frame, "UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(199, 191, 204)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+        }),
+        Rotation = rotation or 90
+    })
+    return gradient
+end
+
+local function makeDraggable(frame, dragHandle)
+    local dragging = false
+    local dragInput
+    local dragStart
+    local startPos
+    
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    dragHandle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, 
+                                        startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- Main Window Constructor
+function AetherUI.new(title, size)
+    local self = setmetatable({}, AetherUI)
+    
+    -- ScreenGui
+    local screenGui = create(CoreGui, "ScreenGui", {
+        Name = "AetherUI",
+        DisplayOrder = 9999,
+        ResetOnSpawn = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Global
+    })
+    
+    -- Protect GUI if possible
+    if syn and syn.protect_gui then
+        syn.protect_gui(screenGui)
+    end
+    
+    local windowSize = size or UDim2.new(0, 500, 0, 650)
+    local window = create(screenGui, "Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = windowSize,
+        BackgroundColor3 = Colors.BorderDark,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    -- Inner frame with border inset
+    local innerFrame = create(window, "Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, -4, 1, -4),
+        BackgroundColor3 = Colors.Background,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    -- Main content area
+    local mainArea = create(innerFrame, "Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Colors.Background,
+        BorderSizePixel = 0,
+    })
+    
+    -- Title bar
+    local titleBar = create(mainArea, "Frame", {
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Colors.Surface,
+        BorderSizePixel = 0,
+    })
+    
+    local titleText = create(titleBar, "TextLabel", {
+        Size = UDim2.new(1, -80, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Text = title or "Aether UI",
+        TextColor3 = Colors.Text,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    -- Close button
+    local closeBtn = create(titleBar, "TextButton", {
+        Size = UDim2.new(0, 30, 1, 0),
+        Position = UDim2.new(1, -30, 0, 0),
+        BackgroundColor3 = Colors.Surface,
+        Text = "✕",
+        TextColor3 = Colors.Text,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
+    
+    -- Minimize button
+    local minBtn = create(titleBar, "TextButton", {
+        Size = UDim2.new(0, 30, 1, 0),
+        Position = UDim2.new(1, -60, 0, 0),
+        BackgroundColor3 = Colors.Surface,
+        Text = "─",
+        TextColor3 = Colors.Text,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
+    
+    -- Tab bar
+    local tabBar = create(mainArea, "Frame", {
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 30),
+        BackgroundColor3 = Colors.Surface,
+        BorderSizePixel = 0,
+    })
+    
+    local tabContainer = create(tabBar, "Frame", {
+        Size = UDim2.new(1, -10, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+    })
+    
+    local tabLayout = create(tabContainer, "UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal,
+        Padding = UDim.new(0, 2),
+    })
+    
+    -- Content area with border
+    local contentBorder = create(mainArea, "Frame", {
+        Size = UDim2.new(1, -20, 1, -70),
+        Position = UDim2.new(0, 10, 0, 65),
+        BackgroundColor3 = Colors.BorderDark,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local contentInner = create(contentBorder, "Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, -4, 1, -4),
+        BackgroundColor3 = Colors.Background,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local contentArea = create(contentInner, "Frame", {
+        Size = UDim2.new(1, -10, 1, -10),
+        Position = UDim2.new(0, 5, 0, 5),
+        BackgroundTransparency = 1,
+    })
+    
+    -- Left and right panels
+    local leftPanel = create(contentArea, "ScrollingFrame", {
+        Size = UDim2.new(0.5, -5, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = Colors.Border,
+    })
+    
+    local rightPanel = create(contentArea, "ScrollingFrame", {
+        Size = UDim2.new(0.5, -5, 1, 0),
+        Position = UDim2.new(1, 0, 0, 0),
+        AnchorPoint = Vector2.new(1, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = Colors.Border,
+    })
+    
+    local leftLayout = create(leftPanel, "UIListLayout", {
+        Padding = UDim.new(0, 8),
+    })
+    
+    local rightLayout = create(rightPanel, "UIListLayout", {
+        Padding = UDim.new(0, 8),
+    })
+    
+    -- Store data
+    self.ScreenGui = screenGui
+    self.Window = window
+    self.Tabs = {}
+    self.CurrentTab = nil
+    self.Elements = {}
+    self.LeftPanel = leftPanel
+    self.RightPanel = rightPanel
+    self.LeftLayout = leftLayout
+    self.RightLayout = rightLayout
+    
+    -- Make window draggable
+    makeDraggable(window, titleBar)
+    
+    -- Close functionality
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- Minimize functionality
+    local minimized = false
+    local originalSize = windowSize
+    minBtn.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        if minimized then
+            TweenService:Create(window, TweenInfo.new(0.2), {
+                Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, 0, 35)
+            }):Play()
+        else
+            TweenService:Create(window, TweenInfo.new(0.2), {
+                Size = originalSize
+            }):Play()
+        end
+    end)
+    
+    return self
+end
+
+-- Tab Creation
+function AetherUI:Tab(name)
+    local tab = {}
+    
+    local tabButton = create(self.TabsContainer or self:GetTabContainer(), "TextButton", {
+        Size = UDim2.new(0, 80, 1, 0),
+        BackgroundColor3 = Colors.Surface,
+        Text = name,
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
+    
+    local tabContent = create(self.ContentArea or self:GetContentArea(), "ScrollingFrame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Visible = false,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = Colors.Border,
+    })
+    
+    local contentLayout = create(tabContent, "UIListLayout", {
+        Padding = UDim.new(0, 8),
+    })
+    
+    tabButton.MouseButton1Click:Connect(function()
+        for _, t in pairs(self.Tabs) do
+            t.Content.Visible = false
+        end
+        tabContent.Visible = true
+    end)
+    
+    tab.Button = tabButton
+    tab.Content = tabContent
+    tab.Layout = contentLayout
+    
+    table.insert(self.Tabs, tab)
+    
+    if not self.CurrentTab then
+        tabContent.Visible = true
+        self.CurrentTab = tab
+    end
+    
+    return tabContent, contentLayout
+end
+
+-- Section Creation
+function AetherUI:Section(parent, title, side)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        BackgroundColor3 = Colors.Surface,
+        BorderSizePixel = 0,
+        AutomaticSize = Enum.AutomaticSize.Y,
+    })
+    
+    -- Outer border
+    local outerBorder = create(container, "Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Colors.BorderDark,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    -- Inner border
+    local innerBorder = create(outerBorder, "Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, -4, 1, -4),
+        BackgroundColor3 = Colors.Background,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    -- Header
+    local header = create(innerBorder, "Frame", {
+        Size = UDim2.new(1, 0, 0, 25),
+        BackgroundColor3 = Colors.Surface,
+        BorderSizePixel = 0,
+    })
+    
+    local headerText = create(header, "TextLabel", {
+        Size = UDim2.new(1, -10, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = title,
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    -- Content
+    local content = create(innerBorder, "Frame", {
+        Size = UDim2.new(1, 0, 0, 0),
+        Position = UDim2.new(0, 0, 0, 25),
+        BackgroundTransparency = 1,
+        AutomaticSize = Enum.AutomaticSize.Y,
+    })
+    
+    local contentLayout = create(content, "UIListLayout", {
+        Padding = UDim.new(0, 8),
+    })
+    
+    return content
+end
+
+-- Button
+function AetherUI:Button(parent, text, callback)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundTransparency = 1,
+    })
+    
+    local outerBorder = create(container, "Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Colors.BorderDark,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local innerBorder = create(outerBorder, "Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, -4, 1, -4),
+        BackgroundColor3 = Colors.Background,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local gradient = addGradient(innerBorder, 90)
+    
+    local button = create(innerBorder, "TextButton", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
+    
+    button.MouseButton1Click:Connect(callback)
+    
+    return button
+end
 
 -- Toggle
-local aimbotEnabled = AetherUI:Toggle(combatLeft, "Aimbot", true, function(state)
-    print("Aimbot:", state)
-end)
+function AetherUI:Toggle(parent, text, default, callback)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundTransparency = 1,
+    })
+    
+    local label = create(container, "TextLabel", {
+        Size = UDim2.new(1, -50, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    local toggleFrame = create(container, "Frame", {
+        Size = UDim2.new(0, 40, 0, 20),
+        Position = UDim2.new(1, -45, 0.5, -10),
+        BackgroundColor3 = Colors.Border,
+        BorderSizePixel = 0,
+    })
+    
+    addCorner(toggleFrame, 2)
+    
+    local toggleIndicator = create(toggleFrame, "Frame", {
+        Size = UDim2.new(0, 18, 0, 16),
+        Position = UDim2.new(0, 2, 0.5, -8),
+        BackgroundColor3 = Colors.Text,
+        BorderSizePixel = 0,
+    })
+    
+    addCorner(toggleIndicator, 2)
+    
+    local state = default or false
+    
+    if state then
+        toggleFrame.BackgroundColor3 = Colors.Accent
+        toggleIndicator.Position = UDim2.new(1, -20, 0.5, -8)
+    end
+    
+    local button = create(container, "TextButton", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        BorderSizePixel = 0,
+    })
+    
+    button.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            TweenService:Create(toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Accent}):Play()
+            TweenService:Create(toggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(1, -20, 0.5, -8)}):Play()
+        else
+            TweenService:Create(toggleFrame, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Border}):Play()
+            TweenService:Create(toggleIndicator, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
+        end
+        callback(state)
+    end)
+    
+    return {
+        Set = function(v) 
+            state = v
+            if state then
+                toggleFrame.BackgroundColor3 = Colors.Accent
+                toggleIndicator.Position = UDim2.new(1, -20, 0.5, -8)
+            else
+                toggleFrame.BackgroundColor3 = Colors.Border
+                toggleIndicator.Position = UDim2.new(0, 2, 0.5, -8)
+            end
+            callback(state)
+        end,
+        Get = function() return state end
+    }
+end
 
 -- Slider
-local fovSlider = AetherUI:Slider(combatLeft, "FOV", 0, 360, 120, function(val)
-    print("FOV:", val)
-end)
+function AetherUI:Slider(parent, text, min, max, default, callback)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 50),
+        BackgroundTransparency = 1,
+    })
+    
+    local label = create(container, "TextLabel", {
+        Size = UDim2.new(0.6, 0, 0, 20),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+    
+    local valueLabel = create(container, "TextLabel", {
+        Size = UDim2.new(0.3, 0, 0, 20),
+        Position = UDim2.new(0.7, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = tostring(default),
+        TextColor3 = Colors.Accent,
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Right,
+    })
+    
+    local sliderTrack = create(container, "Frame", {
+        Size = UDim2.new(1, -10, 0, 4),
+        Position = UDim2.new(0, 5, 0, 28),
+        BackgroundColor3 = Colors.Border,
+        BorderSizePixel = 0,
+    })
+    
+    addCorner(sliderTrack, 2)
+    
+    local sliderFill = create(sliderTrack, "Frame", {
+        Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
+        BackgroundColor3 = Colors.Accent,
+        BorderSizePixel = 0,
+    })
+    
+    addCorner(sliderFill, 2)
+    
+    local sliderHandle = create(container, "TextButton", {
+        Size = UDim2.new(0, 12, 0, 12),
+        Position = UDim2.new((default - min) / (max - min), -6, 0, 24),
+        BackgroundColor3 = Colors.Text,
+        Text = "",
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
+    
+    addCorner(sliderHandle, 6)
+    
+    local value = default
+    local dragging = false
+    
+    local function update(posX)
+        local relative = math.clamp((posX - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X, 0, 1)
+        value = min + (max - min) * relative
+        value = math.floor(value * 100) / 100
+        
+        sliderFill.Size = UDim2.new(relative, 0, 1, 0)
+        sliderHandle.Position = UDim2.new(relative, -6, 0, 24)
+        valueLabel.Text = tostring(value)
+        
+        callback(value)
+    end
+    
+    sliderHandle.MouseButton1Down:Connect(function()
+        dragging = true
+        local conn
+        conn = UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+                update(input.Position.X)
+            end
+        end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+                conn:Disconnect()
+            end
+        end)
+    end)
+    
+    sliderTrack.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            update(input.Position.X)
+        end
+    end)
+    
+    return {
+        Set = function(v)
+            value = math.clamp(v, min, max)
+            local relative = (value - min) / (max - min)
+            sliderFill.Size = UDim2.new(relative, 0, 1, 0)
+            sliderHandle.Position = UDim2.new(relative, -6, 0, 24)
+            valueLabel.Text = tostring(value)
+            callback(value)
+        end,
+        Get = function() return value end
+    }
+end
 
 -- Dropdown
-local aimPart = AetherUI:Dropdown(combatLeft, "Aim Part", {"Head", "Torso", "HumanoidRootPart"}, "Head", function(opt)
-    print("Aim part:", opt)
-end)
+function AetherUI:Dropdown(parent, text, options, default, callback)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 35),
+        BackgroundTransparency = 1,
+    })
+    
+    local outerBorder = create(container, "Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 20),
+        BackgroundColor3 = Colors.BorderDark,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local innerBorder = create(outerBorder, "Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, -4, 1, -4),
+        BackgroundColor3 = Colors.Background,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local label = create(container, "TextLabel", {
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Colors.TextSecondary,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+    
+    local valueLabel = create(innerBorder, "TextLabel", {
+        Size = UDim2.new(1, -25, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = default or options[1],
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    local arrow = create(innerBorder, "TextLabel", {
+        Size = UDim2.new(0, 20, 1, 0),
+        Position = UDim2.new(1, -5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "▼",
+        TextColor3 = Colors.TextSecondary,
+        TextSize = 10,
+        Font = Enum.Font.Gotham,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    local dropdownOpen = false
+    local dropdownFrame
+    
+    local function closeDropdown()
+        if dropdownFrame then
+            dropdownFrame:Destroy()
+            dropdownOpen = false
+        end
+    end
+    
+    local function openDropdown()
+        closeDropdown()
+        
+        dropdownFrame = create(container, "Frame", {
+            Size = UDim2.new(1, 0, 0, #options * 28),
+            Position = UDim2.new(0, 0, 0, 55),
+            BackgroundColor3 = Colors.BorderDark,
+            BorderSizePixel = 1,
+            BorderColor3 = Colors.Border,
+            ZIndex = 10,
+        })
+        
+        local inner = create(dropdownFrame, "Frame", {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, -4, 1, -4),
+            BackgroundColor3 = Colors.Background,
+            BorderSizePixel = 1,
+            BorderColor3 = Colors.Border,
+            ZIndex = 10,
+        })
+        
+        local listLayout = create(inner, "UIListLayout", {
+            Padding = UDim.new(0, 0),
+        })
+        
+        for _, opt in ipairs(options) do
+            local optBtn = create(inner, "TextButton", {
+                Size = UDim2.new(1, 0, 0, 28),
+                BackgroundColor3 = Colors.Background,
+                Text = opt,
+                TextColor3 = Colors.Text,
+                TextSize = 12,
+                Font = Enum.Font.Gotham,
+                BorderSizePixel = 0,
+                AutoButtonColor = false,
+            })
+            
+            optBtn.MouseButton1Click:Connect(function()
+                valueLabel.Text = opt
+                callback(opt)
+                closeDropdown()
+            end)
+        end
+        
+        dropdownOpen = true
+    end
+    
+    local button = create(container, "TextButton", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        BorderSizePixel = 0,
+    })
+    
+    button.MouseButton1Click:Connect(function()
+        if dropdownOpen then
+            closeDropdown()
+        else
+            openDropdown()
+        end
+    end)
+    
+    return {
+        Set = function(v)
+            if table.find(options, v) then
+                valueLabel.Text = v
+                callback(v)
+            end
+        end,
+        Get = function() return valueLabel.Text end
+    }
+end
+
+-- TextBox
+function AetherUI:TextBox(parent, placeholder, callback)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 35),
+        BackgroundTransparency = 1,
+    })
+    
+    local outerBorder = create(container, "Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 20),
+        BackgroundColor3 = Colors.BorderDark,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local innerBorder = create(outerBorder, "Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size = UDim2.new(1, -4, 1, -4),
+        BackgroundColor3 = Colors.Background,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local label = create(container, "TextLabel", {
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = placeholder,
+        TextColor3 = Colors.TextSecondary,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+    
+    local box = create(innerBorder, "TextBox", {
+        Size = UDim2.new(1, -10, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        PlaceholderText = "",
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        ClearTextOnFocus = false,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    box.FocusLost:Connect(function()
+        callback(box.Text)
+    end)
+    
+    return box
+end
 
 -- Keybind
-local aimKey = AetherUI:Keybind(combatLeft, "Aimbot Key", Enum.KeyCode.RightShift, function(key)
-    print("Keybind set:", key)
-end)
+function AetherUI:Keybind(parent, text, default, callback)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundTransparency = 1,
+    })
+    
+    local label = create(container, "TextLabel", {
+        Size = UDim2.new(0.7, 0, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    local bindBtn = create(container, "TextButton", {
+        Size = UDim2.new(0, 80, 0, 24),
+        Position = UDim2.new(1, -85, 0.5, -12),
+        BackgroundColor3 = Colors.Surface,
+        Text = default and tostring(default):gsub("Enum.KeyCode.", "") or "None",
+        TextColor3 = Colors.Text,
+        TextSize = 11,
+        Font = Enum.Font.Gotham,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
+    
+    local listening = false
+    local currentKey = default
+    
+    bindBtn.MouseButton1Click:Connect(function()
+        listening = true
+        bindBtn.Text = "..."
+        
+        local conn
+        conn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then return end
+            
+            if listening and input.KeyCode ~= Enum.KeyCode.Unknown then
+                currentKey = input.KeyCode
+                bindBtn.Text = tostring(currentKey):gsub("Enum.KeyCode.", "")
+                listening = false
+                conn:Disconnect()
+                callback(currentKey)
+            end
+        end)
+        
+        task.wait(3)
+        if listening then
+            listening = false
+            bindBtn.Text = currentKey and tostring(currentKey):gsub("Enum.KeyCode.", "") or "None"
+            conn:Disconnect()
+        end
+    end)
+    
+    return {
+        Set = function(k)
+            currentKey = k
+            bindBtn.Text = tostring(k):gsub("Enum.KeyCode.", "")
+            callback(k)
+        end,
+        Get = function() return currentKey end
+    }
+end
 
--- Visuals Tab
-local espLeft = AetherUI:Section(visualsTab, "ESP", "left")
-local worldLeft = AetherUI:Section(visualsTab, "World", "right")
-
-AetherUI:Toggle(espLeft, "Box ESP", true, function(state) end)
-AetherUI:Toggle(espLeft, "Skeleton ESP", false, function(state) end)
-AetherUI:ColorPicker(espLeft, "ESP Color", Color3.fromRGB(225, 58, 81), function(col) end)
-
-AetherUI:Toggle(worldLeft, "Chams", true, function(state) end)
-AetherUI:Slider(worldLeft, "Transparency", 0, 1, 0.5, function(val) end)
-
--- Player Tab
-local movementLeft = AetherUI:Section(playerTab, "Movement", "left")
-local miscLeft = AetherUI:Section(playerTab, "Misc", "right")
-
-local walkSpeed = AetherUI:Slider(movementLeft, "Walk Speed", 16, 100, 16, function(val)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = val
-end)
-
-local jumpPower = AetherUI:Counter(movementLeft, "Jump Power", 50, 200, 50, function(val)
-    game.Players.LocalPlayer.Character.Humanoid.JumpPower = val
-end)
-
-AetherUI:Toggle(movementLeft, "Noclip", false, function(state) end)
-
--- Settings Tab
-local configLeft = AetherUI:Section(settingsTab, "Config", "left")
-AetherUI:TextBox(configLeft, "Config Name", function(text) print("Config:", text) end)
-
-AetherUI:Button(configLeft, "Save Config", function() print("Saved") end)
-AetherUI:Button(configLeft, "Load Config", function() print("Loaded") end)
-
--- Close UI with Insert key
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Insert then
-        ui.Window.Visible = not ui.Window.Visible
+-- ColorPicker
+function AetherUI:ColorPicker(parent, text, default, callback)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundTransparency = 1,
+    })
+    
+    local label = create(container, "TextLabel", {
+        Size = UDim2.new(0.7, 0, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    local colorDisplay = create(container, "Frame", {
+        Size = UDim2.new(0, 30, 0, 24),
+        Position = UDim2.new(1, -35, 0.5, -12),
+        BackgroundColor3 = default or Colors.Accent,
+        BorderSizePixel = 1,
+        BorderColor3 = Colors.Border,
+    })
+    
+    local currentColor = default or Colors.Accent
+    
+    local colors = {
+        Color3.fromRGB(225, 58, 81),
+        Color3.fromRGB(70, 190, 90),
+        Color3.fromRGB(70, 130, 200),
+        Color3.fromRGB(230, 70, 70),
+        Color3.fromRGB(255, 200, 70),
+        Color3.fromRGB(200, 70, 255),
+        Color3.fromRGB(70, 200, 200),
+        Color3.fromRGB(255, 255, 255),
+    }
+    
+    local open = false
+    local pickerFrame
+    
+    local function closePicker()
+        if pickerFrame then
+            pickerFrame:Destroy()
+            open = false
+        end
     end
-end)
+    
+    local function openPicker()
+        closePicker()
+        
+        pickerFrame = create(container, "Frame", {
+            Size = UDim2.new(0, 150, 0, 100),
+            Position = UDim2.new(1, -185, 0, 35),
+            BackgroundColor3 = Colors.BorderDark,
+            BorderSizePixel = 1,
+            BorderColor3 = Colors.Border,
+            ZIndex = 10,
+        })
+        
+        local inner = create(pickerFrame, "Frame", {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, -4, 1, -4),
+            BackgroundColor3 = Colors.Background,
+            BorderSizePixel = 1,
+            BorderColor3 = Colors.Border,
+            ZIndex = 10,
+        })
+        
+        local grid = create(inner, "UIListLayout", {
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Center,
+            Padding = UDim.new(0, 5),
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Wrap = true,
+        })
+        
+        for _, col in ipairs(colors) do
+            local colorBtn = create(inner, "TextButton", {
+                Size = UDim2.new(0, 30, 0, 30),
+                BackgroundColor3 = col,
+                Text = "",
+                BorderSizePixel = 1,
+                BorderColor3 = Colors.Border,
+                AutoButtonColor = false,
+            })
+            
+            colorBtn.MouseButton1Click:Connect(function()
+                currentColor = col
+                colorDisplay.BackgroundColor3 = col
+                callback(col)
+                closePicker()
+            end)
+        end
+        
+        open = true
+    end
+    
+    local button = create(container, "TextButton", {
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        BorderSizePixel = 0,
+    })
+    
+    button.MouseButton1Click:Connect(function()
+        if open then
+            closePicker()
+        else
+            openPicker()
+        end
+    end)
+    
+    return {
+        Set = function(col)
+            currentColor = col
+            colorDisplay.BackgroundColor3 = col
+            callback(col)
+        end,
+        Get = function() return currentColor end
+    }
+end
+
+-- Label
+function AetherUI:Label(parent, text, isHeader)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, isHeader and 25 or 20),
+        BackgroundTransparency = 1,
+    })
+    
+    local label = create(container, "TextLabel", {
+        Size = UDim2.new(1, -10, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = isHeader and Colors.Accent or Colors.TextSecondary,
+        TextSize = isHeader and 12 or 10,
+        Font = isHeader and Enum.Font.GothamBold or Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    return label
+end
+
+-- Counter
+function AetherUI:Counter(parent, text, min, max, default, callback)
+    local container = create(parent, "Frame", {
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundTransparency = 1,
+    })
+    
+    local label = create(container, "TextLabel", {
+        Size = UDim2.new(0.6, 0, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = text,
+        TextColor3 = Colors.Text,
+        TextSize = 12,
+        Font = Enum.Font.Gotham,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    local valueLabel = create(container, "TextLabel", {
+        Size = UDim2.new(0, 40, 1, 0),
+        Position = UDim2.new(0.5, -20, 0, 0),
+        BackgroundTransparency = 1,
+        Text = tostring(default),
+        TextColor3 = Colors.Accent,
+        TextSize = 12,
+        Font = Enum.Font.GothamBold,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    
+    local minusBtn = create(container, "TextButton", {
+        Size = UDim2.new(0, 25, 0, 22),
+        Position = UDim2.new(1, -65, 0.5, -11),
+        BackgroundColor3 = Colors.Surface,
+        Text = "-",
+        TextColor3 = Colors.Text,
+        TextSize = 14,
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
+    
+    local plusBtn = create(container, "TextButton", {
+        Size = UDim2.new(0, 25, 0, 22),
+        Position = UDim2.new(1, -35, 0.5, -11),
+        BackgroundColor3 = Colors.Surface,
+        Text = "+",
+        TextColor3 = Colors.Text,
+        TextSize = 14,
+        Font = Enum.Font.GothamBold,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+    })
+    
+    local value = math.clamp(default or 0, min or 0, max or 100)
+    
+    local function update(v)
+        value = math.clamp(v, min or -1e9, max or 1e9)
+        valueLabel.Text = tostring(value)
+        callback(value)
+    end
+    
+    minusBtn.MouseButton1Click:Connect(function() update(value - 1) end)
+    plusBtn.MouseButton1Click:Connect(function() update(value + 1) end)
+    
+    return {
+        Set = update,
+        Get = function() return value end
+    }
+end
+
+-- Destroy UI
+function AetherUI:Destroy()
+    if self.ScreenGui then
+        self.ScreenGui:Destroy()
+    end
+end
+
+return AetherUI
