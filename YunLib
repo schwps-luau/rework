@@ -136,11 +136,11 @@ function initLibrary()
                 }
             end
         end
-        -- Обновляем цвета ватермарка и кейбиндлиста
         library:UpdateWatermarkColors()
         if library.UpdateKeybindListColors then
             library.UpdateKeybindListColors()
         end
+        library:RefreshAllKeybindsVisibility()
     end
 
     function library:UpdateKeybindVisibility()
@@ -150,6 +150,15 @@ function initLibrary()
                 if data.label then
                     data.label.Visible = isVisible
                 end
+            end
+        end
+        library:UpdateKeybindListSize()
+    end
+
+    function library:RefreshAllKeybindsVisibility()
+        for name, data in pairs(library.keybindList) do
+            if data.updateVisibility then
+                data.updateVisibility()
             end
         end
         library:UpdateKeybindListSize()
@@ -168,7 +177,14 @@ function initLibrary()
     inputService.InputBegan:Connect(function(input)
         if input.KeyCode == library.keybind then
             library.toggled = not library.toggled
-            gui.Enabled = library.toggled
+            -- Меняем видимость только меню, ватермарк и кейбиндлист остаются
+            for _, child in ipairs(gui:GetChildren()) do
+                if child ~= watermarkOuter and child ~= keybindOuter then
+                    if child:IsA("Frame") or child:IsA("ImageButton") or child:IsA("ScrollingFrame") then
+                        child.Visible = library.toggled
+                    end
+                end
+            end
         end
     end)
 
@@ -339,13 +355,14 @@ function initLibrary()
 
     -- ========== КЕЙБИНД ЛИСТ ==========
     local keybindOuter = utility.create("Frame", {
-        AnchorPoint = Vector2.new(0, 0.5);
+        AnchorPoint = Vector2.new(1, 0);
         BorderColor3 = Color3.new(0, 0, 0);
-        Position = UDim2.new(1, -210, 0, 90);
+        Position = UDim2.new(1, -10, 0, 50);
         Size = UDim2.new(0, 210, 0, 20);
         Visible = false;
         ZIndex = 100;
         Parent = gui;
+        ClipsDescendants = false;
     })
 
     local keybindInner = utility.create("Frame", {
@@ -355,6 +372,7 @@ function initLibrary()
         Size = UDim2.new(1, 0, 1, 0);
         ZIndex = 101;
         Parent = keybindOuter;
+        AutomaticSize = Enum.AutomaticSize.Y;
     })
 
     local keybindColorFrame = utility.create("Frame", {
@@ -380,20 +398,24 @@ function initLibrary()
 
     local keybindContainer = utility.create("Frame", {
         BackgroundTransparency = 1;
-        Size = UDim2.new(1, 0, 1, -20);
         Position = UDim2.new(0, 0, 0, 20);
         ZIndex = 1;
         Parent = keybindInner;
+        AutomaticSize = Enum.AutomaticSize.Y;
     })
 
     local keybindListLayout = utility.create("UIListLayout", {
         FillDirection = Enum.FillDirection.Vertical;
         SortOrder = Enum.SortOrder.LayoutOrder;
+        Padding = UDim.new(0, 2);
         Parent = keybindContainer;
     })
 
     local keybindPadding = utility.create("UIPadding", {
         PaddingLeft = UDim.new(0, 5);
+        PaddingRight = UDim.new(0, 5);
+        PaddingTop = UDim.new(0, 2);
+        PaddingBottom = UDim.new(0, 5);
         Parent = keybindContainer;
     })
 
@@ -414,6 +436,14 @@ function initLibrary()
         keybindOuter.Visible = bool
     end
 
+    function library:UpdateKeybindListSize()
+        task.wait()
+        local innerHeight = keybindInner.AbsoluteSize.Y
+        if innerHeight > 0 then
+            keybindOuter.Size = UDim2.new(0, keybindInner.AbsoluteSize.X, 0, innerHeight)
+        end
+    end
+
     function library:AddKeybindToList(name, key, callback, visibilityFlag)
         local keyText = tostring(key):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
         
@@ -429,7 +459,6 @@ function initLibrary()
             Parent = keybindContainer;
         })
         
-        -- Функция для проверки видимости
         local function isVisible()
             if visibilityFlag then
                 return library.flags[visibilityFlag] == true
@@ -437,18 +466,17 @@ function initLibrary()
             return true
         end
         
-        -- Обновляем цвет текста при смене темы
         local function updateTextColor()
             if selectedTheme then
                 label.TextColor3 = selectedTheme.keybindText
             end
         end
         
-        -- Функция обновления видимости
         local function updateVisibility()
             if label then
                 local visible = isVisible()
                 label.Visible = visible
+                task.wait()
                 library:UpdateKeybindListSize()
             end
         end
@@ -459,7 +487,6 @@ function initLibrary()
             updateVisibility()
         end
         
-        -- Сохраняем данные
         library.keybindList[name] = {
             label = label,
             update = updateFunction,
@@ -467,21 +494,17 @@ function initLibrary()
             updateColor = updateTextColor,
             updateVisibility = updateVisibility,
             visibilityFlag = visibilityFlag,
-            isVisible = isVisible
+            isVisible = isVisible,
+            name = name
         }
         
-        -- Подписываемся на изменения флага видимости
         if visibilityFlag then
-            -- Сохраняем оригинальный колбэк если он уже есть
             local originalCallback = flags.toggles[visibilityFlag]
             
-            -- Создаем новый колбэк с обновлением видимости
             flags.toggles[visibilityFlag] = function(bool)
-                -- Вызываем оригинальный колбэк если он есть
                 if originalCallback then
                     originalCallback(bool)
                 end
-                -- Обновляем видимость всех кейбиндов с этим флагом
                 for _, data in pairs(library.keybindList) do
                     if data.visibilityFlag == visibilityFlag then
                         data.updateVisibility()
@@ -490,27 +513,9 @@ function initLibrary()
             end
         end
         
-        -- Устанавливаем начальную видимость
         updateVisibility()
         
         return updateFunction
-    end
-
-    function library:UpdateKeybindListSize()
-        local ySize = 0
-        local xSize = 0
-        
-        for _, child in ipairs(keybindContainer:GetChildren()) do
-            if child:IsA("TextLabel") and child.Visible then
-                ySize = ySize + 18
-                local boundsX = utility.get_text_bounds(child.Text, Enum.Font.Code, 13)
-                if boundsX > xSize then
-                    xSize = boundsX
-                end
-            end
-        end
-        
-        keybindOuter.Size = UDim2.new(0, math.max(xSize + 20, 210), 0, ySize + 25)
     end
 
     function library:RemoveKeybindFromList(name)
@@ -531,7 +536,6 @@ function initLibrary()
         library:UpdateKeybindListSize()
     end
 
-    -- Функция для обновления кейбинда в списке
     function library:UpdateKeybindInList(name, newKey)
         if library.keybindList[name] then
             local newKeyText = tostring(newKey):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
@@ -746,7 +750,6 @@ function initLibrary()
         local selectedTheme = themes[theme:lower()] or themes.dark
         library.color = color
         
-        -- Обновляем цвета ватермарка и кейбиндлиста
         if watermarkInner then
             watermarkInner.BorderColor3 = library.color
             watermarkInner.BackgroundColor3 = selectedTheme.secondary
@@ -989,7 +992,6 @@ function initLibrary()
                 local totalWidth = columnsContainer.AbsoluteSize.X
                 if totalWidth < 100 then totalWidth = sizeX end
                 
-                -- Считаем количество колонок в верхнем и нижнем ряду
                 local topCount = 0
                 local bottomCount = 0
                 
@@ -998,7 +1000,6 @@ function initLibrary()
                 if tabColumnSizes[3] then bottomCount = bottomCount + 1 end
                 if tabColumnSizes[4] then bottomCount = bottomCount + 1 end
                 
-                -- Показываем/скрываем ряды в зависимости от наличия колонок
                 if topCount == 0 then
                     topRow.Visible = false
                     bottomRow.Position = UDim2.new(0, 0, 0, 0)
@@ -1016,7 +1017,6 @@ function initLibrary()
                     end
                 end
                 
-                -- Настраиваем ширину колонок в верхнем ряду
                 if topCount > 0 then
                     local colWidth = (totalWidth - (topCount - 1) * 4) / topCount
                     if tabColumnSizes[1] then
@@ -1042,7 +1042,6 @@ function initLibrary()
                     column2.Visible = false
                 end
                 
-                -- Настраиваем ширину колонок в нижнем ряду
                 if bottomCount > 0 then
                     local colWidth = (totalWidth - (bottomCount - 1) * 4) / bottomCount
                     if tabColumnSizes[3] then
@@ -1068,14 +1067,12 @@ function initLibrary()
                     column4.Visible = false
                 end
                 
-                -- Обновляем CanvasSize
                 column1.CanvasSize = UDim2.new(0, 0, 0, column1List.AbsoluteContentSize.Y)
                 column2.CanvasSize = UDim2.new(0, 0, 0, column2List.AbsoluteContentSize.Y)
                 column3.CanvasSize = UDim2.new(0, 0, 0, column3List.AbsoluteContentSize.Y)
                 column4.CanvasSize = UDim2.new(0, 0, 0, column4List.AbsoluteContentSize.Y)
             end
 
-            -- Функция открытия вкладки
             local function openTab()
                 for _, obj in next, tabTogglesHolder:GetChildren() do
                     if obj:IsA("TextButton") then
@@ -1093,7 +1090,6 @@ function initLibrary()
 
             tabToggle.MouseButton1Click:Connect(openTab)
 
-            -- Отслеживаем изменение размера окна
             local lastSize = topbar.AbsoluteSize
             runService.RenderStepped:Connect(function()
                 if topbar.AbsoluteSize ~= lastSize then
@@ -1118,7 +1114,6 @@ function initLibrary()
                 local name = options.name or "Section"
                 local column = options.column or 1
                 
-                -- Сохраняем что колонка активна
                 tabColumnSizes[column] = true
                 
                 local columnFrame
@@ -1216,7 +1211,6 @@ function initLibrary()
 
                 function sectionTypes:Remove()
                     sectionHolder:Destroy()
-                    -- Проверяем, есть ли еще секции в этой колонке
                     local hasSections = false
                     for _, child in ipairs(columnFrame:GetChildren()) do
                         if child ~= sectionHolder and child:IsA("Frame") then
@@ -1472,6 +1466,7 @@ function initLibrary()
                         end
 
                         callback(toggled)
+                        library:RefreshAllKeybindsVisibility()
                     end
 
                     toggle.MouseButton1Click:Connect(toggleToggle)
@@ -1963,6 +1958,7 @@ function initLibrary()
                             library.flags[toggleFlag] = toggled
                         end
                         toggleCallback(toggled)
+                        library:RefreshAllKeybindsVisibility()
                     end
 
                     toggle.MouseButton1Click:Connect(toggleToggle)
@@ -2522,8 +2518,6 @@ function initLibrary()
                 end
 
                 -- KEYBIND
-                -- KEYBIND
-                -- KEYBIND
                 function sectionTypes:Keybind(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Keybind"
@@ -2532,7 +2526,7 @@ function initLibrary()
                     local flag = options.flag
                     local callback = options.callback or function() end
                     local addToList = options.addToList or true
-                    local visibilityFlag = options.visibilityFlag -- флаг тогля, от которого зависит видимость
+                    local visibilityFlag = options.visibilityFlag
 
                     if flag then
                         library.flags[flag] = default
@@ -2630,7 +2624,6 @@ function initLibrary()
                         Parent = keybind
                     })
 
-                    -- Добавляем в список кейбиндов если нужно
                     if addToList then
                         updateListFunction = library:AddKeybindToList(name, keyChosen, nil, visibilityFlag)
                     end
@@ -2767,7 +2760,7 @@ function initLibrary()
                     local toggleCallback = options.toggleCallback or function() end
                     local keybindCallback = options.keybindCallback or function() end
                     local addToList = options.addToList or true
-                    local visibilityFlag = options.visibilityFlag -- флаг для видимости в списке
+                    local visibilityFlag = options.visibilityFlag
 
                     local keys = {
                         [Enum.KeyCode.LeftShift] = "LeftShift";
@@ -2910,6 +2903,7 @@ function initLibrary()
                             library.flags[toggleFlag] = toggled
                         end
                         toggleCallback(toggled)
+                        library:RefreshAllKeybindsVisibility()
                     end
 
                     toggleKeybind.MouseButton1Click:Connect(toggleToggle)
@@ -2997,7 +2991,6 @@ function initLibrary()
                         end
                     end)
 
-                    -- Добавляем в список кейбиндов если нужно
                     if addToList then
                         updateListFunction = library:AddKeybindToList(name, keyChosen, nil, visibilityFlag)
                     end
@@ -3066,7 +3059,6 @@ function initLibrary()
 
                     return toggleKeybindTypes
                 end
-
 
                 -- COLOR PICKER
                 function sectionTypes:ColorPicker(opts)
@@ -3650,6 +3642,7 @@ function initLibrary()
                             library.flags[toggleFlag] = toggled
                         end
                         toggleCallback(toggled)
+                        library:RefreshAllKeybindsVisibility()
                     end
 
                     colorPicker.MouseButton1Click:Connect(toggleToggle)
