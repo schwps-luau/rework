@@ -15,6 +15,10 @@ function initLibrary()
     local tweenService = game:GetService("TweenService")
     local runService = game:GetService("RunService")
     local coreGui = game:GetService("CoreGui")
+    local players = game:GetService("Players")
+    local localPlayer = players.LocalPlayer
+    local httpService = game:GetService("HttpService")
+    local stats = game:GetService("Stats")
 
     local utility = {}
 
@@ -113,10 +117,16 @@ function initLibrary()
         toggled = true,
         color = Color3.fromRGB(255, 0, 0),
         keybind = Enum.KeyCode.RightShift,
-        dragSpeed = 0.25
+        dragSpeed = 0.25,
+        notifications = {},
+        watermarkModules = {},
+        notificationQueue = {},
+        activeNotifications = {}
     }
 
     local coloredGradients = {}
+    local currentTheme = nil
+    local currentThemeTable = nil
 
     function library:SetColor(color)
         library.color = color
@@ -136,6 +146,229 @@ function initLibrary()
 
     function library:SetKey(key)
         library.keybind = key
+    end
+
+    -- СИСТЕМА УВЕДОМЛЕНИЙ
+    local notificationContainer = nil
+    
+    function library:Notify(opts)
+        local options = utility.table(opts)
+        local title = options.title or "Notification"
+        local description = options.description or ""
+        local duration = options.duration or 3
+        local icon = options.icon or "📢"
+        local callback = options.callback or function() end
+        
+        if not notificationContainer then
+            notificationContainer = utility.create("Frame", {
+                Name = "NotificationContainer",
+                ZIndex = 20,
+                Size = UDim2.new(0, 320, 0, 0),
+                Position = UDim2.new(1, -330, 0, 10),
+                BackgroundTransparency = 1,
+                Parent = gui
+            })
+            
+            utility.create("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 8),
+                Parent = notificationContainer
+            })
+        end
+        
+        local notification = utility.create("Frame", {
+            ZIndex = 21,
+            Size = UDim2.new(1, 0, 0, 0),
+            BackgroundTransparency = 1,
+            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+            Parent = notificationContainer
+        })
+        
+        local notificationBg = utility.create("Frame", {
+            ZIndex = 22,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundColor3 = currentThemeTable and currentThemeTable.secondary or Color3.fromRGB(32, 32, 32),
+            BorderSizePixel = 0,
+            Parent = notification
+        })
+        
+        utility.create("UICorner", {
+            CornerRadius = UDim.new(0, 6),
+            Parent = notificationBg
+        })
+        
+        utility.create("UIStroke", {
+            Color = currentThemeTable and currentThemeTable.border or Color3.fromRGB(20, 20, 20),
+            Thickness = 1,
+            Parent = notificationBg
+        })
+        
+        local gradient = utility.create("UIGradient", {
+            Rotation = 90,
+            Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, library.color),
+                ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
+            },
+            Parent = notificationBg
+        })
+        
+        table.insert(coloredGradients, gradient)
+        
+        local progressBar = utility.create("Frame", {
+            ZIndex = 23,
+            Size = UDim2.new(1, 0, 0, 2),
+            Position = UDim2.new(0, 0, 1, -2),
+            BackgroundColor3 = library.color,
+            BorderSizePixel = 0,
+            Parent = notificationBg
+        })
+        
+        local iconLabel = utility.create("TextLabel", {
+            ZIndex = 23,
+            Size = UDim2.new(0, 30, 0, 30),
+            Position = UDim2.new(0, 8, 0, 8),
+            BackgroundTransparency = 1,
+            Text = icon,
+            TextSize = 20,
+            TextColor3 = library.color,
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            Parent = notificationBg
+        })
+        
+        local titleLabel = utility.create("TextLabel", {
+            ZIndex = 23,
+            Size = UDim2.new(1, -48, 0, 18),
+            Position = UDim2.new(0, 46, 0, 8),
+            BackgroundTransparency = 1,
+            Text = title,
+            TextSize = 14,
+            TextColor3 = currentThemeTable and currentThemeTable.text or Color3.fromRGB(255, 255, 255),
+            Font = Enum.Font.GothamSemibold,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            Parent = notificationBg
+        })
+        
+        local descLabel = utility.create("TextLabel", {
+            ZIndex = 23,
+            Size = UDim2.new(1, -48, 0, 16),
+            Position = UDim2.new(0, 46, 0, 28),
+            BackgroundTransparency = 1,
+            Text = description,
+            TextSize = 12,
+            TextColor3 = currentThemeTable and currentThemeTable.textSecondary or Color3.fromRGB(180, 180, 180),
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            Parent = notificationBg
+        })
+        
+        local closeButton = utility.create("TextButton", {
+            ZIndex = 23,
+            Size = UDim2.new(0, 20, 0, 20),
+            Position = UDim2.new(1, -24, 0, 8),
+            BackgroundTransparency = 1,
+            Text = "✕",
+            TextSize = 14,
+            TextColor3 = currentThemeTable and currentThemeTable.textSecondary or Color3.fromRGB(180, 180, 180),
+            Font = Enum.Font.Gotham,
+            Parent = notificationBg
+        })
+        
+        closeButton.MouseButton1Click:Connect(function()
+            if callback then callback("closed") end
+            utility.tween(notification, {0.2, Enum.EasingStyle.Quad}, {Size = UDim2.new(1, 0, 0, 0)})
+            task.wait(0.2)
+            notification:Destroy()
+        end)
+        
+        notification.Size = UDim2.new(1, 0, 0, 58)
+        
+        utility.tween(progressBar, {duration, Enum.EasingStyle.Linear}, {Size = UDim2.new(0, 0, 0, 2)})
+        
+        task.spawn(function()
+            task.wait(duration)
+            if notification and notification.Parent then
+                utility.tween(notification, {0.2, Enum.EasingStyle.Quad}, {Size = UDim2.new(1, 0, 0, 0)})
+                task.wait(0.2)
+                notification:Destroy()
+                if callback then callback("auto") end
+            end
+        end)
+        
+        return notification
+    end
+
+    -- РАСШИРЕННЫЙ ВОДЯНОЙ ЗНАК
+    local watermarkFrame = nil
+    local watermarkModules = {
+        fps = false,
+        ping = false,
+        playerName = false,
+        displayName = false,
+        placeName = false,
+        time = false
+    }
+    
+    local function updateWatermark()
+        if not watermarkFrame then return end
+        
+        local lines = {}
+        
+        if watermarkModules.fps then
+            local stats = game:GetService("Stats")
+            local fps = math.floor(1 / stats.WorkingAverage.FrameRate:GetValue())
+            table.insert(lines, "FPS: " .. fps)
+        end
+        
+        if watermarkModules.ping then
+            local ping = localPlayer:GetNetworkPing()
+            local pingColor = ping < 100 and "🟢" or (ping < 200 and "🟡" or "🔴")
+            table.insert(lines, pingColor .. " " .. math.floor(ping * 1000) .. "ms")
+        end
+        
+        if watermarkModules.playerName then
+            table.insert(lines, "User: " .. localPlayer.Name)
+        end
+        
+        if watermarkModules.displayName then
+            table.insert(lines, "Display: " .. localPlayer.DisplayName)
+        end
+        
+        if watermarkModules.placeName then
+            table.insert(lines, "Place: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
+        end
+        
+        if watermarkModules.time then
+            table.insert(lines, "Time: " .. os.date("%H:%M:%S"))
+        end
+        
+        local text = table.concat(lines, "\n")
+        if watermarkFrame.Content then
+            watermarkFrame.Content.Text = text
+            watermarkFrame.Size = UDim2.new(0, watermarkFrame.Content.TextBounds.X + 24, 0, (#lines * 18) + 16)
+        end
+    end
+    
+    function library:SetWatermarkModule(module, enabled)
+        watermarkModules[module] = enabled
+        updateWatermark()
+    end
+    
+    function library:ToggleWatermarkModule(module)
+        watermarkModules[module] = not watermarkModules[module]
+        updateWatermark()
+        return watermarkModules[module]
+    end
+    
+    function library:GetWatermarkModules()
+        return watermarkModules
+    end
+    
+    function library:UpdateWatermark()
+        updateWatermark()
     end
 
     local gui = utility.create("ScreenGui")
@@ -250,6 +483,17 @@ function initLibrary()
         local color = options.color or Color3.fromRGB(128, 128, 128)
         local dragSpeed = options.dragSpeed or 0
         local theme = options.theme or "dark"
+        
+        -- Настройки водяного знака
+        local watermarkEnabled = options.watermark or true
+        local watermarkModulesOpt = options.watermarkModules or {
+            fps = true,
+            ping = true,
+            playerName = false,
+            displayName = false,
+            placeName = false,
+            time = false
+        }
 
         local themeColors = {
             dark = Color3.fromRGB(128, 128, 128),
@@ -412,6 +656,7 @@ function initLibrary()
         }
 
         local selectedTheme = themes[theme:lower()] or themes.dark
+        currentThemeTable = selectedTheme
         library.color = color
 
         -- Создание основного окна
@@ -478,6 +723,104 @@ function initLibrary()
             Parent = tabTogglesHolder
         })
 
+        -- СОЗДАНИЕ ВОДЯНОГО ЗНАКА
+        if watermarkEnabled then
+            watermarkFrame = utility.create("Frame", {
+                Name = "Watermark",
+                ZIndex = 15,
+                Size = UDim2.new(0, 0, 0, 0),
+                Position = UDim2.new(1, -10, 0, 10),
+                AnchorPoint = Vector2.new(1, 0),
+                BackgroundTransparency = 0.75,
+                BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+                BorderSizePixel = 0,
+                Parent = gui
+            })
+            
+            utility.create("UICorner", {
+                CornerRadius = UDim.new(0, 6),
+                Parent = watermarkFrame
+            })
+            
+            utility.create("UIStroke", {
+                Color = selectedTheme.border,
+                Thickness = 1,
+                Transparency = 0.5,
+                Parent = watermarkFrame
+            })
+            
+            local watermarkContent = utility.create("TextLabel", {
+                Name = "Content",
+                ZIndex = 16,
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                TextColor3 = selectedTheme.text,
+                Text = "",
+                TextSize = 11,
+                Font = Enum.Font.Gotham,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Top,
+                Parent = watermarkFrame
+            })
+            
+            utility.create("UIPadding", {
+                PaddingLeft = UDim.new(0, 12),
+                PaddingRight = UDim.new(0, 12),
+                PaddingTop = UDim.new(0, 8),
+                PaddingBottom = UDim.new(0, 8),
+                Parent = watermarkContent
+            })
+            
+            local watermarkDragging = false
+            local watermarkDragStart
+            local watermarkStartPos
+            
+            watermarkFrame.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    watermarkDragging = true
+                    watermarkDragStart = input.Position
+                    watermarkStartPos = watermarkFrame.Position
+                    watermarkFrame.BackgroundTransparency = 0.85
+                end
+            end)
+            
+            watermarkFrame.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    watermarkDragging = false
+                    watermarkFrame.BackgroundTransparency = 0.75
+                end
+            end)
+            
+            inputService.InputChanged:Connect(function(input)
+                if watermarkDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    local delta = input.Position - watermarkDragStart
+                    local screenSize = workspace.CurrentCamera.ViewportSize
+                    local frameSize = watermarkFrame.AbsoluteSize
+                    
+                    local newX = math.clamp(watermarkStartPos.X.Offset + delta.X, 10, screenSize.X - frameSize.X - 10)
+                    local newY = math.clamp(watermarkStartPos.Y.Offset + delta.Y, 10, screenSize.Y - frameSize.Y - 10)
+                    
+                    watermarkFrame.Position = UDim2.new(0, newX, 0, newY)
+                end
+            end)
+            
+            for module, enabled in pairs(watermarkModulesOpt) do
+                watermarkModules[module] = enabled
+            end
+            
+            updateWatermark()
+            
+            -- Обновление FPS и времени
+            task.spawn(function()
+                while watermarkFrame and watermarkFrame.Parent do
+                    if watermarkModules.fps or watermarkModules.time then
+                        updateWatermark()
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        end
+
         local windowTypes = utility.table({count = 0})
 
         function windowTypes:Show()
@@ -490,6 +833,22 @@ function initLibrary()
 
         function windowTypes:SetPosition(x, y)
             topbar.Position = UDim2.new(0, x, 0, y)
+        end
+        
+        function windowTypes:Notify(opts)
+            return library:Notify(opts)
+        end
+        
+        function windowTypes:SetWatermarkModule(module, enabled)
+            library:SetWatermarkModule(module, enabled)
+        end
+        
+        function windowTypes:ToggleWatermarkModule(module)
+            return library:ToggleWatermarkModule(module)
+        end
+        
+        function windowTypes:GetWatermarkModules()
+            return library:GetWatermarkModules()
         end
 
         function windowTypes:Tab(name)
@@ -2848,7 +3207,7 @@ function initLibrary()
                         colorPickerHolder.Size = UDim2.new(1, 0, 0, open and colorPicker.AbsoluteSize.Y + picker.AbsoluteSize.Y + 3 or 16)
                     end
 
-                    colorPicker.MouseButton1Click:connect(openPicker)
+                    colorPicker.MouseButton1Click:Connect(openPicker)
 
                     local function updateHue(input)
                         local sizeY = 1 - math.clamp((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y, 0, 1)
@@ -3249,7 +3608,7 @@ function initLibrary()
                         toggleColorPickerHolder.Size = UDim2.new(1, 0, 0, open and colorPicker.AbsoluteSize.Y + picker.AbsoluteSize.Y + 3 or 16)
                     end
 
-                    colorPickerIcon.MouseButton1Click:connect(openPicker)
+                    colorPickerIcon.MouseButton1Click:Connect(openPicker)
 
                     local function updateHue(input)
                         local sizeY = 1 - math.clamp((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y, 0, 1)
