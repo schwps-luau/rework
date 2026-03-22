@@ -153,8 +153,8 @@ function initLibrary()
         if input.KeyCode == library.keybind then
             library.toggled = not library.toggled
             for _, child in ipairs(gui:GetChildren()) do
-                if child ~= watermarkOuter then
-                    if child:IsA("Frame") or child:IsA("ImageButton") or child:IsA("ScrollingFrame") then
+                if child ~= watermarkOuter and child.Name ~= "WatermarkFrame" then
+                   if child:IsA("Frame") or child:IsA("ImageButton") or child:IsA("ScrollingFrame") then
                         child.Visible = library.toggled
                     end
                 end
@@ -173,6 +173,11 @@ function initLibrary()
     function library:LoadConfig(file)
         local str = readfile(gameConfigFolder .. "/" .. file .. ".cfg")
         local tbl = loadstring(str)()
+        for flag, value in next, tbl.colorpickers do
+            if flags.colorpickers[flag] then
+                flags.colorpickers[flag](value)
+            end
+        end
         for flag, value in next, tbl.toggles do
             if flags.toggles[flag] then
                 flags.toggles[flag](value)
@@ -201,11 +206,6 @@ function initLibrary()
         for flag, value in next, tbl.keybinds do
             if flags.keybinds[flag] then
                 flags.keybinds[flag](value)
-            end
-        end
-        for flag, value in next, tbl.colorpickers do
-            if flags.colorpickers[flag] then
-                flags.colorpickers[flag](value)
             end
         end
     end
@@ -259,6 +259,7 @@ function initLibrary()
 
     -- ========== ВАТЕРМАРК ==========
     local watermarkOuter = utility.create("Frame", {
+        Name = "WatermarkFrame",
         BorderColor3 = Color3.new(0, 0, 0);
         Position = UDim2.new(0, 10, 0, 10);
         Size = UDim2.new(0, 213, 0, 20);
@@ -322,7 +323,7 @@ function initLibrary()
 
     function library:SetWatermark(text)
         local x, y = utility.get_text_bounds(text, Enum.Font.Code, 14)
-        watermarkOuter.Size = UDim2.new(0, x + 15, 0, (y * 1.5) + 3)
+        watermarkOuter.Size = UDim2.new(1, x + 15, 1, (y * 1.5) + 3)
         watermarkLabel.Text = text
         library:SetWatermarkVisibility(true)
     end
