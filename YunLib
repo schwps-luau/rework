@@ -121,7 +121,6 @@ function initLibrary()
         keybind = Enum.KeyCode.RightShift,
         dragSpeed = 0.25,
         watermarks = {},
-        keybindList = {},
         selectedTheme = nil
     }
 
@@ -138,31 +137,6 @@ function initLibrary()
             end
         end
         library:UpdateWatermarkColors()
-        if library.UpdateKeybindListColors then
-            library.UpdateKeybindListColors()
-        end
-        library:RefreshAllKeybindsVisibility()
-    end
-
-    function library:UpdateKeybindVisibility()
-        for name, data in pairs(library.keybindList) do
-            if data.visible then
-                local isVisible = data.visible()
-                if data.label then
-                    data.label.Visible = isVisible
-                end
-            end
-        end
-        library:UpdateKeybindListSize()
-    end
-
-    function library:RefreshAllKeybindsVisibility()
-        for name, data in pairs(library.keybindList) do
-            if data.updateVisibility then
-                data.updateVisibility()
-            end
-        end
-        library:UpdateKeybindListSize()
     end
 
     function library:GetColor()
@@ -178,9 +152,8 @@ function initLibrary()
     inputService.InputBegan:Connect(function(input)
         if input.KeyCode == library.keybind then
             library.toggled = not library.toggled
-            -- Меняем видимость только меню, ватермарк и кейбиндлист остаются
             for _, child in ipairs(gui:GetChildren()) do
-                if child ~= watermarkOuter and child ~= keybindOuter then
+                if child ~= watermarkOuter then
                     if child:IsA("Frame") or child:IsA("ImageButton") or child:IsA("ScrollingFrame") then
                         child.Visible = library.toggled
                     end
@@ -354,206 +327,6 @@ function initLibrary()
         library:SetWatermarkVisibility(true)
     end
 
-    -- ========== КЕЙБИНД ЛИСТ ==========
-    local keybindOuter = utility.create("Frame", {
-        AnchorPoint = Vector2.new(1, 0);
-        BorderColor3 = Color3.new(0, 0, 0);
-        Position = UDim2.new(1, -10, 0, 50);
-        Size = UDim2.new(0, 210, 0, 20);
-        Visible = false;
-        ZIndex = 100;
-        Parent = gui;
-        ClipsDescendants = false;
-    })
-
-    local keybindInner = utility.create("Frame", {
-        BackgroundColor3 = Color3.fromRGB(28, 28, 28);
-        BorderColor3 = Color3.fromRGB(50, 50, 50);
-        BorderMode = Enum.BorderMode.Inset;
-        Size = UDim2.new(1, 0, 1, 0);
-        ZIndex = 101;
-        Parent = keybindOuter;
-        AutomaticSize = Enum.AutomaticSize.Y;
-    })
-
-    local keybindColorFrame = utility.create("Frame", {
-        BackgroundColor3 = library.color;
-        BorderSizePixel = 0;
-        Size = UDim2.new(1, 0, 0, 2);
-        ZIndex = 102;
-        Parent = keybindInner;
-    })
-
-    local keybindLabel = utility.create("TextLabel", {
-        Size = UDim2.new(1, 0, 0, 20);
-        Position = UDim2.fromOffset(5, 2);
-        BackgroundTransparency = 1;
-        TextXAlignment = Enum.TextXAlignment.Left;
-        Text = "Keybinds";
-        TextSize = 14;
-        TextColor3 = Color3.fromRGB(255, 255, 255);
-        Font = Enum.Font.Code;
-        ZIndex = 104;
-        Parent = keybindInner;
-    })
-
-    local keybindContainer = utility.create("Frame", {
-        BackgroundTransparency = 1;
-        Position = UDim2.new(0, 0, 0, 20);
-        ZIndex = 1;
-        Parent = keybindInner;
-        AutomaticSize = Enum.AutomaticSize.Y;
-    })
-
-    local keybindListLayout = utility.create("UIListLayout", {
-        FillDirection = Enum.FillDirection.Vertical;
-        SortOrder = Enum.SortOrder.LayoutOrder;
-        Padding = UDim.new(0, 2);
-        Parent = keybindContainer;
-    })
-
-    local keybindPadding = utility.create("UIPadding", {
-        PaddingLeft = UDim.new(0, 5);
-        PaddingRight = UDim.new(0, 5);
-        PaddingTop = UDim.new(0, 2);
-        PaddingBottom = UDim.new(0, 5);
-        Parent = keybindContainer;
-    })
-
-    library.KeybindFrame = keybindOuter
-    library.KeybindContainer = keybindContainer
-    utility.drag(keybindOuter, 0)
-
-    function library:UpdateKeybindListColors()
-        if keybindColorFrame then
-            keybindColorFrame.BackgroundColor3 = library.color
-        end
-        if keybindInner then
-            keybindInner.BorderColor3 = utility.change_color(library.color, -100)
-        end
-        for name, data in pairs(library.keybindList) do
-            if data.updateColor then
-                data.updateColor()
-            end
-        end
-        library:RefreshAllKeybindsVisibility()
-    end
-
-    function library:SetKeybindListVisibility(bool)
-        keybindOuter.Visible = bool
-    end
-
-    function library:UpdateKeybindListSize()
-        task.wait()
-        local innerHeight = keybindInner.AbsoluteSize.Y
-        if innerHeight > 0 then
-            keybindOuter.Size = UDim2.new(0, keybindInner.AbsoluteSize.X, 0, innerHeight)
-        end
-    end
-
-    function library:AddKeybindToList(name, key, callback, visibilityFlag)
-        local keyText = tostring(key):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
-        
-        local label = utility.create("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 18);
-            BackgroundTransparency = 1;
-            Text = string.format("[%s] %s", keyText, name);
-            TextSize = 13;
-            TextColor3 = (library.selectedTheme and library.selectedTheme.keybindText) or Color3.fromRGB(200, 200, 200);
-            TextXAlignment = Enum.TextXAlignment.Left;
-            Font = Enum.Font.Code;
-            ZIndex = 110;
-            Parent = keybindContainer;
-        })
-        
-        local function isVisible()
-            if visibilityFlag then
-                return library.flags[visibilityFlag] == true
-            end
-            return true
-        end
-        
-        local function updateTextColor()
-            if library.selectedTheme then
-                label.TextColor3 = library.selectedTheme.keybindText
-            end
-        end
-        
-        local function updateVisibility()
-            if label then
-                local visible = isVisible()
-                label.Visible = visible
-                task.wait()
-                library:UpdateKeybindListSize()
-            end
-        end
-        
-        local updateFunction = function(newKey)
-            local newKeyText = tostring(newKey):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
-            label.Text = string.format("[%s] %s", newKeyText, name)
-            updateVisibility()
-        end
-        
-        library.keybindList[name] = {
-            label = label,
-            update = updateFunction,
-            callback = callback,
-            updateColor = updateTextColor,
-            updateVisibility = updateVisibility,
-            visibilityFlag = visibilityFlag,
-            isVisible = isVisible,
-            name = name
-        }
-        
-        if visibilityFlag then
-            local originalCallback = flags.toggles[visibilityFlag]
-            
-            flags.toggles[visibilityFlag] = function(bool)
-                if originalCallback then
-                    originalCallback(bool)
-                end
-                for _, data in pairs(library.keybindList) do
-                    if data.visibilityFlag == visibilityFlag then
-                        data.updateVisibility()
-                    end
-                end
-            end
-        end
-        
-        updateVisibility()
-        
-        return updateFunction
-    end
-
-    function library:RemoveKeybindFromList(name)
-        if library.keybindList[name] and library.keybindList[name].label then
-            library.keybindList[name].label:Destroy()
-            library.keybindList[name] = nil
-            library:UpdateKeybindListSize()
-        end
-    end
-
-    function library:ClearKeybindList()
-        for _, child in ipairs(keybindContainer:GetChildren()) do
-            if child:IsA("TextLabel") then
-                child:Destroy()
-            end
-        end
-        library.keybindList = {}
-        library:UpdateKeybindListSize()
-    end
-
-    function library:UpdateKeybindInList(name, newKey)
-        if library.keybindList[name] then
-            local newKeyText = tostring(newKey):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
-            library.keybindList[name].label.Text = string.format("[%s] %s", newKeyText, name)
-            library:UpdateKeybindListSize()
-            if library.keybindList[name].callback then
-                library.keybindList[name].callback(newKey)
-            end
-        end
-    end
-
     -- ========== ОСНОВНОЕ МЕНЮ ==========
     function library:Load(opts)
         local options = utility.table(opts)
@@ -595,9 +368,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(17, 17, 17),
                 dropdown = Color3.fromRGB(33, 33, 33),
                 picker = Color3.fromRGB(20, 20, 20),
-                watermarkText = Color3.fromRGB(255, 255, 255),
-                keybindText = Color3.fromRGB(255, 255, 255),
-                keybindTitle = Color3.fromRGB(255, 255, 255)
+                watermarkText = Color3.fromRGB(255, 255, 255)
             },
             light = {
                 background = Color3.fromRGB(240, 240, 240),
@@ -612,9 +383,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(220, 220, 220),
                 dropdown = Color3.fromRGB(245, 245, 245),
                 picker = Color3.fromRGB(255, 255, 255),
-                watermarkText = Color3.fromRGB(0, 0, 0),
-                keybindText = Color3.fromRGB(0, 0, 0),
-                keybindTitle = Color3.fromRGB(0, 0, 0)
+                watermarkText = Color3.fromRGB(0, 0, 0)
             },
             blue = {
                 background = Color3.fromRGB(10, 20, 40),
@@ -629,9 +398,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(10, 25, 50),
                 dropdown = Color3.fromRGB(30, 45, 75),
                 picker = Color3.fromRGB(20, 35, 65),
-                watermarkText = Color3.fromRGB(255, 255, 255),
-                keybindText = Color3.fromRGB(255, 255, 255),
-                keybindTitle = Color3.fromRGB(255, 255, 255)
+                watermarkText = Color3.fromRGB(255, 255, 255)
             },
             ["light blue"] = {
                 background = Color3.fromRGB(200, 220, 240),
@@ -646,9 +413,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(200, 220, 240),
                 dropdown = Color3.fromRGB(210, 225, 245),
                 picker = Color3.fromRGB(220, 235, 250),
-                watermarkText = Color3.fromRGB(0, 20, 40),
-                keybindText = Color3.fromRGB(0, 20, 40),
-                keybindTitle = Color3.fromRGB(0, 20, 40)
+                watermarkText = Color3.fromRGB(0, 20, 40)
             },
             red = {
                 background = Color3.fromRGB(40, 10, 10),
@@ -663,9 +428,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(50, 10, 10),
                 dropdown = Color3.fromRGB(70, 25, 25),
                 picker = Color3.fromRGB(60, 20, 20),
-                watermarkText = Color3.fromRGB(255, 255, 255),
-                keybindText = Color3.fromRGB(255, 255, 255),
-                keybindTitle = Color3.fromRGB(255, 255, 255)
+                watermarkText = Color3.fromRGB(255, 255, 255)
             },
             ["light red"] = {
                 background = Color3.fromRGB(250, 220, 220),
@@ -680,9 +443,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(250, 220, 220),
                 dropdown = Color3.fromRGB(245, 225, 225),
                 picker = Color3.fromRGB(255, 235, 235),
-                watermarkText = Color3.fromRGB(80, 0, 0),
-                keybindText = Color3.fromRGB(80, 0, 0),
-                keybindTitle = Color3.fromRGB(80, 0, 0)
+                watermarkText = Color3.fromRGB(80, 0, 0)
             },
             purple = {
                 background = Color3.fromRGB(30, 10, 40),
@@ -697,9 +458,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(30, 10, 50),
                 dropdown = Color3.fromRGB(50, 25, 70),
                 picker = Color3.fromRGB(40, 20, 60),
-                watermarkText = Color3.fromRGB(255, 255, 255),
-                keybindText = Color3.fromRGB(255, 255, 255),
-                keybindTitle = Color3.fromRGB(255, 255, 255)
+                watermarkText = Color3.fromRGB(255, 255, 255)
             },
             ["light purple"] = {
                 background = Color3.fromRGB(230, 210, 250),
@@ -714,9 +473,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(230, 210, 245),
                 dropdown = Color3.fromRGB(235, 215, 250),
                 picker = Color3.fromRGB(245, 225, 255),
-                watermarkText = Color3.fromRGB(40, 10, 60),
-                keybindText = Color3.fromRGB(40, 10, 60),
-                keybindTitle = Color3.fromRGB(40, 10, 60)
+                watermarkText = Color3.fromRGB(40, 10, 60)
             },
             green = {
                 background = Color3.fromRGB(10, 30, 10),
@@ -731,9 +488,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(10, 40, 10),
                 dropdown = Color3.fromRGB(25, 55, 25),
                 picker = Color3.fromRGB(20, 45, 20),
-                watermarkText = Color3.fromRGB(255, 255, 255),
-                keybindText = Color3.fromRGB(255, 255, 255),
-                keybindTitle = Color3.fromRGB(255, 255, 255)
+                watermarkText = Color3.fromRGB(255, 255, 255)
             },
             ["light green"] = {
                 background = Color3.fromRGB(210, 240, 210),
@@ -748,9 +503,7 @@ function initLibrary()
                 gradient2 = Color3.fromRGB(210, 240, 210),
                 dropdown = Color3.fromRGB(215, 240, 215),
                 picker = Color3.fromRGB(225, 250, 225),
-                watermarkText = Color3.fromRGB(0, 40, 0),
-                keybindText = Color3.fromRGB(0, 40, 0),
-                keybindTitle = Color3.fromRGB(0, 40, 0)
+                watermarkText = Color3.fromRGB(0, 40, 0)
             }
         }
 
@@ -770,17 +523,6 @@ function initLibrary()
         end
         if watermarkLabel then
             watermarkLabel.TextColor3 = selectedTheme.watermarkText
-        end
-        
-        if keybindColorFrame then
-            keybindColorFrame.BackgroundColor3 = library.color
-        end
-        if keybindInner then
-            keybindInner.BackgroundColor3 = selectedTheme.secondary
-            keybindInner.BorderColor3 = utility.change_color(library.color, -100)
-        end
-        if keybindLabel then
-            keybindLabel.TextColor3 = selectedTheme.keybindTitle
         end
 
         -- Создание основного окна
@@ -1474,9 +1216,6 @@ function initLibrary()
                         end
 
                         callback(toggled)
-                        
-                        -- Обновляем видимость кейбиндов в списке
-                        library:RefreshAllKeybindsVisibility()
                     end
 
                     toggle.MouseButton1Click:Connect(toggleToggle)
@@ -1968,7 +1707,6 @@ function initLibrary()
                             library.flags[toggleFlag] = toggled
                         end
                         toggleCallback(toggled)
-                        library:RefreshAllKeybindsVisibility()
                     end
 
                     toggle.MouseButton1Click:Connect(toggleToggle)
@@ -2535,8 +2273,6 @@ function initLibrary()
                     local blacklist = options.blacklist or {}
                     local flag = options.flag
                     local callback = options.callback or function() end
-                    local addToList = options.addToList or true
-                    local visibilityFlag = options.visibilityFlag
 
                     if flag then
                         library.flags[flag] = default
@@ -2593,7 +2329,6 @@ function initLibrary()
                     }
 
                     local keyChosen = default
-                    local updateListFunction = nil
 
                     local keybind = utility.create("TextButton", {
                         Size = UDim2.new(1, 0, 0, 16),
@@ -2634,10 +2369,6 @@ function initLibrary()
                         Parent = keybind
                     })
 
-                    if addToList then
-                        updateListFunction = library:AddKeybindToList(name, keyChosen, nil, visibilityFlag)
-                    end
-
                     keybind.MouseButton1Click:Connect(function()
                         value.Text = "..."
                         value.TextColor3 = selectedTheme.text
@@ -2652,18 +2383,12 @@ function initLibrary()
                                     if flag then
                                         library.flags[flag] = input.KeyCode
                                     end
-                                    if updateListFunction then
-                                        updateListFunction(input.KeyCode)
-                                    end
                                     binding:Disconnect()
                                 else
                                     keyChosen = nil
                                     value.Text = "NONE"
                                     if flag then
                                         library.flags[flag] = nil
-                                    end
-                                    if updateListFunction then
-                                        updateListFunction(nil)
                                     end
                                     binding:Disconnect()
                                 end
@@ -2673,18 +2398,12 @@ function initLibrary()
                                     if flag then
                                         library.flags[flag] = input.UserInputType
                                     end
-                                    if updateListFunction then
-                                        updateListFunction(input.UserInputType)
-                                    end
                                     binding:Disconnect()
                                 else
                                     keyChosen = nil
                                     value.Text = "NONE"
                                     if flag then
                                         library.flags[flag] = nil
-                                    end
-                                    if updateListFunction then
-                                        updateListFunction(nil)
                                     end
                                     binding:Disconnect()
                                 end
@@ -2734,17 +2453,11 @@ function initLibrary()
                                 if flag then
                                     library.flags[flag] = newKey
                                 end
-                                if updateListFunction then
-                                    updateListFunction(newKey)
-                                end
                             else
                                 keyChosen = nil
                                 value.Text = "NONE"
                                 if flag then
                                     library.flags[flag] = nil
-                                end
-                                if updateListFunction then
-                                    updateListFunction(nil)
                                 end
                             end
                         end
@@ -2769,8 +2482,6 @@ function initLibrary()
                     local keybindFlag = options.keybindFlag
                     local toggleCallback = options.toggleCallback or function() end
                     local keybindCallback = options.keybindCallback or function() end
-                    local addToList = options.addToList or true
-                    local visibilityFlag = options.visibilityFlag
 
                     local keys = {
                         [Enum.KeyCode.LeftShift] = "LeftShift";
@@ -2824,7 +2535,6 @@ function initLibrary()
 
                     local toggled = false
                     local keyChosen = default
-                    local updateListFunction = nil
 
                     if toggleFlag then
                         library.flags[toggleFlag] = toggled
@@ -2913,7 +2623,6 @@ function initLibrary()
                             library.flags[toggleFlag] = toggled
                         end
                         toggleCallback(toggled)
-                        library:RefreshAllKeybindsVisibility()
                     end
 
                     toggleKeybind.MouseButton1Click:Connect(toggleToggle)
@@ -2936,9 +2645,6 @@ function initLibrary()
                                     if keybindFlag then
                                         library.flags[keybindFlag] = input.KeyCode
                                     end
-                                    if updateListFunction then
-                                        updateListFunction(input.KeyCode)
-                                    end
                                     binding:Disconnect()
                                 else
                                     keyChosen = nil
@@ -2947,9 +2653,6 @@ function initLibrary()
                                     value.Position = UDim2.new(1, -value.TextBounds.X, 0, 0)
                                     if keybindFlag then
                                         library.flags[keybindFlag] = nil
-                                    end
-                                    if updateListFunction then
-                                        updateListFunction(nil)
                                     end
                                     binding:Disconnect()
                                 end
@@ -2959,9 +2662,6 @@ function initLibrary()
                                     if keybindFlag then
                                         library.flags[keybindFlag] = input.UserInputType
                                     end
-                                    if updateListFunction then
-                                        updateListFunction(input.UserInputType)
-                                    end
                                     binding:Disconnect()
                                 else
                                     keyChosen = nil
@@ -2970,9 +2670,6 @@ function initLibrary()
                                     value.Position = UDim2.new(1, -value.TextBounds.X, 0, 0)
                                     if keybindFlag then
                                         library.flags[keybindFlag] = nil
-                                    end
-                                    if updateListFunction then
-                                        updateListFunction(nil)
                                     end
                                     binding:Disconnect()
                                 end
@@ -3000,10 +2697,6 @@ function initLibrary()
                             keybindCallback(keyChosen)
                         end
                     end)
-
-                    if addToList then
-                        updateListFunction = library:AddKeybindToList(name, keyChosen, nil, visibilityFlag)
-                    end
 
                     local toggleKeybindTypes = utility.table()
 
@@ -3037,9 +2730,6 @@ function initLibrary()
                                 if keybindFlag then
                                     library.flags[keybindFlag] = newKey
                                 end
-                                if updateListFunction then
-                                    updateListFunction(newKey)
-                                end
                             else
                                 keyChosen = nil
                                 value.Text = "NONE"
@@ -3047,9 +2737,6 @@ function initLibrary()
                                 value.Position = UDim2.new(1, -value.TextBounds.X, 0, 0)
                                 if keybindFlag then
                                     library.flags[keybindFlag] = nil
-                                end
-                                if updateListFunction then
-                                    updateListFunction(nil)
                                 end
                             end
                         end
@@ -3652,7 +3339,6 @@ function initLibrary()
                             library.flags[toggleFlag] = toggled
                         end
                         toggleCallback(toggled)
-                        library:RefreshAllKeybindsVisibility()
                     end
 
                     colorPicker.MouseButton1Click:Connect(toggleToggle)
