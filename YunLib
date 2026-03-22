@@ -302,7 +302,7 @@ function initLibrary()
         TextSize = 14;
         TextColor3 = Color3.fromRGB(255, 255, 255);
         TextXAlignment = Enum.TextXAlignment.Left;
-        Font = Enum.Font.Code;
+        Font = Enum.Font.GothamSemibold;
         ZIndex = 203;
         Parent = watermarkInnerFrame;
     })
@@ -322,8 +322,8 @@ function initLibrary()
     end
 
     function library:SetWatermark(text)
-        local x, y = utility.get_text_bounds(text, Enum.Font.Code, 14)
-        watermarkOuter.Size = UDim2.new(0, (x + 15), 0, (y * 1.5) + 3)
+        local x, y = utility.get_text_bounds(text, Enum.Font.GothamSemibold, 14)
+        watermarkOuter.Size = UDim2.new(0, x + 15, 0, --[[(y * 1.5) + 3]]0)
         watermarkLabel.Text = text
         library:SetWatermarkVisibility(true)
     end
