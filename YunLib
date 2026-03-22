@@ -270,7 +270,7 @@ function initLibrary()
     -- ========== ВАТЕРМАРК ==========
     local watermarkOuter = utility.create("Frame", {
         BorderColor3 = Color3.new(0, 0, 0);
-        Position = UDim2.new(0, 100, 0, -25);
+        Position = UDim2.new(1, -210, 0, 10)
         Size = UDim2.new(0, 213, 0, 20);
         ZIndex = 200;
         Visible = false;
@@ -318,7 +318,7 @@ function initLibrary()
 
     library.Watermark = watermarkOuter
     library.WatermarkText = watermarkLabel
-    utility.drag(watermarkOuter, 0.25)
+    utility.drag(watermarkOuter, 0)
 
     function library:UpdateWatermarkColors()
         if watermarkInner then
@@ -341,7 +341,7 @@ function initLibrary()
     local keybindOuter = utility.create("Frame", {
         AnchorPoint = Vector2.new(0, 0.5);
         BorderColor3 = Color3.new(0, 0, 0);
-        Position = UDim2.new(0, 10, 0.5, 0);
+        Position = UDim2.new(1, -210, 0, 30)
         Size = UDim2.new(0, 210, 0, 20);
         Visible = false;
         ZIndex = 100;
@@ -399,7 +399,7 @@ function initLibrary()
 
     library.KeybindFrame = keybindOuter
     library.KeybindContainer = keybindContainer
-    utility.drag(keybindOuter, 0.25)
+    utility.drag(keybindOuter, 0)
 
     function library:UpdateKeybindListColors()
         if keybindColorFrame then
@@ -414,7 +414,7 @@ function initLibrary()
         keybindOuter.Visible = bool
     end
 
-    function library:AddKeybindToList(name, key, callback, visibilityFunc)
+    function library:AddKeybindToList(name, key, callback, visibilityFlag)
         local keyText = tostring(key):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
         
         local label = utility.create("TextLabel", {
@@ -429,8 +429,13 @@ function initLibrary()
             Parent = keybindContainer;
         })
         
-        -- Функция видимости (по умолчанию всегда виден)
-        local isVisible = visibilityFunc or function() return true end
+        -- Функция для проверки видимости
+        local function isVisible()
+            if visibilityFlag then
+                return library.flags[visibilityFlag] == true
+            end
+            return true
+        end
         
         -- Обновляем цвет текста при смене темы
         local function updateTextColor()
@@ -439,28 +444,55 @@ function initLibrary()
             end
         end
         
+        -- Функция обновления видимости
+        local function updateVisibility()
+            if label then
+                local visible = isVisible()
+                label.Visible = visible
+                library:UpdateKeybindListSize()
+            end
+        end
+        
         local updateFunction = function(newKey)
             local newKeyText = tostring(newKey):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
             label.Text = string.format("[%s] %s", newKeyText, name)
-            label.Visible = isVisible()
-            library:UpdateKeybindListSize()
+            updateVisibility()
         end
         
+        -- Сохраняем данные
         library.keybindList[name] = {
             label = label,
             update = updateFunction,
             callback = callback,
             updateColor = updateTextColor,
-            visible = isVisible,
-            setVisible = function(func)
-                isVisible = func
-                label.Visible = isVisible()
-                library:UpdateKeybindListSize()
-            end
+            updateVisibility = updateVisibility,
+            visibilityFlag = visibilityFlag,
+            isVisible = isVisible
         }
         
-        label.Visible = isVisible()
-        library:UpdateKeybindListSize()
+        -- Подписываемся на изменения флага видимости
+        if visibilityFlag then
+            -- Сохраняем оригинальный колбэк если он уже есть
+            local originalCallback = flags.toggles[visibilityFlag]
+            
+            -- Создаем новый колбэк с обновлением видимости
+            flags.toggles[visibilityFlag] = function(bool)
+                -- Вызываем оригинальный колбэк если он есть
+                if originalCallback then
+                    originalCallback(bool)
+                end
+                -- Обновляем видимость всех кейбиндов с этим флагом
+                for _, data in pairs(library.keybindList) do
+                    if data.visibilityFlag == visibilityFlag then
+                        data.updateVisibility()
+                    end
+                end
+            end
+        end
+        
+        -- Устанавливаем начальную видимость
+        updateVisibility()
+        
         return updateFunction
     end
 
@@ -2491,6 +2523,7 @@ function initLibrary()
 
                 -- KEYBIND
                 -- KEYBIND
+                -- KEYBIND
                 function sectionTypes:Keybind(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Keybind"
@@ -2498,7 +2531,7 @@ function initLibrary()
                     local blacklist = options.blacklist or {}
                     local flag = options.flag
                     local callback = options.callback or function() end
-                    local addToList = options.addToList or false
+                    local addToList = options.addToList or true
                     local visibilityFlag = options.visibilityFlag -- флаг тогля, от которого зависит видимость
 
                     if flag then
@@ -2557,14 +2590,6 @@ function initLibrary()
 
                     local keyChosen = default
                     local updateListFunction = nil
-                    
-                    -- Функция видимости для списка
-                    local visibilityFunc = nil
-                    if visibilityFlag then
-                        visibilityFunc = function()
-                            return library.flags[visibilityFlag] == true
-                        end
-                    end
 
                     local keybind = utility.create("TextButton", {
                         Size = UDim2.new(1, 0, 0, 16),
@@ -2607,7 +2632,7 @@ function initLibrary()
 
                     -- Добавляем в список кейбиндов если нужно
                     if addToList then
-                        updateListFunction = library:AddKeybindToList(name, keyChosen, nil, visibilityFunc)
+                        updateListFunction = library:AddKeybindToList(name, keyChosen, nil, visibilityFlag)
                     end
 
                     keybind.MouseButton1Click:Connect(function()
@@ -2722,28 +2747,6 @@ function initLibrary()
                         end
                     end
 
-                    -- Обновляем видимость при изменении флага
-                    if visibilityFlag then
-                        local function updateVisibility()
-                            if updateListFunction and library.keybindList[name] then
-                                local isVisible = library.flags[visibilityFlag] == true
-                                if library.keybindList[name].label then
-                                    library.keybindList[name].label.Visible = isVisible
-                                end
-                                library:UpdateKeybindListSize()
-                            end
-                        end
-                        
-                        -- Создаем функцию для обновления
-                        if not flags.toggles[visibilityFlag] then
-                            flags.toggles[visibilityFlag] = function(bool)
-                                updateVisibility()
-                            end
-                        end
-                        
-                        updateVisibility()
-                    end
-
                     if flag then
                         flags.keybinds[flag] = function(key)
                             keybindTypes:Set(key)
@@ -2754,7 +2757,6 @@ function initLibrary()
                 end
 
                 -- ToggleKeybind
-                -- ToggleKeybind
                 function sectionTypes:ToggleKeybind(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Toggle Keybind"
@@ -2764,7 +2766,7 @@ function initLibrary()
                     local keybindFlag = options.keybindFlag
                     local toggleCallback = options.toggleCallback or function() end
                     local keybindCallback = options.keybindCallback or function() end
-                    local addToList = options.addToList or false
+                    local addToList = options.addToList or true
                     local visibilityFlag = options.visibilityFlag -- флаг для видимости в списке
 
                     local keys = {
@@ -2820,14 +2822,6 @@ function initLibrary()
                     local toggled = false
                     local keyChosen = default
                     local updateListFunction = nil
-                    
-                    -- Функция видимости для списка
-                    local visibilityFunc = nil
-                    if visibilityFlag then
-                        visibilityFunc = function()
-                            return library.flags[visibilityFlag] == true
-                        end
-                    end
 
                     if toggleFlag then
                         library.flags[toggleFlag] = toggled
@@ -3005,7 +2999,7 @@ function initLibrary()
 
                     -- Добавляем в список кейбиндов если нужно
                     if addToList then
-                        updateListFunction = library:AddKeybindToList(name, keyChosen, nil, visibilityFunc)
+                        updateListFunction = library:AddKeybindToList(name, keyChosen, nil, visibilityFlag)
                     end
 
                     local toggleKeybindTypes = utility.table()
@@ -3058,28 +3052,6 @@ function initLibrary()
                         end
                     end
 
-                    -- Обновляем видимость при изменении флага
-                    if visibilityFlag then
-                        local function updateVisibility()
-                            if updateListFunction and library.keybindList[name] then
-                                local isVisible = library.flags[visibilityFlag] == true
-                                if library.keybindList[name].label then
-                                    library.keybindList[name].label.Visible = isVisible
-                                end
-                                library:UpdateKeybindListSize()
-                            end
-                        end
-                        
-                        -- Создаем функцию для обновления
-                        if not flags.toggles[visibilityFlag] then
-                            flags.toggles[visibilityFlag] = function(bool)
-                                updateVisibility()
-                            end
-                        end
-                        
-                        updateVisibility()
-                    end
-
                     if keybindFlag then
                         flags.keybinds[keybindFlag] = function(key)
                             toggleKeybindTypes:Set(key)
@@ -3094,6 +3066,7 @@ function initLibrary()
 
                     return toggleKeybindTypes
                 end
+
 
                 -- COLOR PICKER
                 function sectionTypes:ColorPicker(opts)
