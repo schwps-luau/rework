@@ -15,10 +15,7 @@ function initLibrary()
     local tweenService = game:GetService("TweenService")
     local runService = game:GetService("RunService")
     local coreGui = game:GetService("CoreGui")
-    local players = game:GetService("Players")
-    local localPlayer = players.LocalPlayer
-    local httpService = game:GetService("HttpService")
-    local stats = game:GetService("Stats")
+    local textService = game:GetService("TextService")
 
     local utility = {}
 
@@ -94,6 +91,11 @@ function initLibrary()
         return string.format("#%02X%02X%02X", math.clamp(color.R * 255, 0, 255), math.clamp(color.G * 255, 0, 255), math.clamp(color.B * 255, 0, 255))
     end
 
+    function utility.get_text_bounds(text, font, size)
+        local bounds = textService:GetTextSize(text, size, font, Vector2.new(1920, 1080))
+        return bounds.X, bounds.Y
+    end
+
     function utility.table(tbl)
         local oldtbl = tbl or {}
         local newtbl = {}
@@ -118,59 +120,11 @@ function initLibrary()
         color = Color3.fromRGB(255, 0, 0),
         keybind = Enum.KeyCode.RightShift,
         dragSpeed = 0.25,
-        notifications = {},
-        watermarkModules = {}
+        watermarks = {},
+        keybindList = {}
     }
 
     local coloredGradients = {}
-    local currentTheme = nil
-    local currentThemeTable = nil
-    
-    -- FPS и Ping система (улучшенная)
-    local fpsData = {
-        frameUpdateTable = {},
-        lastIteration = 0,
-        start = 0,
-        currentFps = 0,
-        currentPing = 0
-    }
-    
-    local function updateFpsAndPing()
-        local timeFunction = runService:IsRunning() and time or os.clock
-        fpsData.lastIteration = timeFunction()
-        
-        -- Обновляем таблицу кадров
-        for i = #fpsData.frameUpdateTable, 1, -1 do
-            if fpsData.frameUpdateTable[i] >= fpsData.lastIteration - 1 then
-                fpsData.frameUpdateTable[i + 1] = fpsData.frameUpdateTable[i]
-            else
-                fpsData.frameUpdateTable[i] = nil
-            end
-        end
-        
-        fpsData.frameUpdateTable[1] = fpsData.lastIteration
-        
-        -- Вычисляем FPS
-        local elapsed = timeFunction() - fpsData.start
-        if elapsed >= 1 then
-            fpsData.currentFps = #fpsData.frameUpdateTable
-        else
-            fpsData.currentFps = #fpsData.frameUpdateTable / elapsed
-        end
-        fpsData.currentFps = math.floor(fpsData.currentFps)
-        
-        -- Получаем пинг
-        local success, ping = pcall(function()
-            return stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-        end)
-        if success and ping then
-            fpsData.currentPing = math.floor(ping)
-        end
-    end
-    
-    -- Запускаем Heartbeat для обновления FPS
-    fpsData.start = (runService:IsRunning() and time or os.clock)()
-    runService.Heartbeat:Connect(updateFpsAndPing)
 
     function library:SetColor(color)
         library.color = color
@@ -182,6 +136,9 @@ function initLibrary()
                 }
             end
         end
+        -- Обновляем цвета ватермарка и кейбиндлиста
+        library:UpdateWatermarkColors()
+        library:UpdateKeybindListColors()
     end
 
     function library:GetColor()
@@ -190,249 +147,6 @@ function initLibrary()
 
     function library:SetKey(key)
         library.keybind = key
-    end
-
-    -- СИСТЕМА УВЕДОМЛЕНИЙ
-    local notificationContainer = nil
-    
-    function library:Notify(opts)
-        local options = utility.table(opts)
-        local title = options.title or "Notification"
-        local description = options.description or ""
-        local duration = options.duration or 3
-        local icon = options.icon or "📢"
-        local callback = options.callback or function() end
-        
-        if not notificationContainer then
-            notificationContainer = utility.create("Frame", {
-                Name = "NotificationContainer",
-                ZIndex = 20,
-                Size = UDim2.new(0, 320, 0, 0),
-                Position = UDim2.new(1, -330, 0, 10),
-                BackgroundTransparency = 1,
-                Parent = gui
-            })
-            
-            utility.create("UIListLayout", {
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                Padding = UDim.new(0, 8),
-                Parent = notificationContainer
-            })
-        end
-        
-        local notification = utility.create("Frame", {
-            ZIndex = 21,
-            Size = UDim2.new(1, 0, 0, 0),
-            BackgroundTransparency = 1,
-            BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-            Parent = notificationContainer
-        })
-        
-        local notificationBg = utility.create("Frame", {
-            ZIndex = 22,
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundColor3 = currentThemeTable and currentThemeTable.secondary or Color3.fromRGB(32, 32, 32),
-            BorderSizePixel = 0,
-            Parent = notification
-        })
-        
-        utility.create("UICorner", {
-            CornerRadius = UDim.new(0, 6),
-            Parent = notificationBg
-        })
-        
-        utility.create("UIStroke", {
-            Color = currentThemeTable and currentThemeTable.border or Color3.fromRGB(20, 20, 20),
-            Thickness = 1,
-            Parent = notificationBg
-        })
-        
-        local gradient = utility.create("UIGradient", {
-            Rotation = 90,
-            Color = ColorSequence.new{
-                ColorSequenceKeypoint.new(0, library.color),
-                ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
-            },
-            Parent = notificationBg
-        })
-        
-        table.insert(coloredGradients, gradient)
-        
-        local progressBar = utility.create("Frame", {
-            ZIndex = 23,
-            Size = UDim2.new(1, 0, 0, 2),
-            Position = UDim2.new(0, 0, 1, -2),
-            BackgroundColor3 = library.color,
-            BorderSizePixel = 0,
-            Parent = notificationBg
-        })
-        
-        local iconLabel = utility.create("TextLabel", {
-            ZIndex = 23,
-            Size = UDim2.new(0, 30, 0, 30),
-            Position = UDim2.new(0, 8, 0, 8),
-            BackgroundTransparency = 1,
-            Text = icon,
-            TextSize = 20,
-            TextColor3 = library.color,
-            Font = Enum.Font.Gotham,
-            TextXAlignment = Enum.TextXAlignment.Center,
-            TextYAlignment = Enum.TextYAlignment.Center,
-            Parent = notificationBg
-        })
-        
-        local titleLabel = utility.create("TextLabel", {
-            ZIndex = 23,
-            Size = UDim2.new(1, -48, 0, 18),
-            Position = UDim2.new(0, 46, 0, 8),
-            BackgroundTransparency = 1,
-            Text = title,
-            TextSize = 14,
-            TextColor3 = currentThemeTable and currentThemeTable.text or Color3.fromRGB(255, 255, 255),
-            Font = Enum.Font.GothamSemibold,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            Parent = notificationBg
-        })
-        
-        local descLabel = utility.create("TextLabel", {
-            ZIndex = 23,
-            Size = UDim2.new(1, -48, 0, 16),
-            Position = UDim2.new(0, 46, 0, 28),
-            BackgroundTransparency = 1,
-            Text = description,
-            TextSize = 12,
-            TextColor3 = currentThemeTable and currentThemeTable.textSecondary or Color3.fromRGB(180, 180, 180),
-            Font = Enum.Font.Gotham,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            Parent = notificationBg
-        })
-        
-        local closeButton = utility.create("TextButton", {
-            ZIndex = 23,
-            Size = UDim2.new(0, 20, 0, 20),
-            Position = UDim2.new(1, -24, 0, 8),
-            BackgroundTransparency = 1,
-            Text = "✕",
-            TextSize = 14,
-            TextColor3 = currentThemeTable and currentThemeTable.textSecondary or Color3.fromRGB(180, 180, 180),
-            Font = Enum.Font.Gotham,
-            Parent = notificationBg
-        })
-        
-        closeButton.MouseButton1Click:Connect(function()
-            if callback then callback("closed") end
-            utility.tween(notification, {0.2, Enum.EasingStyle.Quad}, {Size = UDim2.new(1, 0, 0, 0)})
-            task.wait(0.2)
-            notification:Destroy()
-        end)
-        
-        notification.Size = UDim2.new(1, 0, 0, 58)
-        
-        utility.tween(progressBar, {duration, Enum.EasingStyle.Linear}, {Size = UDim2.new(0, 0, 0, 2)})
-        
-        task.spawn(function()
-            task.wait(duration)
-            if notification and notification.Parent then
-                utility.tween(notification, {0.2, Enum.EasingStyle.Quad}, {Size = UDim2.new(1, 0, 0, 0)})
-                task.wait(0.2)
-                notification:Destroy()
-                if callback then callback("auto") end
-            end
-        end)
-        
-        return notification
-    end
-
-    -- РАСШИРЕННЫЙ ВОДЯНОЙ ЗНАК
-    local watermarkFrame = nil
-    local watermarkModules = {
-        fps = false,
-        ping = false,
-        playerName = false,
-        displayName = false,
-        placeName = false,
-        time = false
-    }
-    
-    local function updateWatermark()
-        if not watermarkFrame then return end
-        
-        local lines = {}
-        
-        if watermarkModules.fps then
-            table.insert(lines, "FPS: " .. fpsData.currentFps)
-        end
-        
-        if watermarkModules.ping then
-            local ping = fpsData.currentPing
-            local pingColor = ""
-            if ping < 100 then
-                pingColor = "🟢"
-            elseif ping < 200 then
-                pingColor = "🟡"
-            else
-                pingColor = "🔴"
-            end
-            table.insert(lines, pingColor .. " " .. ping .. "ms")
-        end
-        
-        if watermarkModules.playerName then
-            table.insert(lines, "User: " .. localPlayer.Name)
-        end
-        
-        if watermarkModules.displayName then
-            table.insert(lines, "Display: " .. localPlayer.DisplayName)
-        end
-        
-        if watermarkModules.placeName then
-            local success, placeInfo = pcall(function()
-                return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-            end)
-            if success and placeInfo then
-                table.insert(lines, "Place: " .. placeInfo.Name)
-            else
-                table.insert(lines, "Place: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
-            end
-        end
-        
-        if watermarkModules.time then
-            table.insert(lines, "Time: " .. os.date("%H:%M:%S"))
-        end
-        
-        local text = table.concat(lines, "\n")
-        if watermarkFrame.Content then
-            watermarkFrame.Content.Text = text
-            watermarkFrame.Size = UDim2.new(0, watermarkFrame.Content.TextBounds.X + 24, 0, (#lines * 18) + 16)
-        end
-    end
-    
-    function library:SetWatermarkModule(module, enabled)
-        watermarkModules[module] = enabled
-        updateWatermark()
-    end
-    
-    function library:ToggleWatermarkModule(module)
-        watermarkModules[module] = not watermarkModules[module]
-        updateWatermark()
-        return watermarkModules[module]
-    end
-    
-    function library:GetWatermarkModules()
-        return watermarkModules
-    end
-    
-    function library:UpdateWatermark()
-        updateWatermark()
-    end
-    
-    function library:GetFPS()
-        return fpsData.currentFps
-    end
-    
-    function library:GetPing()
-        return fpsData.currentPing
     end
 
     local gui = utility.create("ScreenGui")
@@ -539,6 +253,232 @@ function initLibrary()
         writefile(gameConfigFolder .. "/" .. name .. ".cfg", "return " .. configstr)
     end
 
+    -- ========== ВАТЕРМАРК ==========
+    local watermarkOuter = utility.create("Frame", {
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.new(0, 100, 0, -25);
+        Size = UDim2.new(0, 213, 0, 20);
+        ZIndex = 200;
+        Visible = false;
+        Parent = gui;
+    })
+
+    local watermarkInner = utility.create("Frame", {
+        BackgroundColor3 = Color3.fromRGB(28, 28, 28);
+        BorderColor3 = library.color;
+        BorderMode = Enum.BorderMode.Inset;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 201;
+        Parent = watermarkOuter;
+    })
+
+    local watermarkInnerFrame = utility.create("Frame", {
+        BackgroundColor3 = Color3.new(1, 1, 1);
+        BorderSizePixel = 0;
+        Position = UDim2.new(0, 1, 0, 1);
+        Size = UDim2.new(1, -2, 1, -2);
+        ZIndex = 202;
+        Parent = watermarkInner;
+    })
+
+    local watermarkGradient = utility.create("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, utility.change_color(Color3.fromRGB(28, 28, 28), -20)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(28, 28, 28)),
+        });
+        Rotation = -90;
+        Parent = watermarkInnerFrame;
+    })
+
+    local watermarkLabel = utility.create("TextLabel", {
+        Position = UDim2.new(0, 5, 0, 0);
+        Size = UDim2.new(1, -4, 1, 0);
+        BackgroundTransparency = 1;
+        TextSize = 14;
+        TextColor3 = Color3.fromRGB(255, 255, 255);
+        TextXAlignment = Enum.TextXAlignment.Left;
+        Font = Enum.Font.Code;
+        ZIndex = 203;
+        Parent = watermarkInnerFrame;
+    })
+
+    library.Watermark = watermarkOuter
+    library.WatermarkText = watermarkLabel
+    utility.drag(watermarkOuter, 0.25)
+
+    function library:UpdateWatermarkColors()
+        if watermarkInner then
+            watermarkInner.BorderColor3 = library.color
+        end
+    end
+
+    function library:SetWatermarkVisibility(bool)
+        watermarkOuter.Visible = bool
+    end
+
+    function library:SetWatermark(text)
+        local x, y = utility.get_text_bounds(text, Enum.Font.Code, 14)
+        watermarkOuter.Size = UDim2.new(0, x + 15, 0, (y * 1.5) + 3)
+        watermarkLabel.Text = text
+        library:SetWatermarkVisibility(true)
+    end
+
+    -- ========== КЕЙБИНД ЛИСТ ==========
+    local keybindOuter = utility.create("Frame", {
+        AnchorPoint = Vector2.new(0, 0.5);
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.new(0, 10, 0.5, 0);
+        Size = UDim2.new(0, 210, 0, 20);
+        Visible = false;
+        ZIndex = 100;
+        Parent = gui;
+    })
+
+    local keybindInner = utility.create("Frame", {
+        BackgroundColor3 = Color3.fromRGB(28, 28, 28);
+        BorderColor3 = Color3.fromRGB(50, 50, 50);
+        BorderMode = Enum.BorderMode.Inset;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 101;
+        Parent = keybindOuter;
+    })
+
+    local keybindColorFrame = utility.create("Frame", {
+        BackgroundColor3 = library.color;
+        BorderSizePixel = 0;
+        Size = UDim2.new(1, 0, 0, 2);
+        ZIndex = 102;
+        Parent = keybindInner;
+    })
+
+    local keybindLabel = utility.create("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 20);
+        Position = UDim2.fromOffset(5, 2);
+        BackgroundTransparency = 1;
+        TextXAlignment = Enum.TextXAlignment.Left;
+        Text = "Keybinds";
+        TextSize = 14;
+        TextColor3 = Color3.fromRGB(255, 255, 255);
+        Font = Enum.Font.Code;
+        ZIndex = 104;
+        Parent = keybindInner;
+    })
+
+    local keybindContainer = utility.create("Frame", {
+        BackgroundTransparency = 1;
+        Size = UDim2.new(1, 0, 1, -20);
+        Position = UDim2.new(0, 0, 0, 20);
+        ZIndex = 1;
+        Parent = keybindInner;
+    })
+
+    local keybindListLayout = utility.create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Vertical;
+        SortOrder = Enum.SortOrder.LayoutOrder;
+        Parent = keybindContainer;
+    })
+
+    local keybindPadding = utility.create("UIPadding", {
+        PaddingLeft = UDim.new(0, 5);
+        Parent = keybindContainer;
+    })
+
+    library.KeybindFrame = keybindOuter
+    library.KeybindContainer = keybindContainer
+    utility.drag(keybindOuter, 0.25)
+
+    function library:UpdateKeybindListColors()
+        if keybindColorFrame then
+            keybindColorFrame.BackgroundColor3 = library.color
+        end
+        if keybindInner then
+            keybindInner.BorderColor3 = utility.change_color(library.color, -100)
+        end
+    end
+
+    function library:SetKeybindListVisibility(bool)
+        keybindOuter.Visible = bool
+    end
+
+    function library:AddKeybindToList(name, key, callback)
+        local keyText = tostring(key):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
+        
+        local label = utility.create("TextLabel", {
+            Size = UDim2.new(1, 0, 0, 18);
+            BackgroundTransparency = 1;
+            Text = string.format("[%s] %s", keyText, name);
+            TextSize = 13;
+            TextColor3 = Color3.fromRGB(200, 200, 200);
+            TextXAlignment = Enum.TextXAlignment.Left;
+            Font = Enum.Font.Code;
+            ZIndex = 110;
+            Parent = keybindContainer;
+        })
+        
+        local updateFunction = function(newKey)
+            local newKeyText = tostring(newKey):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
+            label.Text = string.format("[%s] %s", newKeyText, name)
+            library:UpdateKeybindListSize()
+        end
+        
+        library.keybindList[name] = {
+            label = label,
+            update = updateFunction,
+            callback = callback
+        }
+        
+        library:UpdateKeybindListSize()
+        return updateFunction
+    end
+
+    function library:UpdateKeybindListSize()
+        local ySize = 0
+        local xSize = 0
+        
+        for _, child in ipairs(keybindContainer:GetChildren()) do
+            if child:IsA("TextLabel") and child.Visible then
+                ySize = ySize + 18
+                local boundsX = utility.get_text_bounds(child.Text, Enum.Font.Code, 13)
+                if boundsX > xSize then
+                    xSize = boundsX
+                end
+            end
+        end
+        
+        keybindOuter.Size = UDim2.new(0, math.max(xSize + 20, 210), 0, ySize + 25)
+    end
+
+    function library:RemoveKeybindFromList(name)
+        if library.keybindList[name] and library.keybindList[name].label then
+            library.keybindList[name].label:Destroy()
+            library.keybindList[name] = nil
+            library:UpdateKeybindListSize()
+        end
+    end
+
+    function library:ClearKeybindList()
+        for _, child in ipairs(keybindContainer:GetChildren()) do
+            if child:IsA("TextLabel") then
+                child:Destroy()
+            end
+        end
+        library.keybindList = {}
+        library:UpdateKeybindListSize()
+    end
+
+    -- Функция для обновления кейбинда в списке
+    function library:UpdateKeybindInList(name, newKey)
+        if library.keybindList[name] then
+            local newKeyText = tostring(newKey):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
+            library.keybindList[name].label.Text = string.format("[%s] %s", newKeyText, name)
+            library:UpdateKeybindListSize()
+            if library.keybindList[name].callback then
+                library.keybindList[name].callback(newKey)
+            end
+        end
+    end
+
+    -- ========== ОСНОВНОЕ МЕНЮ ==========
     function library:Load(opts)
         local options = utility.table(opts)
         local name = options.name or "Epic UI Library"
@@ -547,17 +487,6 @@ function initLibrary()
         local color = options.color or Color3.fromRGB(128, 128, 128)
         local dragSpeed = options.dragSpeed or 0
         local theme = options.theme or "dark"
-        
-        -- Настройки водяного знака
-        local watermarkEnabled = options.watermark or true
-        local watermarkModulesOpt = options.watermarkModules or {
-            fps = true,
-            ping = true,
-            playerName = false,
-            displayName = false,
-            placeName = false,
-            time = false
-        }
 
         local themeColors = {
             dark = Color3.fromRGB(128, 128, 128),
@@ -720,8 +649,26 @@ function initLibrary()
         }
 
         local selectedTheme = themes[theme:lower()] or themes.dark
-        currentThemeTable = selectedTheme
         library.color = color
+        
+        -- Обновляем цвета ватермарка и кейбиндлиста
+        if watermarkInner then
+            watermarkInner.BorderColor3 = library.color
+            watermarkInner.BackgroundColor3 = selectedTheme.secondary
+        end
+        if watermarkGradient then
+            watermarkGradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, utility.change_color(selectedTheme.secondary, -20)),
+                ColorSequenceKeypoint.new(1, selectedTheme.secondary),
+            })
+        end
+        if keybindColorFrame then
+            keybindColorFrame.BackgroundColor3 = library.color
+        end
+        if keybindInner then
+            keybindInner.BackgroundColor3 = selectedTheme.secondary
+            keybindInner.BorderColor3 = utility.change_color(library.color, -100)
+        end
 
         -- Создание основного окна
         local topbar = utility.create("Frame", {
@@ -787,104 +734,6 @@ function initLibrary()
             Parent = tabTogglesHolder
         })
 
-        -- СОЗДАНИЕ ВОДЯНОГО ЗНАКА
-        if watermarkEnabled then
-            watermarkFrame = utility.create("Frame", {
-                Name = "Watermark",
-                ZIndex = 15,
-                Size = UDim2.new(0, 0, 0, 0),
-                Position = UDim2.new(1, -10, 0, 10),
-                AnchorPoint = Vector2.new(1, 0),
-                BackgroundTransparency = 0.75,
-                BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-                BorderSizePixel = 0,
-                Parent = gui
-            })
-            
-            utility.create("UICorner", {
-                CornerRadius = UDim.new(0, 6),
-                Parent = watermarkFrame
-            })
-            
-            utility.create("UIStroke", {
-                Color = selectedTheme.border,
-                Thickness = 1,
-                Transparency = 0.5,
-                Parent = watermarkFrame
-            })
-            
-            local watermarkContent = utility.create("TextLabel", {
-                Name = "Content",
-                ZIndex = 16,
-                Size = UDim2.new(1, 0, 1, 0),
-                BackgroundTransparency = 1,
-                TextColor3 = selectedTheme.text,
-                Text = "",
-                TextSize = 11,
-                Font = Enum.Font.Gotham,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                TextYAlignment = Enum.TextYAlignment.Top,
-                Parent = watermarkFrame
-            })
-            
-            utility.create("UIPadding", {
-                PaddingLeft = UDim.new(0, 12),
-                PaddingRight = UDim.new(0, 12),
-                PaddingTop = UDim.new(0, 8),
-                PaddingBottom = UDim.new(0, 8),
-                Parent = watermarkContent
-            })
-            
-            local watermarkDragging = false
-            local watermarkDragStart
-            local watermarkStartPos
-            
-            watermarkFrame.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    watermarkDragging = true
-                    watermarkDragStart = input.Position
-                    watermarkStartPos = watermarkFrame.Position
-                    watermarkFrame.BackgroundTransparency = 0.85
-                end
-            end)
-            
-            watermarkFrame.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    watermarkDragging = false
-                    watermarkFrame.BackgroundTransparency = 0.75
-                end
-            end)
-            
-            inputService.InputChanged:Connect(function(input)
-                if watermarkDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                    local delta = input.Position - watermarkDragStart
-                    local screenSize = workspace.CurrentCamera.ViewportSize
-                    local frameSize = watermarkFrame.AbsoluteSize
-                    
-                    local newX = math.clamp(watermarkStartPos.X.Offset + delta.X, 10, screenSize.X - frameSize.X - 10)
-                    local newY = math.clamp(watermarkStartPos.Y.Offset + delta.Y, 10, screenSize.Y - frameSize.Y - 10)
-                    
-                    watermarkFrame.Position = UDim2.new(0, newX, 0, newY)
-                end
-            end)
-            
-            for module, enabled in pairs(watermarkModulesOpt) do
-                watermarkModules[module] = enabled
-            end
-            
-            updateWatermark()
-            
-            -- Обновление водяного знака каждые 0.5 секунды
-            task.spawn(function()
-                while watermarkFrame and watermarkFrame.Parent do
-                    if watermarkModules.fps or watermarkModules.ping or watermarkModules.time then
-                        updateWatermark()
-                    end
-                    task.wait(0.5)
-                end
-            end)
-        end
-
         local windowTypes = utility.table({count = 0})
 
         function windowTypes:Show()
@@ -897,30 +746,6 @@ function initLibrary()
 
         function windowTypes:SetPosition(x, y)
             topbar.Position = UDim2.new(0, x, 0, y)
-        end
-        
-        function windowTypes:Notify(opts)
-            return library:Notify(opts)
-        end
-        
-        function windowTypes:SetWatermarkModule(module, enabled)
-            library:SetWatermarkModule(module, enabled)
-        end
-        
-        function windowTypes:ToggleWatermarkModule(module)
-            return library:ToggleWatermarkModule(module)
-        end
-        
-        function windowTypes:GetWatermarkModules()
-            return library:GetWatermarkModules()
-        end
-        
-        function windowTypes:GetFPS()
-            return library:GetFPS()
-        end
-        
-        function windowTypes:GetPing()
-            return library:GetPing()
         end
 
         function windowTypes:Tab(name)
@@ -2602,6 +2427,7 @@ function initLibrary()
                     local blacklist = options.blacklist or {}
                     local flag = options.flag
                     local callback = options.callback or function() end
+                    local addToList = options.addToList or false
 
                     if flag then
                         library.flags[flag] = default
@@ -2645,12 +2471,11 @@ function initLibrary()
                         [Enum.KeyCode.Semicolon] = ";";
                         [Enum.KeyCode.Quote] = "'";
                         [Enum.KeyCode.BackSlash] = "\\";
-                        [Enum.KeyCode.Comma] = ";";
+                        [Enum.KeyCode.Comma] = ",";
                         [Enum.KeyCode.Period] = ".";
                         [Enum.KeyCode.Slash] = "/";
                         [Enum.KeyCode.Asterisk] = "*";
                         [Enum.KeyCode.Plus] = "+";
-                        [Enum.KeyCode.Period] = ".";
                         [Enum.KeyCode.Backquote] = "`";
                         [Enum.UserInputType.MouseButton1] = "Mouse1";
                         [Enum.UserInputType.MouseButton2] = "Mouse2";
@@ -2659,6 +2484,7 @@ function initLibrary()
                     }
 
                     local keyChosen = default
+                    local updateListFunction = nil
 
                     local keybind = utility.create("TextButton", {
                         Size = UDim2.new(1, 0, 0, 16),
@@ -2699,6 +2525,11 @@ function initLibrary()
                         Parent = keybind
                     })
 
+                    -- Добавляем в список кейбиндов если нужно
+                    if addToList then
+                        updateListFunction = library:AddKeybindToList(name, keyChosen)
+                    end
+
                     keybind.MouseButton1Click:Connect(function()
                         value.Text = "..."
                         value.TextColor3 = selectedTheme.text
@@ -2713,12 +2544,18 @@ function initLibrary()
                                     if flag then
                                         library.flags[flag] = input.KeyCode
                                     end
+                                    if updateListFunction then
+                                        updateListFunction(input.KeyCode)
+                                    end
                                     binding:Disconnect()
                                 else
                                     keyChosen = nil
                                     value.Text = "NONE"
                                     if flag then
                                         library.flags[flag] = nil
+                                    end
+                                    if updateListFunction then
+                                        updateListFunction(nil)
                                     end
                                     binding:Disconnect()
                                 end
@@ -2728,12 +2565,18 @@ function initLibrary()
                                     if flag then
                                         library.flags[flag] = input.UserInputType
                                     end
+                                    if updateListFunction then
+                                        updateListFunction(input.UserInputType)
+                                    end
                                     binding:Disconnect()
                                 else
                                     keyChosen = nil
                                     value.Text = "NONE"
                                     if flag then
                                         library.flags[flag] = nil
+                                    end
+                                    if updateListFunction then
+                                        updateListFunction(nil)
                                     end
                                     binding:Disconnect()
                                 end
@@ -2783,11 +2626,17 @@ function initLibrary()
                                 if flag then
                                     library.flags[flag] = newKey
                                 end
+                                if updateListFunction then
+                                    updateListFunction(newKey)
+                                end
                             else
                                 keyChosen = nil
                                 value.Text = "NONE"
                                 if flag then
                                     library.flags[flag] = nil
+                                end
+                                if updateListFunction then
+                                    updateListFunction(nil)
                                 end
                             end
                         end
@@ -2812,6 +2661,7 @@ function initLibrary()
                     local keybindFlag = options.keybindFlag
                     local toggleCallback = options.toggleCallback or function() end
                     local keybindCallback = options.keybindCallback or function() end
+                    local addToList = options.addToList or false
 
                     local keys = {
                         [Enum.KeyCode.LeftShift] = "LeftShift";
@@ -2851,12 +2701,11 @@ function initLibrary()
                         [Enum.KeyCode.Semicolon] = ";";
                         [Enum.KeyCode.Quote] = "'";
                         [Enum.KeyCode.BackSlash] = "\\";
-                        [Enum.KeyCode.Comma] = ";";
+                        [Enum.KeyCode.Comma] = ",";
                         [Enum.KeyCode.Period] = ".";
                         [Enum.KeyCode.Slash] = "/";
                         [Enum.KeyCode.Asterisk] = "*";
                         [Enum.KeyCode.Plus] = "+";
-                        [Enum.KeyCode.Period] = ".";
                         [Enum.KeyCode.Backquote] = "`";
                         [Enum.UserInputType.MouseButton1] = "Mouse1";
                         [Enum.UserInputType.MouseButton2] = "Mouse2";
@@ -2866,12 +2715,18 @@ function initLibrary()
 
                     local toggled = false
                     local keyChosen = default
+                    local updateListFunction = nil
 
                     if toggleFlag then
                         library.flags[toggleFlag] = toggled
                     end
                     if keybindFlag then
                         library.flags[keybindFlag] = default
+                    end
+
+                    -- Добавляем в список кейбиндов если нужно
+                    if addToList then
+                        updateListFunction = library:AddKeybindToList(name, keyChosen)
                     end
 
                     local toggleKeybind = utility.create("TextButton", {
@@ -2976,6 +2831,9 @@ function initLibrary()
                                     if keybindFlag then
                                         library.flags[keybindFlag] = input.KeyCode
                                     end
+                                    if updateListFunction then
+                                        updateListFunction(input.KeyCode)
+                                    end
                                     binding:Disconnect()
                                 else
                                     keyChosen = nil
@@ -2984,6 +2842,9 @@ function initLibrary()
                                     value.Position = UDim2.new(1, -value.TextBounds.X, 0, 0)
                                     if keybindFlag then
                                         library.flags[keybindFlag] = nil
+                                    end
+                                    if updateListFunction then
+                                        updateListFunction(nil)
                                     end
                                     binding:Disconnect()
                                 end
@@ -2993,6 +2854,9 @@ function initLibrary()
                                     if keybindFlag then
                                         library.flags[keybindFlag] = input.UserInputType
                                     end
+                                    if updateListFunction then
+                                        updateListFunction(input.UserInputType)
+                                    end
                                     binding:Disconnect()
                                 else
                                     keyChosen = nil
@@ -3001,6 +2865,9 @@ function initLibrary()
                                     value.Position = UDim2.new(1, -value.TextBounds.X, 0, 0)
                                     if keybindFlag then
                                         library.flags[keybindFlag] = nil
+                                    end
+                                    if updateListFunction then
+                                        updateListFunction(nil)
                                     end
                                     binding:Disconnect()
                                 end
@@ -3061,6 +2928,9 @@ function initLibrary()
                                 if keybindFlag then
                                     library.flags[keybindFlag] = newKey
                                 end
+                                if updateListFunction then
+                                    updateListFunction(newKey)
+                                end
                             else
                                 keyChosen = nil
                                 value.Text = "NONE"
@@ -3068,6 +2938,9 @@ function initLibrary()
                                 value.Position = UDim2.new(1, -value.TextBounds.X, 0, 0)
                                 if keybindFlag then
                                     library.flags[keybindFlag] = nil
+                                end
+                                if updateListFunction then
+                                    updateListFunction(nil)
                                 end
                             end
                         end
@@ -3279,7 +3152,7 @@ function initLibrary()
                         colorPickerHolder.Size = UDim2.new(1, 0, 0, open and colorPicker.AbsoluteSize.Y + picker.AbsoluteSize.Y + 3 or 16)
                     end
 
-                    colorPicker.MouseButton1Click:Connect(openPicker)
+                    colorPicker.MouseButton1Click:connect(openPicker)
 
                     local function updateHue(input)
                         local sizeY = 1 - math.clamp((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y, 0, 1)
@@ -3680,7 +3553,7 @@ function initLibrary()
                         toggleColorPickerHolder.Size = UDim2.new(1, 0, 0, open and colorPicker.AbsoluteSize.Y + picker.AbsoluteSize.Y + 3 or 16)
                     end
 
-                    colorPickerIcon.MouseButton1Click:Connect(openPicker)
+                    colorPickerIcon.MouseButton1Click:connect(openPicker)
 
                     local function updateHue(input)
                         local sizeY = 1 - math.clamp((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y, 0, 1)
@@ -3859,5 +3732,6 @@ function initLibrary()
         return windowTypes
     end
 
+    -- Возвращаем библиотеку
     return library
 end
