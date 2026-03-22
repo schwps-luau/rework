@@ -119,14 +119,58 @@ function initLibrary()
         keybind = Enum.KeyCode.RightShift,
         dragSpeed = 0.25,
         notifications = {},
-        watermarkModules = {},
-        notificationQueue = {},
-        activeNotifications = {}
+        watermarkModules = {}
     }
 
     local coloredGradients = {}
     local currentTheme = nil
     local currentThemeTable = nil
+    
+    -- FPS и Ping система (улучшенная)
+    local fpsData = {
+        frameUpdateTable = {},
+        lastIteration = 0,
+        start = 0,
+        currentFps = 0,
+        currentPing = 0
+    }
+    
+    local function updateFpsAndPing()
+        local timeFunction = runService:IsRunning() and time or os.clock
+        fpsData.lastIteration = timeFunction()
+        
+        -- Обновляем таблицу кадров
+        for i = #fpsData.frameUpdateTable, 1, -1 do
+            if fpsData.frameUpdateTable[i] >= fpsData.lastIteration - 1 then
+                fpsData.frameUpdateTable[i + 1] = fpsData.frameUpdateTable[i]
+            else
+                fpsData.frameUpdateTable[i] = nil
+            end
+        end
+        
+        fpsData.frameUpdateTable[1] = fpsData.lastIteration
+        
+        -- Вычисляем FPS
+        local elapsed = timeFunction() - fpsData.start
+        if elapsed >= 1 then
+            fpsData.currentFps = #fpsData.frameUpdateTable
+        else
+            fpsData.currentFps = #fpsData.frameUpdateTable / elapsed
+        end
+        fpsData.currentFps = math.floor(fpsData.currentFps)
+        
+        -- Получаем пинг
+        local success, ping = pcall(function()
+            return stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+        end)
+        if success and ping then
+            fpsData.currentPing = math.floor(ping)
+        end
+    end
+    
+    -- Запускаем Heartbeat для обновления FPS
+    fpsData.start = (runService:IsRunning() and time or os.clock)()
+    runService.Heartbeat:Connect(updateFpsAndPing)
 
     function library:SetColor(color)
         library.color = color
@@ -318,15 +362,20 @@ function initLibrary()
         local lines = {}
         
         if watermarkModules.fps then
-            local stats = game:GetService("Stats")
-            local fps = math.floor(1 / stats.WorkingAverage.FrameRate:GetValue())
-            table.insert(lines, "FPS: " .. fps)
+            table.insert(lines, "FPS: " .. fpsData.currentFps)
         end
         
         if watermarkModules.ping then
-            local ping = localPlayer:GetNetworkPing()
-            local pingColor = ping < 100 and "🟢" or (ping < 200 and "🟡" or "🔴")
-            table.insert(lines, pingColor .. " " .. math.floor(ping * 1000) .. "ms")
+            local ping = fpsData.currentPing
+            local pingColor = ""
+            if ping < 100 then
+                pingColor = "🟢"
+            elseif ping < 200 then
+                pingColor = "🟡"
+            else
+                pingColor = "🔴"
+            end
+            table.insert(lines, pingColor .. " " .. ping .. "ms")
         end
         
         if watermarkModules.playerName then
@@ -338,7 +387,14 @@ function initLibrary()
         end
         
         if watermarkModules.placeName then
-            table.insert(lines, "Place: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
+            local success, placeInfo = pcall(function()
+                return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+            end)
+            if success and placeInfo then
+                table.insert(lines, "Place: " .. placeInfo.Name)
+            else
+                table.insert(lines, "Place: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name)
+            end
         end
         
         if watermarkModules.time then
@@ -369,6 +425,14 @@ function initLibrary()
     
     function library:UpdateWatermark()
         updateWatermark()
+    end
+    
+    function library:GetFPS()
+        return fpsData.currentFps
+    end
+    
+    function library:GetPing()
+        return fpsData.currentPing
     end
 
     local gui = utility.create("ScreenGui")
@@ -810,10 +874,10 @@ function initLibrary()
             
             updateWatermark()
             
-            -- Обновление FPS и времени
+            -- Обновление водяного знака каждые 0.5 секунды
             task.spawn(function()
                 while watermarkFrame and watermarkFrame.Parent do
-                    if watermarkModules.fps or watermarkModules.time then
+                    if watermarkModules.fps or watermarkModules.ping or watermarkModules.time then
                         updateWatermark()
                     end
                     task.wait(0.5)
@@ -849,6 +913,14 @@ function initLibrary()
         
         function windowTypes:GetWatermarkModules()
             return library:GetWatermarkModules()
+        end
+        
+        function windowTypes:GetFPS()
+            return library:GetFPS()
+        end
+        
+        function windowTypes:GetPing()
+            return library:GetPing()
         end
 
         function windowTypes:Tab(name)
