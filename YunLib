@@ -138,7 +138,9 @@ function initLibrary()
         end
         -- Обновляем цвета ватермарка и кейбиндлиста
         library:UpdateWatermarkColors()
-        library:UpdateKeybindListColors()
+        if library.UpdateKeybindListColors then
+            library.UpdateKeybindListColors()
+        end
     end
 
     function library:GetColor()
@@ -408,12 +410,20 @@ function initLibrary()
             BackgroundTransparency = 1;
             Text = string.format("[%s] %s", keyText, name);
             TextSize = 13;
-            TextColor3 = Color3.fromRGB(200, 200, 200);
+            TextColor3 = selectedTheme and selectedTheme.keybindText or Color3.fromRGB(200, 200, 200);
             TextXAlignment = Enum.TextXAlignment.Left;
             Font = Enum.Font.Code;
             ZIndex = 110;
             Parent = keybindContainer;
         })
+        
+        -- Обновляем цвет текста при смене темы
+        local function updateTextColor()
+            if selectedTheme then
+                label.TextColor3 = selectedTheme.keybindText
+            end
+        end
+        library.UpdateKeybindListColors = updateTextColor
         
         local updateFunction = function(newKey)
             local newKeyText = tostring(newKey):gsub("Enum.KeyCode.", ""):gsub("Enum.UserInputType.", "")
@@ -424,7 +434,8 @@ function initLibrary()
         library.keybindList[name] = {
             label = label,
             update = updateFunction,
-            callback = callback
+            callback = callback,
+            updateColor = updateTextColor
         }
         
         library:UpdateKeybindListSize()
@@ -518,7 +529,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(32, 32, 32),
                 gradient2 = Color3.fromRGB(17, 17, 17),
                 dropdown = Color3.fromRGB(33, 33, 33),
-                picker = Color3.fromRGB(20, 20, 20)
+                picker = Color3.fromRGB(20, 20, 20),
+                watermarkText = Color3.fromRGB(255, 255, 255),
+                keybindText = Color3.fromRGB(255, 255, 255),
+                keybindTitle = Color3.fromRGB(255, 255, 255)
             },
             light = {
                 background = Color3.fromRGB(240, 240, 240),
@@ -532,7 +546,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(255, 255, 255),
                 gradient2 = Color3.fromRGB(220, 220, 220),
                 dropdown = Color3.fromRGB(245, 245, 245),
-                picker = Color3.fromRGB(255, 255, 255)
+                picker = Color3.fromRGB(255, 255, 255),
+                watermarkText = Color3.fromRGB(0, 0, 0),
+                keybindText = Color3.fromRGB(0, 0, 0),
+                keybindTitle = Color3.fromRGB(0, 0, 0)
             },
             blue = {
                 background = Color3.fromRGB(10, 20, 40),
@@ -546,7 +563,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(25, 45, 80),
                 gradient2 = Color3.fromRGB(10, 25, 50),
                 dropdown = Color3.fromRGB(30, 45, 75),
-                picker = Color3.fromRGB(20, 35, 65)
+                picker = Color3.fromRGB(20, 35, 65),
+                watermarkText = Color3.fromRGB(255, 255, 255),
+                keybindText = Color3.fromRGB(255, 255, 255),
+                keybindTitle = Color3.fromRGB(255, 255, 255)
             },
             ["light blue"] = {
                 background = Color3.fromRGB(200, 220, 240),
@@ -560,7 +580,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(255, 255, 255),
                 gradient2 = Color3.fromRGB(200, 220, 240),
                 dropdown = Color3.fromRGB(210, 225, 245),
-                picker = Color3.fromRGB(220, 235, 250)
+                picker = Color3.fromRGB(220, 235, 250),
+                watermarkText = Color3.fromRGB(0, 20, 40),
+                keybindText = Color3.fromRGB(0, 20, 40),
+                keybindTitle = Color3.fromRGB(0, 20, 40)
             },
             red = {
                 background = Color3.fromRGB(40, 10, 10),
@@ -574,7 +597,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(80, 25, 25),
                 gradient2 = Color3.fromRGB(50, 10, 10),
                 dropdown = Color3.fromRGB(70, 25, 25),
-                picker = Color3.fromRGB(60, 20, 20)
+                picker = Color3.fromRGB(60, 20, 20),
+                watermarkText = Color3.fromRGB(255, 255, 255),
+                keybindText = Color3.fromRGB(255, 255, 255),
+                keybindTitle = Color3.fromRGB(255, 255, 255)
             },
             ["light red"] = {
                 background = Color3.fromRGB(250, 220, 220),
@@ -588,7 +614,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(255, 255, 255),
                 gradient2 = Color3.fromRGB(250, 220, 220),
                 dropdown = Color3.fromRGB(245, 225, 225),
-                picker = Color3.fromRGB(255, 235, 235)
+                picker = Color3.fromRGB(255, 235, 235),
+                watermarkText = Color3.fromRGB(80, 0, 0),
+                keybindText = Color3.fromRGB(80, 0, 0),
+                keybindTitle = Color3.fromRGB(80, 0, 0)
             },
             purple = {
                 background = Color3.fromRGB(30, 10, 40),
@@ -602,7 +631,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(55, 25, 80),
                 gradient2 = Color3.fromRGB(30, 10, 50),
                 dropdown = Color3.fromRGB(50, 25, 70),
-                picker = Color3.fromRGB(40, 20, 60)
+                picker = Color3.fromRGB(40, 20, 60),
+                watermarkText = Color3.fromRGB(255, 255, 255),
+                keybindText = Color3.fromRGB(255, 255, 255),
+                keybindTitle = Color3.fromRGB(255, 255, 255)
             },
             ["light purple"] = {
                 background = Color3.fromRGB(230, 210, 250),
@@ -616,7 +648,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(255, 255, 255),
                 gradient2 = Color3.fromRGB(230, 210, 245),
                 dropdown = Color3.fromRGB(235, 215, 250),
-                picker = Color3.fromRGB(245, 225, 255)
+                picker = Color3.fromRGB(245, 225, 255),
+                watermarkText = Color3.fromRGB(40, 10, 60),
+                keybindText = Color3.fromRGB(40, 10, 60),
+                keybindTitle = Color3.fromRGB(40, 10, 60)
             },
             green = {
                 background = Color3.fromRGB(10, 30, 10),
@@ -630,7 +665,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(25, 60, 25),
                 gradient2 = Color3.fromRGB(10, 40, 10),
                 dropdown = Color3.fromRGB(25, 55, 25),
-                picker = Color3.fromRGB(20, 45, 20)
+                picker = Color3.fromRGB(20, 45, 20),
+                watermarkText = Color3.fromRGB(255, 255, 255),
+                keybindText = Color3.fromRGB(255, 255, 255),
+                keybindTitle = Color3.fromRGB(255, 255, 255)
             },
             ["light green"] = {
                 background = Color3.fromRGB(210, 240, 210),
@@ -644,7 +682,10 @@ function initLibrary()
                 gradient1 = Color3.fromRGB(255, 255, 255),
                 gradient2 = Color3.fromRGB(210, 240, 210),
                 dropdown = Color3.fromRGB(215, 240, 215),
-                picker = Color3.fromRGB(225, 250, 225)
+                picker = Color3.fromRGB(225, 250, 225),
+                watermarkText = Color3.fromRGB(0, 40, 0),
+                keybindText = Color3.fromRGB(0, 40, 0),
+                keybindTitle = Color3.fromRGB(0, 40, 0)
             }
         }
 
@@ -662,12 +703,19 @@ function initLibrary()
                 ColorSequenceKeypoint.new(1, selectedTheme.secondary),
             })
         end
+        if watermarkLabel then
+            watermarkLabel.TextColor3 = selectedTheme.watermarkText
+        end
+        
         if keybindColorFrame then
             keybindColorFrame.BackgroundColor3 = library.color
         end
         if keybindInner then
             keybindInner.BackgroundColor3 = selectedTheme.secondary
             keybindInner.BorderColor3 = utility.change_color(library.color, -100)
+        end
+        if keybindLabel then
+            keybindLabel.TextColor3 = selectedTheme.keybindTitle
         end
 
         -- Создание основного окна
