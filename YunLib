@@ -121,7 +121,8 @@ function initLibrary()
         keybind = Enum.KeyCode.RightShift,
         dragSpeed = 0.25,
         watermarks = {},
-        keybindList = {}
+        keybindList = {},
+        selectedTheme = nil
     }
 
     local coloredGradients = {}
@@ -430,6 +431,12 @@ function initLibrary()
         if keybindInner then
             keybindInner.BorderColor3 = utility.change_color(library.color, -100)
         end
+        for name, data in pairs(library.keybindList) do
+            if data.updateColor then
+                data.updateColor()
+            end
+        end
+        library:RefreshAllKeybindsVisibility()
     end
 
     function library:SetKeybindListVisibility(bool)
@@ -452,7 +459,7 @@ function initLibrary()
             BackgroundTransparency = 1;
             Text = string.format("[%s] %s", keyText, name);
             TextSize = 13;
-            TextColor3 = selectedTheme and selectedTheme.keybindText or Color3.fromRGB(200, 200, 200);
+            TextColor3 = (library.selectedTheme and library.selectedTheme.keybindText) or Color3.fromRGB(200, 200, 200);
             TextXAlignment = Enum.TextXAlignment.Left;
             Font = Enum.Font.Code;
             ZIndex = 110;
@@ -467,8 +474,8 @@ function initLibrary()
         end
         
         local function updateTextColor()
-            if selectedTheme then
-                label.TextColor3 = selectedTheme.keybindText
+            if library.selectedTheme then
+                label.TextColor3 = library.selectedTheme.keybindText
             end
         end
         
@@ -748,6 +755,7 @@ function initLibrary()
         }
 
         local selectedTheme = themes[theme:lower()] or themes.dark
+        library.selectedTheme = selectedTheme
         library.color = color
         
         if watermarkInner then
@@ -1466,6 +1474,8 @@ function initLibrary()
                         end
 
                         callback(toggled)
+                        
+                        -- Обновляем видимость кейбиндов в списке
                         library:RefreshAllKeybindsVisibility()
                     end
 
