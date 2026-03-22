@@ -2427,7 +2427,7 @@ function initLibrary()
                     local blacklist = options.blacklist or {}
                     local flag = options.flag
                     local callback = options.callback or function() end
-                    local addToList = options.addToList or false
+                    local addToList = options.addToList or true
 
                     if flag then
                         library.flags[flag] = default
