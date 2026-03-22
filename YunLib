@@ -323,7 +323,7 @@ function initLibrary()
 
     function library:SetWatermark(text)
         local x, y = utility.get_text_bounds(text, Enum.Font.Code, 14)
-        watermarkOuter.Size = UDim2.new(1, x + 15, 1, (y * 1.5) + 3)
+        watermarkOuter.Size = UDim2.new(1, -(x + 15), 1, (y * 1.5) + 3)
         watermarkLabel.Text = text
         library:SetWatermarkVisibility(true)
     end
