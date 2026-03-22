@@ -341,7 +341,7 @@ function initLibrary()
     local keybindOuter = utility.create("Frame", {
         AnchorPoint = Vector2.new(0, 0.5);
         BorderColor3 = Color3.new(0, 0, 0);
-        Position = UDim2.new(1, -210, 0, 30);
+        Position = UDim2.new(1, -210, 0, 60);
         Size = UDim2.new(0, 210, 0, 20);
         Visible = false;
         ZIndex = 100;
