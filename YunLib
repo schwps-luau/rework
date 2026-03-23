@@ -16,6 +16,8 @@ function initLibrary()
     local runService = game:GetService("RunService")
     local coreGui = game:GetService("CoreGui")
     local textService = game:GetService("TextService")
+    local players = game:GetService("Players")
+    local stats = game:GetService("Stats")
 
     local utility = {}
 
@@ -317,16 +319,157 @@ function initLibrary()
         end
     end
 
-    function library:SetWatermarkVisibility(bool)
-        watermarkOuter.Visible = bool
+    -- ========== НАСТРАИВАЕМЫЙ ВАТЕРМАРК ==========
+    local watermarkModules = {
+        menuName = { name = "Menu Name", enabled = true, value = nil },
+        gameName = { name = "Game Name", enabled = true, value = nil },
+        ping = { name = "Ping", enabled = true, value = nil },
+        fps = { name = "FPS", enabled = true, value = nil },
+        displayName = { name = "Display Name", enabled = true, value = nil }
+    }
+
+    local watermarkSettings = {
+        enabled = true
+    }
+
+    local watermarkUpdateConnection = nil
+    local currentMenuName = "Epic UI Library"
+    
+    -- Функция для получения DisplayName игрока
+    local function getDisplayName()
+        local localPlayer = players.LocalPlayer
+        if localPlayer and localPlayer.DisplayName then
+            return localPlayer.DisplayName
+        end
+        return "Unknown"
     end
 
-    function library:SetWatermark(text)
-        local x, y = utility.get_text_bounds(text, Enum.Font.GothamSemibold, 14)
-        watermarkOuter.Size = UDim2.new(0, x + 15, 0, 20)
-        watermarkLabel.Text = text
-        library:SetWatermarkVisibility(true)
+    -- Функция для получения пинга
+    local function getPing()
+        local network = stats.Network
+        if network and network.ServerStatsItem and network.ServerStatsItem["Data Ping"] then
+            return math.floor(network.ServerStatsItem["Data Ping"]:GetValue())
+        end
+        return 0
     end
+
+    -- Функция для получения FPS
+    local fpsValues = {}
+    local function getFPS()
+        local fps = math.floor(1 / runService.RenderStepped:Wait())
+        table.insert(fpsValues, fps)
+        if #fpsValues > 10 then table.remove(fpsValues, 1) end
+        local sum = 0
+        for _, v in ipairs(fpsValues) do sum = sum + v end
+        return math.floor(sum / #fpsValues)
+    end
+
+    -- Функция для получения названия игры
+    local function getGameName()
+        local marketplaceService = game:GetService("MarketplaceService")
+        local success, result = pcall(function()
+            return marketplaceService:GetProductInfo(game.PlaceId)
+        end)
+        if success and result and result.Name then
+            return result.Name
+        end
+        return game.Name
+    end
+
+    -- Обновление значений модулей
+    local function updateModuleValues()
+        watermarkModules.menuName.value = currentMenuName
+        watermarkModules.gameName.value = getGameName()
+        watermarkModules.ping.value = getPing()
+        watermarkModules.fps.value = getFPS()
+        watermarkModules.displayName.value = getDisplayName()
+    end
+
+    -- Формирование текста водяного знака
+    local function buildWatermarkText()
+        if not watermarkSettings.enabled then return "" end
+        
+        updateModuleValues()
+        
+        local parts = {}
+        
+        -- Собираем включенные модули
+        if watermarkModules.menuName.enabled then
+            table.insert(parts, watermarkModules.menuName.value)
+        end
+        if watermarkModules.gameName.enabled then
+            table.insert(parts, watermarkModules.gameName.value)
+        end
+        if watermarkModules.ping.enabled then
+            table.insert(parts, watermarkModules.ping.value .. "ms")
+        end
+        if watermarkModules.fps.enabled then
+            table.insert(parts, watermarkModules.fps.value .. "fps")
+        end
+        if watermarkModules.displayName.enabled then
+            table.insert(parts, watermarkModules.displayName.value)
+        end
+        
+        return table.concat(parts, ", ")
+    end
+
+    -- Обновление водяного знака
+    local function updateWatermark()
+        if not watermarkSettings.enabled then
+            if watermarkOuter then
+                watermarkOuter.Visible = false
+            end
+            return
+        end
+        
+        local text = buildWatermarkText()
+        if text ~= "" and watermarkLabel then
+            local x, y = utility.get_text_bounds(text, Enum.Font.GothamSemibold, 14)
+            if watermarkOuter then
+                watermarkOuter.Size = UDim2.new(0, x + 15, 0, 20)
+                watermarkOuter.Visible = true
+            end
+            watermarkLabel.Text = text
+        elseif watermarkOuter then
+            watermarkOuter.Visible = false
+        end
+    end
+
+    -- Запуск цикла обновления
+    local function startWatermarkUpdater()
+        if watermarkUpdateConnection then
+            watermarkUpdateConnection:Disconnect()
+        end
+        watermarkUpdateConnection = runService.RenderStepped:Connect(function()
+            updateWatermark()
+        end)
+    end
+
+    -- Функции управления водяным знаком
+    function library:SetWatermarkMenuName(name)
+        currentMenuName = name
+        updateWatermark()
+    end
+
+    function library:SetWatermarkModuleEnabled(moduleName, enabled)
+        if watermarkModules[moduleName] then
+            watermarkModules[moduleName].enabled = enabled
+            updateWatermark()
+        end
+    end
+
+    function library:SetWatermarkVisibility(bool)
+        watermarkSettings.enabled = bool
+        if bool then
+            updateWatermark()
+        elseif watermarkOuter then
+            watermarkOuter.Visible = false
+        end
+    end
+
+    -- Запускаем обновление
+    startWatermarkUpdater()
+    updateModuleValues()
 
     -- ========== ОСНОВНОЕ МЕНЮ ==========
     function library:Load(opts)
@@ -525,6 +668,10 @@ function initLibrary()
         if watermarkLabel then
             watermarkLabel.TextColor3 = selectedTheme.watermarkText
         end
+
+        -- Сохраняем название меню для водяного знака
+        currentMenuName = name
+        library:SetWatermarkMenuName(name)
 
         -- Создание основного окна
         local topbar = utility.create("Frame", {
