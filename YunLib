@@ -539,7 +539,7 @@ function initLibrary()
         return notificationTypes
     end
 
-    function library:ToggleDropdown(opts)
+    function sectionTypes:ToggleDropdown(opts)
         local options = utility.table(opts)
         local name = options.name or "Toggle Dropdown"
         local content = options.content or {}
@@ -680,6 +680,9 @@ function initLibrary()
                 totalHeight = 36 + contentFrame.AbsoluteSize.Y + 3
             end
             toggleDropdownHolder.Size = UDim2.new(1, 0, 0, totalHeight)
+            if sectionContentList then
+                sectionContentList:GetPropertyChangedSignal("AbsoluteContentSize"):Wait()
+            end
         end)
 
         local function toggleToggle()
@@ -687,7 +690,12 @@ function initLibrary()
             if toggled then
                 table.insert(coloredGradients, iconGradient)
             else
-                table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
+                for i, v in ipairs(coloredGradients) do
+                    if v == iconGradient then
+                        table.remove(coloredGradients, i)
+                        break
+                    end
+                end
             end
             local textColor = toggled and selectedTheme.text or selectedTheme.textSecondary
             local gradientColor
@@ -725,12 +733,17 @@ function initLibrary()
         local function selectObj(obj, padding, bool)
             for i, v in next, contentHolder:GetChildren() do
                 if v:IsA("TextButton") then
-                    v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 6)
+                    local pad = v:FindFirstChildOfClass("UIPadding")
+                    if pad then
+                        pad.PaddingLeft = UDim.new(0, 6)
+                    end
                     v.Font = Enum.Font.Gotham
                 end
             end
             obj.Font = bool and Enum.Font.GothamSemibold or Enum.Font.Gotham
-            padding.PaddingLeft = bool and UDim.new(0, 10) or UDim.new(0, 6)
+            if padding then
+                padding.PaddingLeft = bool and UDim.new(0, 10) or UDim.new(0, 6)
+            end
             value.TextColor3 = bool and selectedTheme.text or selectedTheme.textSecondary
         end
 
@@ -798,12 +811,19 @@ function initLibrary()
                     value.Text = opt
                     value.TextColor3 = selectedTheme.text
                     for i, v in next, contentHolder:GetChildren() do
-                        if v:IsA("TextButton") and v.Name == opt then
-                            v.Font = Enum.Font.GothamSemibold
-                            v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 10)
-                        elseif v:IsA("TextButton") then
-                            v.Font = Enum.Font.Gotham
-                            v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 6)
+                        if v:IsA("TextButton") then
+                            local pad = v:FindFirstChildOfClass("UIPadding")
+                            if v.Name == opt then
+                                v.Font = Enum.Font.GothamSemibold
+                                if pad then
+                                    pad.PaddingLeft = UDim.new(0, 10)
+                                end
+                            else
+                                v.Font = Enum.Font.Gotham
+                                if pad then
+                                    pad.PaddingLeft = UDim.new(0, 6)
+                                end
+                            end
                         end
                     end
                     if dropdownFlag then
@@ -817,7 +837,10 @@ function initLibrary()
                     for i, v in next, contentHolder:GetChildren() do
                         if v:IsA("TextButton") then
                             v.Font = Enum.Font.Gotham
-                            v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 6)
+                            local pad = v:FindFirstChildOfClass("UIPadding")
+                            if pad then
+                                pad.PaddingLeft = UDim.new(0, 6)
+                            end
                         end
                     end
                     if dropdownFlag then
@@ -875,7 +898,12 @@ function initLibrary()
                     if contentHolder:FindFirstChild(opt) then
                         contentHolder:FindFirstChild(opt):Destroy()
                     end
-                    table.remove(content, table.find(content, opt))
+                    for i, v in ipairs(content) do
+                        if v == opt then
+                            table.remove(content, i)
+                            break
+                        end
+                    end
                 end
             end,
             Refresh = function(tbl)
