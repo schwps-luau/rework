@@ -337,7 +337,7 @@ function initLibrary()
         Name = "NotificationContainer",
         BackgroundTransparency = 1,
         Position = UDim2.new(1, -10, 0, 10),
-        Size = UDim2.new(0, 300, 0, 0),
+        Size = UDim2.new(0, 320, 0, 0),
         AnchorPoint = Vector2.new(1, 0),
         Parent = gui
     })
@@ -351,29 +351,36 @@ function initLibrary()
     })
 
     notificationList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        notificationContainer.Size = UDim2.new(0, 300, 0, notificationList.AbsoluteContentSize.Y)
+        notificationContainer.Size = UDim2.new(0, 320, 0, notificationList.AbsoluteContentSize.Y)
     end)
 
     local activeNotifications = {}
 
     function library:UpdateNotificationColors()
         for _, notification in ipairs(activeNotifications) do
-            if notification and notification.border then
-                notification.border.BorderColor3 = library.color
-            end
-            if notification and notification.gradient and notification.toggled then
-                notification.gradient.Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, library.color),
-                    ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
-                }
+            if notification and notification.frame then
+                notification.frame.BackgroundColor3 = library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(32, 32, 32)
+                notification.frame.BorderColor3 = library.color
+                if notification.gradient then
+                    notification.gradient.Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, utility.change_color(library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(32, 32, 32), -20)),
+                        ColorSequenceKeypoint.new(1, library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(32, 32, 32)),
+                    })
+                end
+                if notification.bar then
+                    notification.bar.BackgroundColor3 = library.color
+                end
+                if notification.title then
+                    notification.title.TextColor3 = library.selectedTheme and library.selectedTheme.text or Color3.fromRGB(255, 255, 255)
+                end
             end
         end
     end
 
     function library:Notify(opts)
         local options = utility.table(opts)
-        local title = options.title or "Notification"
-        local description = options.description or ""
+        local mode = options.mode or "default"
+        local text = options.text or ""
         local duration = options.duration or 5
         local callback = options.callback or function() end
 
@@ -385,7 +392,7 @@ function initLibrary()
 
         local notificationHolder = utility.create("Frame", {
             BackgroundTransparency = 1,
-            Size = UDim2.new(0, 300, 0, 0),
+            Size = UDim2.new(0, 320, 0, 0),
             ClipsDescendants = true,
             Parent = notificationContainer
         })
@@ -418,12 +425,12 @@ function initLibrary()
         })
 
         local titleLabel = utility.create("TextLabel", {
-            Position = UDim2.new(0, 8, 0, 6),
-            Size = UDim2.new(1, -16, 0, 18),
+            Position = UDim2.new(0, 12, 0, 10),
+            Size = UDim2.new(1, -24, 0, 18),
             BackgroundTransparency = 1,
             TextSize = 14,
             TextColor3 = theme.text,
-            Text = title,
+            Text = mode:upper(),
             TextXAlignment = Enum.TextXAlignment.Left,
             Font = Enum.Font.GothamSemibold,
             ZIndex = 203,
@@ -431,12 +438,12 @@ function initLibrary()
         })
 
         local descLabel = utility.create("TextLabel", {
-            Position = UDim2.new(0, 8, 0, 28),
-            Size = UDim2.new(1, -16, 0, 0),
+            Position = UDim2.new(0, 12, 0, 32),
+            Size = UDim2.new(1, -24, 0, 0),
             BackgroundTransparency = 1,
             TextSize = 12,
             TextColor3 = theme.textSecondary,
-            Text = description,
+            Text = text,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextYAlignment = Enum.TextYAlignment.Top,
             TextWrapped = true,
@@ -445,8 +452,25 @@ function initLibrary()
             Parent = notificationInner
         })
 
+        local bar = utility.create("Frame", {
+            Position = UDim2.new(0, 0, 1, -2),
+            Size = UDim2.new(1, 0, 0, 2),
+            BackgroundColor3 = library.color,
+            BorderSizePixel = 0,
+            Parent = notificationInner
+        })
+
+        local filler = utility.create("Frame", {
+            Position = UDim2.new(0, 0, 1, -2),
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            BackgroundTransparency = 0.5,
+            BorderSizePixel = 0,
+            Parent = bar
+        })
+
         local closeButton = utility.create("TextButton", {
-            Position = UDim2.new(1, -22, 0, 4),
+            Position = UDim2.new(1, -26, 0, 8),
             Size = UDim2.new(0, 18, 0, 18),
             BackgroundTransparency = 1,
             Text = "✕",
@@ -458,12 +482,12 @@ function initLibrary()
         })
 
         local function updateHeight()
-            local descBounds = textService:GetTextSize(description, 12, Enum.Font.Gotham, Vector2.new(284, 1000))
-            local descHeight = math.max(descBounds.Y, 14)
-            local totalHeight = 8 + 18 + 4 + descHeight + 8
+            local descBounds = textService:GetTextSize(text, 12, Enum.Font.Gotham, Vector2.new(296, 1000))
+            local descHeight = math.max(descBounds.Y, 18)
+            local totalHeight = 10 + 18 + 8 + descHeight + 12
             notification.Size = UDim2.new(1, 0, 0, totalHeight)
-            descLabel.Size = UDim2.new(1, -16, 0, descHeight)
-            notificationHolder.Size = UDim2.new(0, 300, 0, totalHeight)
+            descLabel.Size = UDim2.new(1, -24, 0, descHeight)
+            notificationHolder.Size = UDim2.new(0, 320, 0, totalHeight)
         end
 
         updateHeight()
@@ -471,11 +495,10 @@ function initLibrary()
         local notificationData = {
             holder = notificationHolder,
             frame = notification,
-            border = notification,
             gradient = notificationGradient,
-            toggled = true,
+            bar = bar,
             title = titleLabel,
-            desc = descLabel
+            toggled = true
         }
 
         table.insert(activeNotifications, notificationData)
@@ -489,7 +512,7 @@ function initLibrary()
             end
             
             local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-            local endPosition = UDim2.new(1, 300, 0, 0)
+            local endPosition = UDim2.new(1, 320, 0, 0)
             local endSize = UDim2.new(0, 0, 0, 0)
             
             local sizeTween = tweenService:Create(notificationHolder, tweenInfo, {Size = endSize})
@@ -508,17 +531,22 @@ function initLibrary()
             removeNotification()
         end)
 
-        notificationHolder.Position = UDim2.new(1, 300, 0, 0)
+        notificationHolder.Position = UDim2.new(1, 320, 0, 0)
         notificationHolder.Size = UDim2.new(0, 0, 0, 0)
         
         local appearTween = tweenService:Create(notificationHolder, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Position = UDim2.new(1, -300, 0, 0),
-            Size = UDim2.new(0, 300, 0, notificationHolder.Size.Y.Offset)
+            Position = UDim2.new(1, -320, 0, 0),
+            Size = UDim2.new(0, 320, 0, notificationHolder.Size.Y.Offset)
         })
         
         appearTween:Play()
 
+        local fadeTween = tweenService:Create(filler, TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 0, 1, 0)
+        })
+        
         if duration > 0 then
+            fadeTween:Play()
             task.wait(duration)
             if notificationHolder and notificationHolder.Parent then
                 removeNotification()
@@ -530,7 +558,7 @@ function initLibrary()
                 titleLabel.Text = text
             end,
             SetDescription = function(text)
-                description = text
+                text = text
                 updateHeight()
                 descLabel.Text = text
             end,
@@ -2121,7 +2149,7 @@ function initLibrary()
 
                     contentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                         contentFrame.Size = UDim2.new(1, 0, 0, contentList.AbsoluteContentSize.Y + 4)
-                    end)
+                    })
 
                     local function openDropdown()
                         opened = not opened
