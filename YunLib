@@ -138,6 +138,7 @@ function initLibrary()
             end
         end
         library:UpdateWatermarkColors()
+        library:UpdateNotificationColors()
     end
 
     function library:GetColor()
@@ -158,7 +159,7 @@ function initLibrary()
         if input.KeyCode == library.keybind then
             library.toggled = not library.toggled
             for _, child in ipairs(gui:GetChildren()) do
-                if child ~= watermarkOuter and child.Name ~= "WatermarkFrame" then
+                if child ~= watermarkOuter and child.Name ~= "WatermarkFrame" and child.Name ~= "NotificationContainer" then
                    if child:IsA("Frame") or child:IsA("ImageButton") or child:IsA("ScrollingFrame") then
                         child.Visible = library.toggled
                     end
@@ -262,7 +263,6 @@ function initLibrary()
         writefile(gameConfigFolder .. "/" .. name .. ".cfg", "return " .. configstr)
     end
 
-    -- ========== ВАТЕРМАРК ==========
     local watermarkOuter = utility.create("Frame", {
         Name = "WatermarkFrame",
         BorderColor3 = Color3.new(0, 0, 0);
@@ -333,7 +333,619 @@ function initLibrary()
         library:SetWatermarkVisibility(true)
     end
 
-    -- ========== ОСНОВНОЕ МЕНЮ ==========
+    local notificationContainer = utility.create("Frame", {
+        Name = "NotificationContainer",
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, -10, 0, 10),
+        Size = UDim2.new(0, 300, 0, 0),
+        AnchorPoint = Vector2.new(1, 0),
+        Parent = gui
+    })
+
+    local notificationList = utility.create("UIListLayout", {
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 8),
+        HorizontalAlignment = Enum.HorizontalAlignment.Right,
+        VerticalAlignment = Enum.VerticalAlignment.Top,
+        Parent = notificationContainer
+    })
+
+    notificationList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        notificationContainer.Size = UDim2.new(0, 300, 0, notificationList.AbsoluteContentSize.Y)
+    end)
+
+    local activeNotifications = {}
+
+    function library:UpdateNotificationColors()
+        for _, notification in ipairs(activeNotifications) do
+            if notification and notification.border then
+                notification.border.BorderColor3 = library.color
+            end
+            if notification and notification.gradient and notification.toggled then
+                notification.gradient.Color = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, library.color),
+                    ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
+                }
+            end
+        end
+    end
+
+    function library:Notify(opts)
+        local options = utility.table(opts)
+        local title = options.title or "Notification"
+        local description = options.description or ""
+        local duration = options.duration or 5
+        local callback = options.callback or function() end
+
+        local notificationHolder = utility.create("Frame", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 300, 0, 0),
+            ClipsDescendants = true,
+            Parent = notificationContainer
+        })
+
+        local notification = utility.create("Frame", {
+            Size = UDim2.new(1, 0, 0, 0),
+            BackgroundColor3 = library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(28, 28, 28),
+            BorderColor3 = library.color,
+            BorderMode = Enum.BorderMode.Inset,
+            ClipsDescendants = true,
+            Position = UDim2.new(0, 0, 0, 0),
+            Parent = notificationHolder
+        })
+
+        local notificationInner = utility.create("Frame", {
+            BackgroundColor3 = Color3.new(1, 1, 1),
+            BorderSizePixel = 0,
+            Position = UDim2.new(0, 1, 0, 1),
+            Size = UDim2.new(1, -2, 1, -2),
+            Parent = notification
+        })
+
+        local notificationGradient = utility.create("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, utility.change_color(library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(28, 28, 28), -20)),
+                ColorSequenceKeypoint.new(1, library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(28, 28, 28)),
+            }),
+            Rotation = -90,
+            Parent = notificationInner
+        })
+
+        local titleLabel = utility.create("TextLabel", {
+            Position = UDim2.new(0, 8, 0, 6),
+            Size = UDim2.new(1, -16, 0, 18),
+            BackgroundTransparency = 1,
+            TextSize = 14,
+            TextColor3 = library.selectedTheme and library.selectedTheme.text or Color3.fromRGB(255, 255, 255),
+            Text = title,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Font = Enum.Font.GothamSemibold,
+            ZIndex = 203,
+            Parent = notificationInner
+        })
+
+        local descLabel = utility.create("TextLabel", {
+            Position = UDim2.new(0, 8, 0, 28),
+            Size = UDim2.new(1, -16, 0, 0),
+            BackgroundTransparency = 1,
+            TextSize = 12,
+            TextColor3 = library.selectedTheme and library.selectedTheme.textSecondary or Color3.fromRGB(180, 180, 180),
+            Text = description,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            TextWrapped = true,
+            Font = Enum.Font.Gotham,
+            ZIndex = 203,
+            Parent = notificationInner
+        })
+
+        local closeButton = utility.create("TextButton", {
+            Position = UDim2.new(1, -22, 0, 4),
+            Size = UDim2.new(0, 18, 0, 18),
+            BackgroundTransparency = 1,
+            Text = "✕",
+            TextSize = 14,
+            TextColor3 = library.selectedTheme and library.selectedTheme.textSecondary or Color3.fromRGB(180, 180, 180),
+            Font = Enum.Font.Gotham,
+            ZIndex = 204,
+            Parent = notificationInner
+        })
+
+        local function updateHeight()
+            local descBounds = textService:GetTextSize(description, 12, Enum.Font.Gotham, Vector2.new(284, 1000))
+            local descHeight = math.max(descBounds.Y, 14)
+            local totalHeight = 8 + 18 + 4 + descHeight + 8
+            notification.Size = UDim2.new(1, 0, 0, totalHeight)
+            descLabel.Size = UDim2.new(1, -16, 0, descHeight)
+            notificationHolder.Size = UDim2.new(0, 300, 0, totalHeight)
+        end
+
+        updateHeight()
+
+        local notificationData = {
+            holder = notificationHolder,
+            frame = notification,
+            border = notification,
+            gradient = notificationGradient,
+            toggled = true,
+            title = titleLabel,
+            desc = descLabel
+        }
+
+        table.insert(activeNotifications, notificationData)
+
+        local function removeNotification()
+            for i, data in ipairs(activeNotifications) do
+                if data == notificationData then
+                    table.remove(activeNotifications, i)
+                    break
+                end
+            end
+            
+            local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local endPosition = UDim2.new(1, 300, 0, 0)
+            local endSize = UDim2.new(0, 0, 0, 0)
+            
+            local sizeTween = tweenService:Create(notificationHolder, tweenInfo, {Size = endSize})
+            local posTween = tweenService:Create(notificationHolder, tweenInfo, {Position = endPosition})
+            
+            posTween:Play()
+            sizeTween:Play()
+            
+            sizeTween.Completed:Connect(function()
+                notificationHolder:Destroy()
+                callback()
+            end)
+        end
+
+        closeButton.MouseButton1Click:Connect(function()
+            removeNotification()
+        end)
+
+        notificationHolder.Position = UDim2.new(1, 300, 0, 0)
+        notificationHolder.Size = UDim2.new(0, 0, 0, 0)
+        
+        local appearTween = tweenService:Create(notificationHolder, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = UDim2.new(1, -300, 0, 0),
+            Size = UDim2.new(0, 300, 0, notificationHolder.Size.Y.Offset)
+        })
+        
+        appearTween:Play()
+
+        if duration > 0 then
+            task.wait(duration)
+            if notificationHolder and notificationHolder.Parent then
+                removeNotification()
+            end
+        end
+
+        local notificationTypes = {
+            SetTitle = function(text)
+                titleLabel.Text = text
+            end,
+            SetDescription = function(text)
+                description = text
+                updateHeight()
+                descLabel.Text = text
+            end,
+            SetDuration = function(sec)
+                duration = sec
+            end,
+            Close = function()
+                removeNotification()
+            end
+        }
+
+        return notificationTypes
+    end
+
+    function library:ToggleDropdown(opts)
+        local options = utility.table(opts)
+        local name = options.name or "Toggle Dropdown"
+        local content = options.content or {}
+        local default = options.default
+        local toggleFlag = options.toggleFlag
+        local dropdownFlag = options.dropdownFlag
+        local toggleCallback = options.toggleCallback or function() end
+        local dropdownCallback = options.dropdownCallback or function() end
+
+        local toggled = false
+        local current = default
+        local opened = false
+
+        if toggleFlag then
+            library.flags[toggleFlag] = toggled
+        end
+        if dropdownFlag then
+            library.flags[dropdownFlag] = default
+        end
+        toggleCallback(toggled)
+        dropdownCallback(default)
+
+        local toggleDropdownHolder = utility.create("Frame", {
+            Size = UDim2.new(1, 0, 0, 36),
+            BackgroundTransparency = 1,
+            Parent = sectionContent
+        })
+
+        local toggle = utility.create("TextButton", {
+            Size = UDim2.new(1, 0, 0, 16),
+            BackgroundTransparency = 1,
+            Parent = toggleDropdownHolder
+        })
+
+        local icon = utility.create("Frame", {
+            ZIndex = 3,
+            Size = UDim2.new(0, 14, 1, -2),
+            BorderColor3 = Color3.fromRGB(37, 37, 37),
+            Position = UDim2.new(0, 0, 0, 1),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = toggle
+        })
+
+        local iconGradient = utility.create("UIGradient", {
+            Rotation = 90,
+            Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
+            Parent = icon
+        })
+
+        local toggleTitle = utility.create("TextLabel", {
+            ZIndex = 3,
+            Size = UDim2.new(0, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Position = UDim2.new(1, 7, 0, 0),
+            FontSize = Enum.FontSize.Size14,
+            TextSize = 13,
+            TextColor3 = selectedTheme.textSecondary,
+            Text = name,
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = icon
+        })
+
+        local dropdownHolder = utility.create("Frame", {
+            Size = UDim2.new(1, 0, 0, 20),
+            Position = UDim2.new(0, 0, 0, 20),
+            BackgroundTransparency = 1,
+            Parent = toggleDropdownHolder
+        })
+
+        local open = utility.create("TextButton", {
+            ZIndex = 3,
+            Size = UDim2.new(1, 0, 0, 16),
+            BorderColor3 = selectedTheme.background,
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            Text = "",
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = dropdownHolder
+        })
+
+        utility.create("UIGradient", {
+            Rotation = 90,
+            Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
+            Parent = open
+        })
+
+        local value = utility.create("TextLabel", {
+            ZIndex = 4,
+            Size = UDim2.new(0, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 8, 0, 0),
+            FontSize = Enum.FontSize.Size12,
+            TextSize = 12,
+            TextColor3 = current and selectedTheme.text or selectedTheme.textSecondary,
+            Text = current or "NONE",
+            Font = Enum.Font.Gotham,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = open
+        })
+
+        local dropdownIcon = utility.create("ImageLabel", {
+            ZIndex = 4,
+            Size = UDim2.new(0, 14, 0, 14),
+            Rotation = 180,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(1, -16, 0, 1),
+            Image = "http://www.roblox.com/asset/?id=8747047318",
+            Parent = open
+        })
+
+        local contentFrame = utility.create("Frame", {
+            ZIndex = 10,
+            Visible = false,
+            Size = UDim2.new(1, 0, 0, 0),
+            BorderColor3 = selectedTheme.background,
+            Position = UDim2.new(0, 0, 1, 3),
+            BackgroundColor3 = selectedTheme.dropdown,
+            Parent = open
+        })
+
+        local contentHolder = utility.create("Frame", {
+            Size = UDim2.new(1, 0, 1, -4),
+            Position = UDim2.new(0, 0, 0, 2),
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = contentFrame
+        })
+
+        local contentList = utility.create("UIListLayout", {
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = contentHolder
+        })
+
+        contentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            contentFrame.Size = UDim2.new(1, 0, 0, contentList.AbsoluteContentSize.Y + 4)
+            local totalHeight = 36
+            if opened then
+                totalHeight = 36 + contentFrame.AbsoluteSize.Y + 3
+            end
+            toggleDropdownHolder.Size = UDim2.new(1, 0, 0, totalHeight)
+        end)
+
+        local function toggleToggle()
+            toggled = not toggled
+            if toggled then
+                table.insert(coloredGradients, iconGradient)
+            else
+                table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
+            end
+            local textColor = toggled and selectedTheme.text or selectedTheme.textSecondary
+            local gradientColor
+            if toggled then
+                gradientColor = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, library.color),
+                    ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
+                }
+            else
+                gradientColor = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2)
+            end
+            iconGradient.Color = gradientColor
+            toggleTitle.TextColor3 = textColor
+            if toggleFlag then
+                library.flags[toggleFlag] = toggled
+            end
+            toggleCallback(toggled)
+        end
+
+        toggle.MouseButton1Click:Connect(toggleToggle)
+
+        local function openDropdown()
+            opened = not opened
+            dropdownIcon.Rotation = opened and 0 or 180
+            contentFrame.Visible = opened
+            local totalHeight = 36
+            if opened then
+                totalHeight = 36 + contentFrame.AbsoluteSize.Y + 3
+            end
+            toggleDropdownHolder.Size = UDim2.new(1, 0, 0, totalHeight)
+        end
+
+        open.MouseButton1Click:Connect(openDropdown)
+
+        local function selectObj(obj, padding, bool)
+            for i, v in next, contentHolder:GetChildren() do
+                if v:IsA("TextButton") then
+                    v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 6)
+                    v.Font = Enum.Font.Gotham
+                end
+            end
+            obj.Font = bool and Enum.Font.GothamSemibold or Enum.Font.Gotham
+            padding.PaddingLeft = bool and UDim.new(0, 10) or UDim.new(0, 6)
+            value.TextColor3 = bool and selectedTheme.text or selectedTheme.textSecondary
+        end
+
+        for _, opt in next, content do
+            local option = utility.create("TextButton", {
+                Name = opt,
+                ZIndex = 11,
+                Size = UDim2.new(1, 0, 0, 14),
+                BackgroundTransparency = 1,
+                FontSize = Enum.FontSize.Size12,
+                TextSize = 12,
+                TextColor3 = selectedTheme.text,
+                Text = tostring(opt),
+                Font = current == opt and Enum.Font.GothamSemibold or Enum.Font.Gotham,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = contentHolder
+            })
+
+            local optionPadding = utility.create("UIPadding", {
+                PaddingLeft = current == opt and UDim.new(0, 10) or UDim.new(0, 6),
+                Parent = option
+            })
+
+            option.MouseButton1Click:Connect(function()
+                if current ~= opt then
+                    current = opt
+                    selectObj(option, optionPadding, true)
+                    value.Text = opt
+                    if dropdownFlag then
+                        library.flags[dropdownFlag] = opt
+                    end
+                    dropdownCallback(opt)
+                    openDropdown()
+                else
+                    current = nil
+                    selectObj(option, optionPadding, false)
+                    value.Text = "NONE"
+                    if dropdownFlag then
+                        library.flags[dropdownFlag] = nil
+                    end
+                    dropdownCallback(nil)
+                    openDropdown()
+                end
+            end)
+        end
+
+        local toggleDropdownTypes = {
+            Show = function()
+                toggleDropdownHolder.Visible = true
+            end,
+            Hide = function()
+                toggleDropdownHolder.Visible = false
+            end,
+            SetName = function(str)
+                toggleTitle.Text = str
+            end,
+            Toggle = function(bool)
+                if toggled ~= bool then
+                    toggleToggle()
+                end
+            end,
+            Set = function(opt)
+                if opt and table.find(content, opt) then
+                    current = opt
+                    value.Text = opt
+                    value.TextColor3 = selectedTheme.text
+                    for i, v in next, contentHolder:GetChildren() do
+                        if v:IsA("TextButton") and v.Name == opt then
+                            v.Font = Enum.Font.GothamSemibold
+                            v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 10)
+                        elseif v:IsA("TextButton") then
+                            v.Font = Enum.Font.Gotham
+                            v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 6)
+                        end
+                    end
+                    if dropdownFlag then
+                        library.flags[dropdownFlag] = opt
+                    end
+                    dropdownCallback(opt)
+                elseif opt == nil then
+                    current = nil
+                    value.Text = "NONE"
+                    value.TextColor3 = selectedTheme.textSecondary
+                    for i, v in next, contentHolder:GetChildren() do
+                        if v:IsA("TextButton") then
+                            v.Font = Enum.Font.Gotham
+                            v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 6)
+                        end
+                    end
+                    if dropdownFlag then
+                        library.flags[dropdownFlag] = nil
+                    end
+                    dropdownCallback(nil)
+                end
+            end,
+            Add = function(opt)
+                table.insert(content, opt)
+                local option = utility.create("TextButton", {
+                    Name = opt,
+                    ZIndex = 11,
+                    Size = UDim2.new(1, 0, 0, 14),
+                    BackgroundTransparency = 1,
+                    FontSize = Enum.FontSize.Size12,
+                    TextSize = 12,
+                    TextColor3 = selectedTheme.text,
+                    Text = tostring(opt),
+                    Font = current == opt and Enum.Font.GothamSemibold or Enum.Font.Gotham,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    Parent = contentHolder
+                })
+                local optionPadding = utility.create("UIPadding", {
+                    PaddingLeft = current == opt and UDim.new(0, 10) or UDim.new(0, 6),
+                    Parent = option
+                })
+                option.MouseButton1Click:Connect(function()
+                    if current ~= opt then
+                        current = opt
+                        selectObj(option, optionPadding, true)
+                        value.Text = opt
+                        if dropdownFlag then
+                            library.flags[dropdownFlag] = opt
+                        end
+                        dropdownCallback(opt)
+                        openDropdown()
+                    else
+                        current = nil
+                        selectObj(option, optionPadding, false)
+                        value.Text = "NONE"
+                        if dropdownFlag then
+                            library.flags[dropdownFlag] = nil
+                        end
+                        dropdownCallback(nil)
+                        openDropdown()
+                    end
+                end)
+            end,
+            Remove = function(opt)
+                if table.find(content, opt) then
+                    if current == opt then
+                        toggleDropdownTypes.Set(nil)
+                    end
+                    if contentHolder:FindFirstChild(opt) then
+                        contentHolder:FindFirstChild(opt):Destroy()
+                    end
+                    table.remove(content, table.find(content, opt))
+                end
+            end,
+            Refresh = function(tbl)
+                content = tbl
+                for _, opt in next, contentHolder:GetChildren() do
+                    if opt:IsA("TextButton") then
+                        opt:Destroy()
+                    end
+                end
+                current = nil
+                value.Text = "NONE"
+                value.TextColor3 = selectedTheme.textSecondary
+                for _, opt in next, content do
+                    local option = utility.create("TextButton", {
+                        Name = opt,
+                        ZIndex = 11,
+                        Size = UDim2.new(1, 0, 0, 14),
+                        BackgroundTransparency = 1,
+                        FontSize = Enum.FontSize.Size12,
+                        TextSize = 12,
+                        TextColor3 = selectedTheme.text,
+                        Text = tostring(opt),
+                        Font = Enum.Font.Gotham,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        Parent = contentHolder
+                    })
+                    local optionPadding = utility.create("UIPadding", {
+                        PaddingLeft = UDim.new(0, 6),
+                        Parent = option
+                    })
+                    option.MouseButton1Click:Connect(function()
+                        if current ~= opt then
+                            current = opt
+                            selectObj(option, optionPadding, true)
+                            value.Text = opt
+                            if dropdownFlag then
+                                library.flags[dropdownFlag] = opt
+                            end
+                            dropdownCallback(opt)
+                            openDropdown()
+                        else
+                            current = nil
+                            selectObj(option, optionPadding, false)
+                            value.Text = "NONE"
+                            if dropdownFlag then
+                                library.flags[dropdownFlag] = nil
+                            end
+                            dropdownCallback(nil)
+                            openDropdown()
+                        end
+                    end)
+                end
+            end
+        }
+
+        if dropdownFlag then
+            flags.dropdowns[dropdownFlag] = function(opt)
+                toggleDropdownTypes.Set(opt)
+            end
+        end
+
+        if toggleFlag then
+            flags.toggles[toggleFlag] = function(bool)
+                toggleDropdownTypes.Toggle(bool)
+            end
+        end
+
+        return toggleDropdownTypes
+    end
+
     function library:Load(opts)
         local options = utility.table(opts)
         local name = options.name or "Epic UI Library"; library._currentMenuName = name
@@ -531,7 +1143,8 @@ function initLibrary()
             watermarkLabel.TextColor3 = selectedTheme.watermarkText
         end
 
-        -- Создание основного окна
+        library:UpdateNotificationColors()
+
         local topbar = utility.create("Frame", {
             ZIndex = 2,
             Size = UDim2.new(0, sizeX, 0, 26),
@@ -637,14 +1250,12 @@ function initLibrary()
                 Parent = tabs
             })
 
-            -- Контейнер для колонок
             local columnsContainer = utility.create("Frame", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
                 Parent = tab
             })
 
-            -- ВЕРХНИЙ РЯД (колонки 1 и 2)
             local topRow = utility.create("Frame", {
                 Size = UDim2.new(1, 0, 0.5, -3),
                 Position = UDim2.new(0, 0, 0, 0),
@@ -652,7 +1263,6 @@ function initLibrary()
                 Parent = columnsContainer
             })
 
-            -- НИЖНИЙ РЯД (колонки 3 и 4)
             local bottomRow = utility.create("Frame", {
                 Size = UDim2.new(1, 0, 0.5, -3),
                 Position = UDim2.new(0, 0, 0.5, 3),
@@ -660,7 +1270,6 @@ function initLibrary()
                 Parent = columnsContainer
             })
 
-            -- КОЛОНКА 1 (верхняя левая)
             local column1 = utility.create("ScrollingFrame", {
                 Size = UDim2.new(0.5, -2, 1, 0),
                 Position = UDim2.new(0, 0, 0, 0),
@@ -680,7 +1289,6 @@ function initLibrary()
                 updateLayout()
             end)
 
-            -- КОЛОНКА 2 (верхняя правая)
             local column2 = utility.create("ScrollingFrame", {
                 Size = UDim2.new(0.5, -2, 1, 0),
                 Position = UDim2.new(0.5, 2, 0, 0),
@@ -700,7 +1308,6 @@ function initLibrary()
                 updateLayout()
             end)
 
-            -- КОЛОНКА 3 (нижняя левая)
             local column3 = utility.create("ScrollingFrame", {
                 Size = UDim2.new(0.5, -2, 1, 0),
                 Position = UDim2.new(0, 0, 0, 0),
@@ -720,7 +1327,6 @@ function initLibrary()
                 updateLayout()
             end)
 
-            -- КОЛОНКА 4 (нижняя правая)
             local column4 = utility.create("ScrollingFrame", {
                 Size = UDim2.new(0.5, -2, 1, 0),
                 Position = UDim2.new(0.5, 2, 0, 0),
@@ -740,10 +1346,8 @@ function initLibrary()
                 updateLayout()
             end)
 
-            -- Хранилище размеров колонок для этой вкладки
             local tabColumnSizes = {}
 
-            -- Функция обновления расположения колонок
             local function updateLayout()
                 local totalWidth = columnsContainer.AbsoluteSize.X
                 if totalWidth < 100 then totalWidth = sizeX end
@@ -864,7 +1468,6 @@ function initLibrary()
                 updateLayout()
             end
 
-            -- СЕКЦИИ
             function tabTypes:Section(opts)
                 local options = utility.table(opts)
                 local name = options.name or "Section"
@@ -980,7 +1583,6 @@ function initLibrary()
                     updateLayout()
                 end
 
-                -- LABEL
                 function sectionTypes:Label(text)
                     local label = utility.create("TextLabel", {
                         ZIndex = 3,
@@ -1014,7 +1616,6 @@ function initLibrary()
                     return labelTypes
                 end
 
-                -- SPECIAL LABEL
                 function sectionTypes:SpecialLabel(text)
                     local specialLabel = utility.create("TextLabel", {
                         ZIndex = 5,
@@ -1070,7 +1671,6 @@ function initLibrary()
                     return specialLabelTypes
                 end
 
-                -- BUTTON
                 function sectionTypes:Button(opts)
                     local options = utility.table(opts)
                     local name = options.name
@@ -1135,7 +1735,6 @@ function initLibrary()
                     return buttonTypes
                 end
 
-                -- TOGGLE
                 function sectionTypes:Toggle(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Toggle"
@@ -1257,7 +1856,6 @@ function initLibrary()
                     return toggleTypes
                 end
 
-                -- BOX
                 function sectionTypes:Box(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Box"
@@ -1407,7 +2005,6 @@ function initLibrary()
                     return boxTypes
                 end
 
-                -- SLIDER
                 function sectionTypes:Slider(opts)
                     local options = utility.table(opts)
                     local min = options.min or 0
@@ -1561,7 +2158,6 @@ function initLibrary()
                     return sliderTypes
                 end
 
-                -- ToggleSlider
                 function sectionTypes:ToggleSlider(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Toggle Slider"
@@ -1820,7 +2416,6 @@ function initLibrary()
                     return toggleSliderTypes
                 end
 
-                -- DROPDOWN
                 function sectionTypes:Dropdown(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Dropdown"
@@ -1927,7 +2522,7 @@ function initLibrary()
 
                     contentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                         contentFrame.Size = UDim2.new(1, 0, 0, contentList.AbsoluteContentSize.Y + 4)
-                    end)
+                    })
 
                     local function openDropdown()
                         opened = not opened
@@ -2271,7 +2866,6 @@ function initLibrary()
                     return dropdownTypes
                 end
 
-                -- KEYBIND
                 function sectionTypes:Keybind(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Keybind"
@@ -2478,7 +3072,6 @@ function initLibrary()
                     return keybindTypes
                 end
 
-                -- ToggleKeybind
                 function sectionTypes:ToggleKeybind(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Toggle Keybind"
@@ -2763,7 +3356,6 @@ function initLibrary()
                     return toggleKeybindTypes
                 end
 
-                -- COLOR PICKER
                 function sectionTypes:ColorPicker(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Color Picker"
@@ -3112,7 +3704,6 @@ function initLibrary()
                     return colorPickerTypes
                 end
 
-                -- ToggleColorPicker
                 function sectionTypes:ToggleColorPicker(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Toggle Color Picker"
@@ -3534,6 +4125,5 @@ function initLibrary()
         return windowTypes
     end
 
-    -- Возвращаем библиотеку
     return library
 end
