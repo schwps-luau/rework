@@ -1,3 +1,8 @@
+--[[
+Yun Founders: flash#9999, loris#9547, worldwide#0001 , Saul Goodman#2345
+Yun Devs: zomb#7741, nives#0001, loot#1337
+Special Thanks To: Qw#1549
+--]]
 function initLibrary()
     local folderName = "config holder"
     local gameConfigFolder = "cfgs"
@@ -372,6 +377,12 @@ function initLibrary()
         local duration = options.duration or 5
         local callback = options.callback or function() end
 
+        local theme = library.selectedTheme or {
+            secondary = Color3.fromRGB(32, 32, 32),
+            text = Color3.fromRGB(255, 255, 255),
+            textSecondary = Color3.fromRGB(180, 180, 180)
+        }
+
         local notificationHolder = utility.create("Frame", {
             BackgroundTransparency = 1,
             Size = UDim2.new(0, 300, 0, 0),
@@ -381,7 +392,7 @@ function initLibrary()
 
         local notification = utility.create("Frame", {
             Size = UDim2.new(1, 0, 0, 0),
-            BackgroundColor3 = library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(28, 28, 28),
+            BackgroundColor3 = theme.secondary,
             BorderColor3 = library.color,
             BorderMode = Enum.BorderMode.Inset,
             ClipsDescendants = true,
@@ -399,8 +410,8 @@ function initLibrary()
 
         local notificationGradient = utility.create("UIGradient", {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, utility.change_color(library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(28, 28, 28), -20)),
-                ColorSequenceKeypoint.new(1, library.selectedTheme and library.selectedTheme.secondary or Color3.fromRGB(28, 28, 28)),
+                ColorSequenceKeypoint.new(0, utility.change_color(theme.secondary, -20)),
+                ColorSequenceKeypoint.new(1, theme.secondary),
             }),
             Rotation = -90,
             Parent = notificationInner
@@ -411,7 +422,7 @@ function initLibrary()
             Size = UDim2.new(1, -16, 0, 18),
             BackgroundTransparency = 1,
             TextSize = 14,
-            TextColor3 = library.selectedTheme and library.selectedTheme.text or Color3.fromRGB(255, 255, 255),
+            TextColor3 = theme.text,
             Text = title,
             TextXAlignment = Enum.TextXAlignment.Left,
             Font = Enum.Font.GothamSemibold,
@@ -424,7 +435,7 @@ function initLibrary()
             Size = UDim2.new(1, -16, 0, 0),
             BackgroundTransparency = 1,
             TextSize = 12,
-            TextColor3 = library.selectedTheme and library.selectedTheme.textSecondary or Color3.fromRGB(180, 180, 180),
+            TextColor3 = theme.textSecondary,
             Text = description,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextYAlignment = Enum.TextYAlignment.Top,
@@ -440,7 +451,7 @@ function initLibrary()
             BackgroundTransparency = 1,
             Text = "✕",
             TextSize = 14,
-            TextColor3 = library.selectedTheme and library.selectedTheme.textSecondary or Color3.fromRGB(180, 180, 180),
+            TextColor3 = theme.textSecondary,
             Font = Enum.Font.Gotham,
             ZIndex = 204,
             Parent = notificationInner
@@ -533,7 +544,6 @@ function initLibrary()
 
         return notificationTypes
     end
-
 
     function library:Load(opts)
         local options = utility.table(opts)
@@ -2111,7 +2121,7 @@ function initLibrary()
 
                     contentList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                         contentFrame.Size = UDim2.new(1, 0, 0, contentList.AbsoluteContentSize.Y + 4)
-                    end)
+                    })
 
                     local function openDropdown()
                         opened = not opened
