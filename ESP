@@ -22,6 +22,10 @@ local ESP = {
     TeammateColor = Color3.fromRGB(0, 255, 0),
     HealthLowColor = Color3.fromRGB(255, 0, 0),
     HealthHighColor = Color3.fromRGB(0, 255, 0),
+    HealthVisibleLowColor = Color3.fromRGB(255, 0, 0),
+    HealthVisibleHighColor = Color3.fromRGB(0, 255, 0),
+    HealthInvisibleLowColor = Color3.fromRGB(128, 0, 0),
+    HealthInvisibleHighColor = Color3.fromRGB(0, 128, 0),
     HealthOutlineColor = Color3.fromRGB(0, 0, 0),
     NameColor = Color3.fromRGB(255, 255, 255),
     BoxColor = Color3.fromRGB(255, 255, 255),
@@ -205,6 +209,23 @@ local function getNameColor(player)
     return color or ESP.NameColor
 end
 
+local function getHealthColor(player, healthPercent)
+    if isTeammate(player) then
+        return ESP.TeammateColor
+    end
+    
+    if ESP.VisibleCheck then
+        local isVisible = isPlayerVisible(player)
+        if isVisible then
+            return ESP.HealthVisibleLowColor:Lerp(ESP.HealthVisibleHighColor, healthPercent)
+        else
+            return ESP.HealthInvisibleLowColor:Lerp(ESP.HealthInvisibleHighColor, healthPercent)
+        end
+    end
+    
+    return ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPercent)
+end
+
 local function shouldShowPlayer(player)
     local character = player.Character
     if not character then return false end
@@ -337,7 +358,7 @@ local function updateHealth(player)
     
     esp.health.From = Vector2.new(boxPosition.X - 6, boxPosition.Y + boxSize.Y)
     esp.health.To = Vector2.new(esp.health.From.X, esp.health.From.Y - healthPercent * boxSize.Y)
-    esp.health.Color = ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPercent)
+    esp.health.Color = getHealthColor(player, healthPercent)
     esp.health.Visible = true
 end
 
