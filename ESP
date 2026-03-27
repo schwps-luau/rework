@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
-
+--
 local highlights = {}
 local connections = {}
 local cache = {}
@@ -22,10 +22,6 @@ local ESP = {
     TeammateColor = Color3.fromRGB(0, 255, 0),
     HealthLowColor = Color3.fromRGB(255, 0, 0),
     HealthHighColor = Color3.fromRGB(0, 255, 0),
-    HealthVisibleLowColor = Color3.fromRGB(255, 0, 0),
-    HealthVisibleHighColor = Color3.fromRGB(0, 255, 0),
-    HealthInvisibleLowColor = Color3.fromRGB(128, 0, 0),
-    HealthInvisibleHighColor = Color3.fromRGB(0, 128, 0),
     HealthOutlineColor = Color3.fromRGB(0, 0, 0),
     NameColor = Color3.fromRGB(255, 255, 255),
     BoxColor = Color3.fromRGB(255, 255, 255),
@@ -214,16 +210,15 @@ local function getHealthColor(player, healthPercent)
         return ESP.TeammateColor
     end
     
+    local baseColor
     if ESP.VisibleCheck then
-        local isVisible = isPlayerVisible(player)
-        if isVisible then
-            return ESP.HealthVisibleLowColor:Lerp(ESP.HealthVisibleHighColor, healthPercent)
-        else
-            return ESP.HealthInvisibleLowColor:Lerp(ESP.HealthInvisibleHighColor, healthPercent)
-        end
+        baseColor = isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
+    else
+        baseColor = ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPercent)
+        return baseColor
     end
     
-    return ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPercent)
+    return baseColor
 end
 
 local function shouldShowPlayer(player)
