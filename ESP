@@ -26,7 +26,7 @@ local ESP = {
     NameColor = Color3.fromRGB(255, 255, 255),
     BoxColor = Color3.fromRGB(255, 255, 255),
     TracerColor = Color3.fromRGB(255, 255, 255),
-    TracerThickness = 1,
+    TracerThickness = 0.5,
     BoxThickness = 1
 }
 
@@ -189,7 +189,8 @@ local function updateHighlight(player)
     local highlight = highlights[player]
     if not highlight then return end
     
-    if not ESP.Enabled or not shouldShowPlayer(player) then
+    -- Выключаем Highlight если включен Box ESP
+    if not ESP.Enabled or not shouldShowPlayer(player) or ESP.ShowBox then
         highlight.Enabled = false
         return
     end
