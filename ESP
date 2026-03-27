@@ -25,8 +25,8 @@ local ESP = {
     HealthOutlineColor = Color3.fromRGB(0, 0, 0),
     NameColor = Color3.fromRGB(255, 255, 255),
     BoxColor = Color3.fromRGB(255, 255, 255),
-    TracerColor = Color3.fromRGB(255, 255, 255),
-    TracerThickness = 0.5,
+    TracerColor = Color3.fromRGB(255, 0, 0),
+    TracerThickness = 2,
     BoxThickness = 1
 }
 
@@ -70,19 +70,7 @@ local function isPlayerVisible(player)
         "HumanoidRootPart", 
         "UpperTorso", 
         "LowerTorso", 
-        "Torso",
-        "LeftUpperArm", 
-        "LeftLowerArm", 
-        "LeftHand",
-        "RightUpperArm", 
-        "RightLowerArm", 
-        "RightHand",
-        "LeftUpperLeg", 
-        "LeftLowerLeg", 
-        "LeftFoot",
-        "RightUpperLeg", 
-        "RightLowerLeg", 
-        "RightFoot"
+        "Torso"
     }
     
     for _, partName in ipairs(partsToCheck) do
@@ -145,6 +133,7 @@ local function createEsp(player)
         }),
         tracer = createDrawing("Line", {
             Thickness = ESP.TracerThickness,
+            Color = ESP.TracerColor,
             Visible = false
         })
     }
@@ -168,17 +157,14 @@ local function getElementColor(player)
 end
 
 local function getTracerColor(player)
-    -- Для трейсера используем отдельную логику цвета
     if isTeammate(player) then
         return ESP.TeammateColor
     end
     
-    -- Если включена проверка видимости, используем соответствующие цвета
     if ESP.VisibleCheck then
         return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
     end
     
-    -- Иначе используем цвет трейсера из настроек
     return ESP.TracerColor
 end
 
@@ -204,7 +190,6 @@ local function updateHighlight(player)
     local highlight = highlights[player]
     if not highlight then return end
     
-    -- Выключаем Highlight если включен Box ESP
     if not ESP.Enabled or not shouldShowPlayer(player) or ESP.ShowBox then
         highlight.Enabled = false
         return
@@ -393,9 +378,17 @@ end
 
 local function updateTracer(player)
     local esp = cache[player]
-    if not esp or not esp.tracer then return end
+    if not esp or not esp.tracer then 
+        return 
+    end
     
-    if not ESP.Enabled or not ESP.ShowTracer or not shouldShowPlayer(player) then
+    -- Проверяем все условия для отображения трейсера
+    if not ESP.Enabled then
+        esp.tracer.Visible = false
+        return
+    end
+    
+    if not ESP.ShowTracer then
         esp.tracer.Visible = false
         return
     end
@@ -412,26 +405,29 @@ local function updateTracer(player)
         return
     end
     
+    -- Проверяем, не союзник ли игрок
+    if isTeammate(player) then
+        esp.tracer.Visible = false
+        return
+    end
+    
     local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
     if not rootPart then
         esp.tracer.Visible = false
         return
     end
     
+    -- Получаем позицию на экране
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-    if not onScreen then
-        esp.tracer.Visible = false
-        return
-    end
     
+    -- Трейсер рисуется даже если игрок не на экране
     local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
     
     esp.tracer.From = screenCenter
     esp.tracer.To = Vector2.new(hrp2D.X, hrp2D.Y)
-    -- Используем отдельную функцию для цвета трейсера
     esp.tracer.Color = getTracerColor(player)
     esp.tracer.Thickness = ESP.TracerThickness
-    esp.tracer.Visible = true
+    esp.tracer.Visible = true  -- Всегда показываем трейсер, даже если игрок не на экране
 end
 
 local function setupPlayer(player)
@@ -472,29 +468,10 @@ local function cleanupPlayer(player)
     end
     
     if cache[player] then
-        if cache[player].name then
-            cache[player].name:Remove()
-        end
-        if cache[player].health then
-            cache[player].health:Remove()
-        end
-        if cache[player].healthOutline then
-            cache[player].healthOutline:Remove()
-        end
-        if cache[player].boxTop then
-            cache[player].boxTop:Remove()
-        end
-        if cache[player].boxBottom then
-            cache[player].boxBottom:Remove()
-        end
-        if cache[player].boxLeft then
-            cache[player].boxLeft:Remove()
-        end
-        if cache[player].boxRight then
-            cache[player].boxRight:Remove()
-        end
-        if cache[player].tracer then
-            cache[player].tracer:Remove()
+        for _, drawing in pairs(cache[player]) do
+            if drawing and drawing.Remove then
+                drawing:Remove()
+            end
         end
         cache[player] = nil
     end
@@ -531,7 +508,7 @@ function ESP:Init()
     end)
     
     connections.RenderStepped = RunService.RenderStepped:Connect(function()
-        for player, _ in pairs(highlights) do
+        for player, _ in pairs(cache) do
             updateHighlight(player)
             updateName(player)
             updateHealth(player)
