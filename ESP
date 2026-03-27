@@ -26,7 +26,7 @@ local ESP = {
     NameColor = Color3.fromRGB(255, 255, 255),
     BoxColor = Color3.fromRGB(255, 255, 255),
     TracerColor = Color3.fromRGB(255, 0, 0),
-    TracerThickness = 0.5,
+    TracerThickness = 1,
     BoxThickness = 1
 }
 
