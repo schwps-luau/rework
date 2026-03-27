@@ -25,6 +25,9 @@ local ESP = {
     HealthOutlineColor = Color3.fromRGB(0, 0, 0),
     NameColor = Color3.fromRGB(255, 255, 255),
     BoxColor = Color3.fromRGB(255, 255, 255),
+    BoxVisibleColor = Color3.fromRGB(255, 0, 0), -- Цвет бокса когда игрок видим
+    BoxInvisibleColor = Color3.fromRGB(128, 128, 128), -- Цвет бокса когда игрок невидим
+    HighlightColor = Color3.fromRGB(255, 0, 0), -- Цвет хайлайта
     TracerColor = Color3.fromRGB(255, 0, 0),
     TracerThickness = 1,
     BoxThickness = 1
@@ -200,6 +203,26 @@ local function getElementColor(player)
     return ESP.VisibleColor
 end
 
+local function getBoxColor(player)
+    if isTeammate(player) then
+        return ESP.TeammateColor
+    end
+    
+    if ESP.VisibleCheck then
+        return isPlayerVisible(player) and ESP.BoxVisibleColor or ESP.BoxInvisibleColor
+    end
+    
+    return ESP.BoxColor
+end
+
+local function getHighlightColor(player)
+    if isTeammate(player) then
+        return ESP.TeammateColor
+    end
+    
+    return ESP.HighlightColor
+end
+
 local function getTracerColor(player)
     if isTeammate(player) then
         return ESP.TeammateColor
@@ -250,7 +273,7 @@ local function updateHighlight(player)
     end
     
     highlight.Enabled = true
-    highlight.FillColor = getElementColor(player)
+    highlight.FillColor = getHighlightColor(player)
 end
 
 local function updateName(player)
@@ -408,7 +431,7 @@ local function updateBox(player)
     local boxSize = Vector2.new(math.floor(charSize * 1.8), math.floor(charSize * 1.9))
     local boxPosition = Vector2.new(math.floor(hrp2D.X - charSize * 1.8 / 2), math.floor(hrp2D.Y - charSize * 1.6 / 2))
     
-    local boxColor = getElementColor(player)
+    local boxColor = getBoxColor(player)
     
     esp.boxTop.From = boxPosition
     esp.boxTop.To = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y)
@@ -510,7 +533,7 @@ local function setupPlayer(player)
         highlight.Name = "ESP_Highlight"
         highlight.FillTransparency = 0.5
         highlight.OutlineTransparency = 0.5
-        highlight.FillColor = ESP.VisibleColor
+        highlight.FillColor = ESP.HighlightColor
         highlight.Parent = character
         highlight.Enabled = false
         highlights[player] = highlight
