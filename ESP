@@ -25,9 +25,7 @@ local ESP = {
     HealthOutlineColor = Color3.fromRGB(0, 0, 0),
     NameColor = Color3.fromRGB(255, 255, 255),
     BoxColor = Color3.fromRGB(255, 255, 255),
-    BoxVisibleColor = Color3.fromRGB(255, 0, 0), -- Цвет бокса когда игрок видим
-    BoxInvisibleColor = Color3.fromRGB(128, 128, 128), -- Цвет бокса когда игрок невидим
-    HighlightColor = Color3.fromRGB(255, 0, 0), -- Цвет хайлайта
+    HighlightColor = Color3.fromRGB(255, 0, 0),
     TracerColor = Color3.fromRGB(255, 0, 0),
     TracerThickness = 1,
     BoxThickness = 1
@@ -91,32 +89,16 @@ local function isPlayerVisible(player)
     
     if characterType == "R15" then
         partsToCheck = {
-            "Head",
-            "HumanoidRootPart",
-            "UpperTorso",
-            "LowerTorso",
-            "LeftUpperArm",
-            "LeftLowerArm",
-            "LeftHand",
-            "RightUpperArm",
-            "RightLowerArm",
-            "RightHand",
-            "LeftUpperLeg",
-            "LeftLowerLeg",
-            "LeftFoot",
-            "RightUpperLeg",
-            "RightLowerLeg",
-            "RightFoot"
+            "Head", "HumanoidRootPart", "UpperTorso", "LowerTorso",
+            "LeftUpperArm", "LeftLowerArm", "LeftHand",
+            "RightUpperArm", "RightLowerArm", "RightHand",
+            "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+            "RightUpperLeg", "RightLowerLeg", "RightFoot"
         }
     else
         partsToCheck = {
-            "Head",
-            "HumanoidRootPart",
-            "Torso",
-            "Left Arm",
-            "Right Arm",
-            "Left Leg",
-            "Right Leg"
+            "Head", "HumanoidRootPart", "Torso",
+            "Left Arm", "Right Arm", "Left Leg", "Right Leg"
         }
     end
     
@@ -124,10 +106,8 @@ local function isPlayerVisible(player)
         local part = character:FindFirstChild(partName)
         if part and part:IsA("BasePart") then
             local screenPos, onScreen = camera:WorldToViewportPoint(part.Position)
-            if onScreen then
-                if isPartVisible(part) then
-                    return true
-                end
+            if onScreen and isPartVisible(part) then
+                return true
             end
         end
     end
@@ -191,48 +171,38 @@ local function isTeammate(player)
     return ESP.TeamCheck and player.Team and localPlayer.Team and player.Team == localPlayer.Team
 end
 
-local function getElementColor(player)
+local function getColorByVisibility(colorIfVisible, colorIfInvisible, player)
     if isTeammate(player) then
         return ESP.TeammateColor
     end
     
     if ESP.VisibleCheck then
-        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
+        return isPlayerVisible(player) and colorIfVisible or colorIfInvisible
     end
     
-    return ESP.VisibleColor
-end
-
-local function getBoxColor(player)
-    if isTeammate(player) then
-        return ESP.TeammateColor
-    end
-    
-    if ESP.VisibleCheck then
-        return isPlayerVisible(player) and ESP.BoxVisibleColor or ESP.BoxInvisibleColor
-    end
-    
-    return ESP.BoxColor
+    return nil
 end
 
 local function getHighlightColor(player)
     if isTeammate(player) then
         return ESP.TeammateColor
     end
-    
     return ESP.HighlightColor
 end
 
+local function getBoxColor(player)
+    local color = getColorByVisibility(ESP.VisibleColor, ESP.InvisibleColor, player)
+    return color or ESP.BoxColor
+end
+
 local function getTracerColor(player)
-    if isTeammate(player) then
-        return ESP.TeammateColor
-    end
-    
-    if ESP.VisibleCheck then
-        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
-    end
-    
-    return ESP.TracerColor
+    local color = getColorByVisibility(ESP.VisibleColor, ESP.InvisibleColor, player)
+    return color or ESP.TracerColor
+end
+
+local function getNameColor(player)
+    local color = getColorByVisibility(ESP.VisibleColor, ESP.InvisibleColor, player)
+    return color or ESP.NameColor
 end
 
 local function shouldShowPlayer(player)
@@ -246,20 +216,13 @@ local function shouldShowPlayer(player)
         return false
     end
     
-    -- WallCheck: скрывает игрока если он за стеной
     if ESP.WallCheck then
-        -- Проверяем видимость через стены и нахождение в кадре
-        if not isPlayerVisible(player) then
-            return false
-        end
-        -- Дополнительно проверяем, находится ли игрок в кадре
-        if not isPlayerOnScreen(player) then
+        if not isPlayerVisible(player) or not isPlayerOnScreen(player) then
             return false
         end
         return true
     end
     
-    -- Если WallCheck выключен, показываем всех живых игроков (не союзников)
     return true
 end
 
@@ -280,7 +243,6 @@ local function updateName(player)
     local esp = cache[player]
     if not esp or not esp.name then return end
     
-    -- Проверяем WallCheck для скрытия имени
     if not ESP.Enabled or not ESP.ShowName or not shouldShowPlayer(player) then
         esp.name.Visible = false
         return
@@ -311,7 +273,7 @@ local function updateName(player)
     end
     
     esp.name.Visible = true
-    esp.name.Color = ESP.NameColor
+    esp.name.Color = getNameColor(player)
     esp.name.OutlineColor = Color3.fromRGB(0, 0, 0)
     
     if ESP.UseDisplayName then
@@ -460,7 +422,6 @@ local function updateTracer(player)
         return 
     end
     
-    -- Проверяем все условия для отображения трейсера
     if not ESP.Enabled then
         esp.tracer.Visible = false
         return
@@ -483,13 +444,11 @@ local function updateTracer(player)
         return
     end
     
-    -- Проверяем, не союзник ли игрок
     if isTeammate(player) then
         esp.tracer.Visible = false
         return
     end
     
-    -- WallCheck: скрываем трейсер если игрок за стеной или не в кадре
     if ESP.WallCheck then
         if not isPlayerVisible(player) or not isPlayerOnScreen(player) then
             esp.tracer.Visible = false
@@ -503,10 +462,8 @@ local function updateTracer(player)
         return
     end
     
-    -- Получаем позицию на экране
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
     
-    -- Трейсер рисуется только если игрок в кадре
     if not onScreen then
         esp.tracer.Visible = false
         return
