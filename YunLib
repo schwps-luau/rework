@@ -1,5 +1,9 @@
---a
-local function initLibrary()
+--[[
+Yun Founders: flash#9999, loris#9547, worldwide#0001 , Saul Goodman#2345
+Yun Devs: zomb#7741, nives#0001, loot#1337
+Special Thanks To: Qw#1549
+--]]
+function initLibrary()
     local folderName = "config holder"
     local gameConfigFolder = "cfgs"
 
@@ -173,46 +177,39 @@ local function initLibrary()
     local flags = {toggles = {}, boxes = {}, sliders = {}, dropdowns = {}, multidropdowns = {}, keybinds = {}, colorpickers = {}}
 
     function library:LoadConfig(file)
-        local success, str = pcall(readfile, gameConfigFolder .. "/" .. file .. ".cfg")
-        if not success then return end
-        
-        local func, err = loadstring(str)
-        if not func then return end
-        
-        local success, tbl = pcall(func)
-        if not success then return end
-        
-        for flag, value in next, tbl.colorpickers or {} do
+        local str = readfile(gameConfigFolder .. "/" .. file .. ".cfg")
+        local tbl = loadstring(str)()
+        for flag, value in next, tbl.colorpickers do
             if flags.colorpickers[flag] then
                 flags.colorpickers[flag](value)
             end
         end
-        for flag, value in next, tbl.toggles or {} do
+        for flag, value in next, tbl.toggles do
             if flags.toggles[flag] then
                 flags.toggles[flag](value)
             end
         end
-        for flag, value in next, tbl.boxes or {} do
+        for flag, value in next, tbl.boxes do
             if flags.boxes[flag] then
                 flags.boxes[flag](value)
             end
         end
-        for flag, value in next, tbl.sliders or {} do
+        for flag, value in next, tbl.sliders do
             if flags.sliders[flag] then
                 flags.sliders[flag](value)
             end
         end
-        for flag, value in next, tbl.dropdowns or {} do
+        for flag, value in next, tbl.dropdowns do
             if flags.dropdowns[flag] then
                 flags.dropdowns[flag](value)
             end
         end
-        for flag, value in next, tbl.multidropdowns or {} do
+        for flag, value in next, tbl.multidropdowns do
             if flags.multidropdowns[flag] then
                 flags.multidropdowns[flag](value)
             end
         end
-        for flag, value in next, tbl.keybinds or {} do
+        for flag, value in next, tbl.keybinds do
             if flags.keybinds[flag] then
                 flags.keybinds[flag](value)
             end
@@ -263,11 +260,7 @@ local function initLibrary()
             configstr = configstr .. "['" .. flag .. "']=Color3.new(" .. tostring(library.flags[flag]) .. "),"
         end
         configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "}}"
-        
-        local success, err = pcall(writefile, gameConfigFolder .. "/" .. name .. ".cfg", "return " .. configstr)
-        if not success then
-            warn("Failed to save config: " .. err)
-        end
+        writefile(gameConfigFolder .. "/" .. name .. ".cfg", "return " .. configstr)
     end
 
     local watermarkOuter = utility.create("Frame", {
@@ -570,7 +563,32 @@ local function initLibrary()
         return notificationTypes
     end
 
-    local function createThemeColors(theme)
+    function library:Load(opts)
+        local options = utility.table(opts)
+        local name = options.name or "Epic UI Library"; library._currentMenuName = name
+        local sizeX = options.sizeX or 466
+        local sizeY = options.sizeY or 350
+        local color = options.color or Color3.fromRGB(128, 128, 128)
+        local dragSpeed = options.dragSpeed or 0
+        local theme = options.theme or "dark"
+
+        local themeColors = {
+            dark = Color3.fromRGB(128, 128, 128),
+            light = Color3.fromRGB(240, 240, 240),
+            blue = Color3.fromRGB(30, 50, 90),
+            ["light blue"] = Color3.fromRGB(200, 220, 240),
+            red = Color3.fromRGB(90, 30, 30),
+            ["light red"] = Color3.fromRGB(250, 220, 220),
+            purple = Color3.fromRGB(60, 30, 90),
+            ["light purple"] = Color3.fromRGB(230, 210, 250),
+            green = Color3.fromRGB(30, 70, 30),
+            ["light green"] = Color3.fromRGB(210, 240, 210)
+        }
+
+        if color == Color3.fromRGB(128, 128, 128) and theme:lower() ~= "dark" then
+            color = themeColors[theme:lower()] or color
+        end
+
         local themes = {
             dark = {
                 background = Color3.fromRGB(22, 22, 22),
@@ -723,37 +741,8 @@ local function initLibrary()
                 watermarkText = Color3.fromRGB(0, 40, 0)
             }
         }
-        return themes[theme:lower()] or themes.dark
-    end
 
-    function library:Load(opts)
-        local options = utility.table(opts)
-        local name = options.name or "Epic UI Library"
-        library._currentMenuName = name
-        local sizeX = options.sizeX or 466
-        local sizeY = options.sizeY or 350
-        local color = options.color or Color3.fromRGB(128, 128, 128)
-        local dragSpeed = options.dragSpeed or 0
-        local theme = options.theme or "dark"
-
-        local themeColors = {
-            dark = Color3.fromRGB(128, 128, 128),
-            light = Color3.fromRGB(240, 240, 240),
-            blue = Color3.fromRGB(30, 50, 90),
-            ["light blue"] = Color3.fromRGB(200, 220, 240),
-            red = Color3.fromRGB(90, 30, 30),
-            ["light red"] = Color3.fromRGB(250, 220, 220),
-            purple = Color3.fromRGB(60, 30, 90),
-            ["light purple"] = Color3.fromRGB(230, 210, 250),
-            green = Color3.fromRGB(30, 70, 30),
-            ["light green"] = Color3.fromRGB(210, 240, 210)
-        }
-
-        if color == Color3.fromRGB(128, 128, 128) and theme:lower() ~= "dark" then
-            color = themeColors[theme:lower()] or color
-        end
-
-        local selectedTheme = createThemeColors(theme)
+        local selectedTheme = themes[theme:lower()] or themes.dark
         library.selectedTheme = selectedTheme
         library.color = color
         
@@ -873,6 +862,7 @@ local function initLibrary()
             local tab = utility.create("Frame", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                 Visible = toggled,
                 Parent = tabs
             })
@@ -897,32 +887,81 @@ local function initLibrary()
                 Parent = columnsContainer
             })
 
-            local columns = {}
-            local columnLists = {}
-            
-            for i = 1, 4 do
-                local column = utility.create("ScrollingFrame", {
-                    Size = UDim2.new(0.5, -2, 1, 0),
-                    Position = i == 2 and UDim2.new(0.5, 2, 0, 0) or UDim2.new(0, 0, 0, 0),
-                    BackgroundTransparency = 1,
-                    Active = true,
-                    BorderSizePixel = 0,
-                    ScrollBarThickness = 0,
-                    Parent = i <= 2 and topRow or bottomRow
-                })
-                local columnList = utility.create("UIListLayout", {
-                    SortOrder = Enum.SortOrder.LayoutOrder,
-                    Padding = UDim.new(0, 6),
-                    Parent = column
-                })
-                columns[i] = column
-                columnLists[i] = columnList
-                
-                columnList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                    column.CanvasSize = UDim2.new(0, 0, 0, columnList.AbsoluteContentSize.Y)
-                    updateLayout()
-                end)
-            end
+            local column1 = utility.create("ScrollingFrame", {
+                Size = UDim2.new(0.5, -2, 1, 0),
+                Position = UDim2.new(0, 0, 0, 0),
+                BackgroundTransparency = 1,
+                Active = true,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 0,
+                Parent = topRow
+            })
+            local column1List = utility.create("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 6),
+                Parent = column1
+            })
+            column1List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                column1.CanvasSize = UDim2.new(0, 0, 0, column1List.AbsoluteContentSize.Y)
+                updateLayout()
+            end)
+
+            local column2 = utility.create("ScrollingFrame", {
+                Size = UDim2.new(0.5, -2, 1, 0),
+                Position = UDim2.new(0.5, 2, 0, 0),
+                BackgroundTransparency = 1,
+                Active = true,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 0,
+                Parent = topRow
+            })
+            local column2List = utility.create("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 6),
+                Parent = column2
+            })
+            column2List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                column2.CanvasSize = UDim2.new(0, 0, 0, column2List.AbsoluteContentSize.Y)
+                updateLayout()
+            end)
+
+            local column3 = utility.create("ScrollingFrame", {
+                Size = UDim2.new(0.5, -2, 1, 0),
+                Position = UDim2.new(0, 0, 0, 0),
+                BackgroundTransparency = 1,
+                Active = true,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 0,
+                Parent = bottomRow
+            })
+            local column3List = utility.create("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 6),
+                Parent = column3
+            })
+            column3List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                column3.CanvasSize = UDim2.new(0, 0, 0, column3List.AbsoluteContentSize.Y)
+                updateLayout()
+            end)
+
+            local column4 = utility.create("ScrollingFrame", {
+                Size = UDim2.new(0.5, -2, 1, 0),
+                Position = UDim2.new(0.5, 2, 0, 0),
+                BackgroundTransparency = 1,
+                Active = true,
+                BorderSizePixel = 0,
+                ScrollBarThickness = 0,
+                Parent = bottomRow
+            })
+            local column4List = utility.create("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 6),
+                Parent = column4
+            })
+            column4List:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                column4.CanvasSize = UDim2.new(0, 0, 0, column4List.AbsoluteContentSize.Y)
+                updateLayout()
+            end)
 
             local tabColumnSizes = {}
 
@@ -933,12 +972,10 @@ local function initLibrary()
                 local topCount = 0
                 local bottomCount = 0
                 
-                for i = 1, 2 do
-                    if tabColumnSizes[i] then topCount = topCount + 1 end
-                end
-                for i = 3, 4 do
-                    if tabColumnSizes[i] then bottomCount = bottomCount + 1 end
-                end
+                if tabColumnSizes[1] then topCount = topCount + 1 end
+                if tabColumnSizes[2] then topCount = topCount + 1 end
+                if tabColumnSizes[3] then bottomCount = bottomCount + 1 end
+                if tabColumnSizes[4] then bottomCount = bottomCount + 1 end
                 
                 if topCount == 0 then
                     topRow.Visible = false
@@ -959,45 +996,58 @@ local function initLibrary()
                 
                 if topCount > 0 then
                     local colWidth = (totalWidth - (topCount - 1) * 4) / topCount
-                    local xPos = 0
-                    for i = 1, 2 do
-                        if tabColumnSizes[i] then
-                            columns[i].Size = UDim2.new(0, colWidth, 1, 0)
-                            columns[i].Position = UDim2.new(0, xPos, 0, 0)
-                            columns[i].Visible = true
-                            xPos = xPos + colWidth + 4
+                    if tabColumnSizes[1] then
+                        column1.Size = UDim2.new(0, colWidth, 1, 0)
+                        column1.Position = UDim2.new(0, 0, 0, 0)
+                        column1.Visible = true
+                        local xPos = colWidth + 4
+                        if tabColumnSizes[2] then
+                            column2.Size = UDim2.new(0, colWidth, 1, 0)
+                            column2.Position = UDim2.new(0, xPos, 0, 0)
+                            column2.Visible = true
                         else
-                            columns[i].Visible = false
+                            column2.Visible = false
                         end
+                    elseif tabColumnSizes[2] then
+                        column2.Size = UDim2.new(0, colWidth, 1, 0)
+                        column2.Position = UDim2.new(0, 0, 0, 0)
+                        column2.Visible = true
+                        column1.Visible = false
                     end
                 else
-                    columns[1].Visible = false
-                    columns[2].Visible = false
+                    column1.Visible = false
+                    column2.Visible = false
                 end
                 
                 if bottomCount > 0 then
                     local colWidth = (totalWidth - (bottomCount - 1) * 4) / bottomCount
-                    local xPos = 0
-                    for i = 3, 4 do
-                        if tabColumnSizes[i] then
-                            columns[i].Size = UDim2.new(0, colWidth, 1, 0)
-                            columns[i].Position = UDim2.new(0, xPos, 0, 0)
-                            columns[i].Visible = true
-                            xPos = xPos + colWidth + 4
+                    if tabColumnSizes[3] then
+                        column3.Size = UDim2.new(0, colWidth, 1, 0)
+                        column3.Position = UDim2.new(0, 0, 0, 0)
+                        column3.Visible = true
+                        local xPos = colWidth + 4
+                        if tabColumnSizes[4] then
+                            column4.Size = UDim2.new(0, colWidth, 1, 0)
+                            column4.Position = UDim2.new(0, xPos, 0, 0)
+                            column4.Visible = true
                         else
-                            columns[i].Visible = false
+                            column4.Visible = false
                         end
+                    elseif tabColumnSizes[4] then
+                        column4.Size = UDim2.new(0, colWidth, 1, 0)
+                        column4.Position = UDim2.new(0, 0, 0, 0)
+                        column4.Visible = true
+                        column3.Visible = false
                     end
                 else
-                    columns[3].Visible = false
-                    columns[4].Visible = false
+                    column3.Visible = false
+                    column4.Visible = false
                 end
                 
-                for i = 1, 4 do
-                    if columns[i] and columns[i].Visible then
-                        columns[i].CanvasSize = UDim2.new(0, 0, 0, columnLists[i].AbsoluteContentSize.Y)
-                    end
-                end
+                column1.CanvasSize = UDim2.new(0, 0, 0, column1List.AbsoluteContentSize.Y)
+                column2.CanvasSize = UDim2.new(0, 0, 0, column2List.AbsoluteContentSize.Y)
+                column3.CanvasSize = UDim2.new(0, 0, 0, column3List.AbsoluteContentSize.Y)
+                column4.CanvasSize = UDim2.new(0, 0, 0, column4List.AbsoluteContentSize.Y)
             end
 
             local function openTab()
@@ -1011,14 +1061,14 @@ local function initLibrary()
                     obj.Visible = false
                 end
                 tab.Visible = true
-                task.wait(0.1)
+                wait(0.1)
                 updateLayout()
             end
 
             tabToggle.MouseButton1Click:Connect(openTab)
 
             local lastSize = topbar.AbsoluteSize
-            topbar:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+            runService.RenderStepped:Connect(function()
                 if topbar.AbsoluteSize ~= lastSize then
                     lastSize = topbar.AbsoluteSize
                     updateLayout()
@@ -1042,11 +1092,23 @@ local function initLibrary()
                 
                 tabColumnSizes[column] = true
                 
-                local columnFrame = columns[column] or columns[1]
+                local columnFrame
+                if column == 1 then
+                    columnFrame = column1
+                elseif column == 2 then
+                    columnFrame = column2
+                elseif column == 3 then
+                    columnFrame = column3
+                elseif column == 4 then
+                    columnFrame = column4
+                else
+                    columnFrame = column1
+                end
 
                 local sectionHolder = utility.create("Frame", {
                     Size = UDim2.new(1, 0, 0, 26),
                     BackgroundTransparency = 1,
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     Parent = columnFrame
                 })
 
@@ -1072,6 +1134,7 @@ local function initLibrary()
                     Size = UDim2.new(0, 0, 1, 0),
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 8, 0, 0),
+                    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     FontSize = Enum.FontSize.Size14,
                     TextSize = 13,
                     TextColor3 = selectedTheme.text,
@@ -1143,6 +1206,7 @@ local function initLibrary()
                         Size = UDim2.new(0, 0, 0, 14),
                         BackgroundTransparency = 1,
                         Position = UDim2.new(0, 8, 0, 0),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         Text = text,
@@ -1175,6 +1239,7 @@ local function initLibrary()
                         Size = UDim2.new(1, 0, 0, 14),
                         BackgroundTransparency = 1,
                         Position = UDim2.new(0, 8, 0, 0),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         Text = text,
@@ -1332,6 +1397,7 @@ local function initLibrary()
                         Size = UDim2.new(0, 0, 1, 0),
                         BackgroundTransparency = 1,
                         Position = UDim2.new(1, 7, 0, 0),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.textSecondary,
@@ -1347,12 +1413,7 @@ local function initLibrary()
                         if toggled then
                             table.insert(coloredGradients, iconGradient)
                         else
-                            for i, g in ipairs(coloredGradients) do
-                                if g == iconGradient then
-                                    table.remove(coloredGradients, i)
-                                    break
-                                end
-                            end
+                            table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
                         end
 
                         local textColor = toggled and selectedTheme.text or selectedTheme.textSecondary
@@ -1440,6 +1501,7 @@ local function initLibrary()
                     local boxHolder = utility.create("Frame", {
                         Size = UDim2.new(1, 0, 0, 36),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         Parent = sectionContent
                     })
 
@@ -1449,6 +1511,7 @@ local function initLibrary()
                         BorderColor3 = selectedTheme.background,
                         BackgroundTransparency = 1,
                         Position = UDim2.new(0, 0, 1, -16),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size12,
                         TextSize = 12,
                         TextColor3 = selectedTheme.text,
@@ -1462,6 +1525,7 @@ local function initLibrary()
                         ZIndex = 3,
                         Size = UDim2.new(1, 0, 1, 0),
                         BorderColor3 = selectedTheme.background,
+                        Position = UDim2.new(0, 0, 0, 0),
                         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         Parent = box
                     })
@@ -1476,6 +1540,7 @@ local function initLibrary()
                         ZIndex = 3,
                         Size = UDim2.new(0, 0, 0, 16),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.text,
@@ -1606,6 +1671,7 @@ local function initLibrary()
                         ZIndex = 5,
                         Size = UDim2.new(1, 0, 1, 0),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size12,
                         TextSize = 12,
                         TextColor3 = selectedTheme.text,
@@ -1735,6 +1801,7 @@ local function initLibrary()
                     local toggleSliderHolder = utility.create("Frame", {
                         Size = UDim2.new(1, 0, 0, 35),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         Parent = sectionContent
                     })
 
@@ -1776,6 +1843,7 @@ local function initLibrary()
                         ZIndex = 5,
                         Size = UDim2.new(1, 0, 1, 0),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size12,
                         TextSize = 12,
                         TextColor3 = selectedTheme.text,
@@ -1787,6 +1855,7 @@ local function initLibrary()
                     local toggle = utility.create("TextButton", {
                         Size = UDim2.new(1, 0, 0, 16),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 14,
                         TextColor3 = Color3.fromRGB(0, 0, 0),
@@ -1815,6 +1884,7 @@ local function initLibrary()
                         Size = UDim2.new(0, 0, 1, 0),
                         BackgroundTransparency = 1,
                         Position = UDim2.new(1, 7, 0, 0),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.textSecondary,
@@ -1829,12 +1899,7 @@ local function initLibrary()
                         if toggled then
                             table.insert(coloredGradients, iconGradient)
                         else
-                            for i, g in ipairs(coloredGradients) do
-                                if g == iconGradient then
-                                    table.remove(coloredGradients, i)
-                                    break
-                                end
-                            end
+                            table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
                         end
 
                         local textColor = toggled and selectedTheme.text or selectedTheme.textSecondary
@@ -1983,6 +2048,7 @@ local function initLibrary()
                     local dropdownHolder = utility.create("Frame", {
                         Size = UDim2.new(1, 0, 0, 36),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         Parent = sectionContent
                     })
 
@@ -1990,6 +2056,7 @@ local function initLibrary()
                         ZIndex = 3,
                         Size = UDim2.new(0, 0, 0, 16),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.text,
@@ -2037,6 +2104,7 @@ local function initLibrary()
                         Rotation = 180,
                         BackgroundTransparency = 1,
                         Position = UDim2.new(1, -16, 0, 1),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         Image = "http://www.roblox.com/asset/?id=8747047318",
                         Parent = open
                     })
@@ -2077,10 +2145,7 @@ local function initLibrary()
                     local function selectObj(obj, padding, bool)
                         for i, v in next, contentHolder:GetChildren() do
                             if v:IsA("TextButton") then
-                                local pad = v:FindFirstChildOfClass("UIPadding")
-                                if pad then
-                                    pad.PaddingLeft = UDim.new(0, 6)
-                                end
+                                v:FindFirstChildOfClass("UIPadding").PaddingLeft = UDim.new(0, 6)
                                 v.Font = Enum.Font.Gotham
                             end
                         end
@@ -2102,6 +2167,7 @@ local function initLibrary()
                             ZIndex = 11,
                             Size = UDim2.new(1, 0, 0, 14),
                             BackgroundTransparency = 1,
+                            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                             FontSize = Enum.FontSize.Size12,
                             TextSize = 12,
                             TextColor3 = selectedTheme.text,
@@ -2286,6 +2352,7 @@ local function initLibrary()
                             ZIndex = 11,
                             Size = UDim2.new(1, 0, 0, 14),
                             BackgroundTransparency = 1,
+                            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                             FontSize = Enum.FontSize.Size12,
                             TextSize = 12,
                             TextColor3 = selectedTheme.text,
@@ -2389,6 +2456,7 @@ local function initLibrary()
                                 ZIndex = 11,
                                 Size = UDim2.new(1, 0, 0, 14),
                                 BackgroundTransparency = 1,
+                                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                                 FontSize = Enum.FontSize.Size12,
                                 TextSize = 12,
                                 TextColor3 = selectedTheme.text,
@@ -2534,6 +2602,7 @@ local function initLibrary()
                     local keybind = utility.create("TextButton", {
                         Size = UDim2.new(1, 0, 0, 16),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 14,
                         TextColor3 = Color3.fromRGB(0, 0, 0),
@@ -2545,6 +2614,7 @@ local function initLibrary()
                         ZIndex = 3,
                         Size = UDim2.new(0, 0, 1, 0),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.text,
@@ -2744,6 +2814,7 @@ local function initLibrary()
                     local toggleKeybind = utility.create("TextButton", {
                         Size = UDim2.new(1, 0, 0, 16),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 14,
                         TextColor3 = Color3.fromRGB(0, 0, 0),
@@ -2756,6 +2827,7 @@ local function initLibrary()
                         Size = UDim2.new(0, 0, 1, 0),
                         BackgroundTransparency = 1,
                         Position = UDim2.new(0, 21, 0, 0),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.textSecondary,
@@ -2783,6 +2855,7 @@ local function initLibrary()
                     local value = utility.create("TextButton", {
                         ZIndex = 3,
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.textSecondary,
@@ -2800,12 +2873,7 @@ local function initLibrary()
                         if toggled then
                             table.insert(coloredGradients, iconGradient)
                         else
-                            for i, g in ipairs(coloredGradients) do
-                                if g == iconGradient then
-                                    table.remove(coloredGradients, i)
-                                    break
-                                end
-                            end
+                            table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
                         end
                         local textColor = toggled and selectedTheme.text or selectedTheme.textSecondary
                         local gradientColor
@@ -2985,6 +3053,7 @@ local function initLibrary()
                     local colorPicker = utility.create("TextButton", {
                         Size = UDim2.new(1, 0, 0, 16),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 14,
                         TextColor3 = Color3.fromRGB(0, 0, 0),
@@ -2996,6 +3065,7 @@ local function initLibrary()
                         ZIndex = 3,
                         Size = UDim2.new(0, 0, 1, 0),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.text,
@@ -3347,6 +3417,7 @@ local function initLibrary()
                     local colorPicker = utility.create("TextButton", {
                         Size = UDim2.new(1, 0, 0, 16),
                         BackgroundTransparency = 1,
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 14,
                         TextColor3 = Color3.fromRGB(0, 0, 0),
@@ -3393,6 +3464,7 @@ local function initLibrary()
                         Size = UDim2.new(0, 0, 1, 0),
                         BackgroundTransparency = 1,
                         Position = UDim2.new(1, 7, 0, 0),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         FontSize = Enum.FontSize.Size14,
                         TextSize = 13,
                         TextColor3 = selectedTheme.textSecondary,
@@ -3523,12 +3595,7 @@ local function initLibrary()
                         if toggled then
                             table.insert(coloredGradients, iconGradient)
                         else
-                            for i, g in ipairs(coloredGradients) do
-                                if g == iconGradient then
-                                    table.remove(coloredGradients, i)
-                                    break
-                                end
-                            end
+                            table.remove(coloredGradients, table.find(coloredGradients, iconGradient))
                         end
                         local textColor = toggled and selectedTheme.text or selectedTheme.textSecondary
                         local gradientColor
