@@ -26,7 +26,7 @@ local ESP = {
     NameColor = Color3.fromRGB(255, 255, 255),
     BoxColor = Color3.fromRGB(255, 255, 255),
     TracerColor = Color3.fromRGB(255, 0, 0),
-    TracerThickness = 1,
+    TracerThickness = 2,
     BoxThickness = 1
 }
 
@@ -61,17 +61,53 @@ local function isPartVisible(part)
     return true
 end
 
+local function getCharacterType(character)
+    -- Проверяем наличие частей тела для R15
+    if character:FindFirstChild("UpperTorso") and character:FindFirstChild("LowerTorso") then
+        return "R15"
+    end
+    return "R6"
+end
+
 local function isPlayerVisible(player)
     local character = player.Character
     if not character then return false end
     
-    local partsToCheck = {
-        "Head", 
-        "HumanoidRootPart", 
-        "UpperTorso", 
-        "LowerTorso", 
-        "Torso"
-    }
+    local characterType = getCharacterType(character)
+    local partsToCheck = {}
+    
+    if characterType == "R15" then
+        -- Все части тела для R15
+        partsToCheck = {
+            "Head",
+            "HumanoidRootPart",
+            "UpperTorso",
+            "LowerTorso",
+            "LeftUpperArm",
+            "LeftLowerArm",
+            "LeftHand",
+            "RightUpperArm",
+            "RightLowerArm",
+            "RightHand",
+            "LeftUpperLeg",
+            "LeftLowerLeg",
+            "LeftFoot",
+            "RightUpperLeg",
+            "RightLowerLeg",
+            "RightFoot"
+        }
+    else
+        -- Основные части для R6
+        partsToCheck = {
+            "Head",
+            "HumanoidRootPart",
+            "Torso",
+            "Left Arm",
+            "Right Arm",
+            "Left Leg",
+            "Right Leg"
+        }
+    end
     
     for _, partName in ipairs(partsToCheck) do
         local part = character:FindFirstChild(partName)
@@ -420,6 +456,14 @@ local function updateTracer(player)
     -- Получаем позицию на экране
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
     
+    -- Проверка видимости для трейсера
+    if ESP.VisibleCheck then
+        if not isPlayerVisible(player) then
+            esp.tracer.Visible = false
+            return
+        end
+    end
+    
     -- Трейсер рисуется даже если игрок не на экране
     local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
     
@@ -427,7 +471,7 @@ local function updateTracer(player)
     esp.tracer.To = Vector2.new(hrp2D.X, hrp2D.Y)
     esp.tracer.Color = getTracerColor(player)
     esp.tracer.Thickness = ESP.TracerThickness
-    esp.tracer.Visible = true  -- Всегда показываем трейсер, даже если игрок не на экране
+    esp.tracer.Visible = true
 end
 
 local function setupPlayer(player)
