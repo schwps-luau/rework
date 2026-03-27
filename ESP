@@ -62,11 +62,21 @@ local function isPartVisible(part)
 end
 
 local function getCharacterType(character)
-    -- Проверяем наличие частей тела для R15
     if character:FindFirstChild("UpperTorso") and character:FindFirstChild("LowerTorso") then
         return "R15"
     end
     return "R6"
+end
+
+local function isPlayerOnScreen(player)
+    local character = player.Character
+    if not character then return false end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
+    if not rootPart then return false end
+    
+    local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+    return onScreen
 end
 
 local function isPlayerVisible(player)
@@ -77,7 +87,6 @@ local function isPlayerVisible(player)
     local partsToCheck = {}
     
     if characterType == "R15" then
-        -- Все части тела для R15
         partsToCheck = {
             "Head",
             "HumanoidRootPart",
@@ -97,7 +106,6 @@ local function isPlayerVisible(player)
             "RightFoot"
         }
     else
-        -- Основные части для R6
         partsToCheck = {
             "Head",
             "HumanoidRootPart",
@@ -215,10 +223,20 @@ local function shouldShowPlayer(player)
         return false
     end
     
+    -- WallCheck: скрывает игрока если он за стеной
     if ESP.WallCheck then
-        return isPlayerVisible(player)
+        -- Проверяем видимость через стены и нахождение в кадре
+        if not isPlayerVisible(player) then
+            return false
+        end
+        -- Дополнительно проверяем, находится ли игрок в кадре
+        if not isPlayerOnScreen(player) then
+            return false
+        end
+        return true
     end
     
+    -- Если WallCheck выключен, показываем всех живых игроков (не союзников)
     return true
 end
 
@@ -239,6 +257,7 @@ local function updateName(player)
     local esp = cache[player]
     if not esp or not esp.name then return end
     
+    -- Проверяем WallCheck для скрытия имени
     if not ESP.Enabled or not ESP.ShowName or not shouldShowPlayer(player) then
         esp.name.Visible = false
         return
@@ -447,6 +466,14 @@ local function updateTracer(player)
         return
     end
     
+    -- WallCheck: скрываем трейсер если игрок за стеной или не в кадре
+    if ESP.WallCheck then
+        if not isPlayerVisible(player) or not isPlayerOnScreen(player) then
+            esp.tracer.Visible = false
+            return
+        end
+    end
+    
     local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
     if not rootPart then
         esp.tracer.Visible = false
@@ -456,15 +483,12 @@ local function updateTracer(player)
     -- Получаем позицию на экране
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
     
-    -- Проверка видимости для трейсера
-    if ESP.VisibleCheck then
-        if not isPlayerVisible(player) then
-            esp.tracer.Visible = false
-            return
-        end
+    -- Трейсер рисуется только если игрок в кадре
+    if not onScreen then
+        esp.tracer.Visible = false
+        return
     end
     
-    -- Трейсер рисуется даже если игрок не на экране
     local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
     
     esp.tracer.From = screenCenter
