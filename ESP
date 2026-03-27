@@ -27,7 +27,9 @@ local ESP = {
     BoxColor = Color3.fromRGB(255, 255, 255),
     TracerColor = Color3.fromRGB(255, 255, 255),
     TracerThickness = 1,
-    BoxThickness = 1
+    BoxThickness = 1,
+    BoxFilled = false,
+    BoxTransparency = 0.5
 }
 
 local raycastParams = RaycastParams.new()
@@ -143,6 +145,11 @@ local function createEsp(player)
             Thickness = ESP.BoxThickness,
             Visible = false
         }),
+        boxFill = createDrawing("Quad", {
+            Color = ESP.BoxColor,
+            Visible = false,
+            Transparency = ESP.BoxTransparency
+        }),
         tracer = createDrawing("Line", {
             Thickness = ESP.TracerThickness,
             Visible = false
@@ -189,7 +196,7 @@ local function updateHighlight(player)
     local highlight = highlights[player]
     if not highlight then return end
     
-    if not ESP.Enabled or not shouldShowPlayer(player) then
+    if not ESP.Enabled or not shouldShowPlayer(player) or ESP.ShowBox then
         highlight.Enabled = false
         return
     end
@@ -309,6 +316,9 @@ local function updateBox(player)
         esp.boxBottom.Visible = false
         esp.boxLeft.Visible = false
         esp.boxRight.Visible = false
+        if esp.boxFill then
+            esp.boxFill.Visible = false
+        end
         return
     end
     
@@ -318,6 +328,9 @@ local function updateBox(player)
         esp.boxBottom.Visible = false
         esp.boxLeft.Visible = false
         esp.boxRight.Visible = false
+        if esp.boxFill then
+            esp.boxFill.Visible = false
+        end
         return
     end
     
@@ -327,6 +340,9 @@ local function updateBox(player)
         esp.boxBottom.Visible = false
         esp.boxLeft.Visible = false
         esp.boxRight.Visible = false
+        if esp.boxFill then
+            esp.boxFill.Visible = false
+        end
         return
     end
     
@@ -336,6 +352,9 @@ local function updateBox(player)
         esp.boxBottom.Visible = false
         esp.boxLeft.Visible = false
         esp.boxRight.Visible = false
+        if esp.boxFill then
+            esp.boxFill.Visible = false
+        end
         return
     end
     
@@ -345,6 +364,9 @@ local function updateBox(player)
         esp.boxBottom.Visible = false
         esp.boxLeft.Visible = false
         esp.boxRight.Visible = false
+        if esp.boxFill then
+            esp.boxFill.Visible = false
+        end
         return
     end
     
@@ -373,6 +395,18 @@ local function updateBox(player)
     esp.boxRight.To = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y + boxSize.Y)
     esp.boxRight.Color = boxColor
     esp.boxRight.Visible = true
+    
+    if esp.boxFill and ESP.BoxFilled then
+        esp.boxFill.Color = boxColor
+        esp.boxFill.Transparency = ESP.BoxTransparency
+        esp.boxFill.PointA = Vector2.new(boxPosition.X, boxPosition.Y)
+        esp.boxFill.PointB = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y)
+        esp.boxFill.PointC = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y + boxSize.Y)
+        esp.boxFill.PointD = Vector2.new(boxPosition.X, boxPosition.Y + boxSize.Y)
+        esp.boxFill.Visible = true
+    elseif esp.boxFill then
+        esp.boxFill.Visible = false
+    end
 end
 
 local function updateTracer(player)
@@ -475,6 +509,9 @@ local function cleanupPlayer(player)
         end
         if cache[player].boxRight then
             cache[player].boxRight:Remove()
+        end
+        if cache[player].boxFill then
+            cache[player].boxFill:Remove()
         end
         if cache[player].tracer then
             cache[player].tracer:Remove()
