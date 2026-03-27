@@ -311,7 +311,9 @@ local function updateBox(player)
     local esp = cache[player]
     if not esp or not esp.boxTop then return end
     
-    if not ESP.Enabled or not ESP.ShowBox or not shouldShowPlayer(player) then
+    local shouldDraw = ESP.Enabled and ESP.ShowBox and shouldShowPlayer(player)
+    
+    if not shouldDraw then
         esp.boxTop.Visible = false
         esp.boxBottom.Visible = false
         esp.boxLeft.Visible = false
@@ -379,33 +381,39 @@ local function updateBox(player)
     esp.boxTop.From = boxPosition
     esp.boxTop.To = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y)
     esp.boxTop.Color = boxColor
+    esp.boxTop.Thickness = ESP.BoxThickness
     esp.boxTop.Visible = true
     
     esp.boxBottom.From = Vector2.new(boxPosition.X, boxPosition.Y + boxSize.Y)
     esp.boxBottom.To = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y + boxSize.Y)
     esp.boxBottom.Color = boxColor
+    esp.boxBottom.Thickness = ESP.BoxThickness
     esp.boxBottom.Visible = true
     
     esp.boxLeft.From = boxPosition
     esp.boxLeft.To = Vector2.new(boxPosition.X, boxPosition.Y + boxSize.Y)
     esp.boxLeft.Color = boxColor
+    esp.boxLeft.Thickness = ESP.BoxThickness
     esp.boxLeft.Visible = true
     
     esp.boxRight.From = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y)
     esp.boxRight.To = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y + boxSize.Y)
     esp.boxRight.Color = boxColor
+    esp.boxRight.Thickness = ESP.BoxThickness
     esp.boxRight.Visible = true
     
-    if esp.boxFill and ESP.BoxFilled then
-        esp.boxFill.Color = boxColor
-        esp.boxFill.Transparency = ESP.BoxTransparency
-        esp.boxFill.PointA = Vector2.new(boxPosition.X, boxPosition.Y)
-        esp.boxFill.PointB = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y)
-        esp.boxFill.PointC = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y + boxSize.Y)
-        esp.boxFill.PointD = Vector2.new(boxPosition.X, boxPosition.Y + boxSize.Y)
-        esp.boxFill.Visible = true
-    elseif esp.boxFill then
-        esp.boxFill.Visible = false
+    if esp.boxFill then
+        if ESP.BoxFilled then
+            esp.boxFill.Color = boxColor
+            esp.boxFill.Transparency = ESP.BoxTransparency
+            esp.boxFill.PointA = Vector2.new(boxPosition.X, boxPosition.Y)
+            esp.boxFill.PointB = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y)
+            esp.boxFill.PointC = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y + boxSize.Y)
+            esp.boxFill.PointD = Vector2.new(boxPosition.X, boxPosition.Y + boxSize.Y)
+            esp.boxFill.Visible = true
+        else
+            esp.boxFill.Visible = false
+        end
     end
 end
 
