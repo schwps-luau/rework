@@ -167,6 +167,21 @@ local function getElementColor(player)
     return ESP.VisibleColor
 end
 
+local function getTracerColor(player)
+    -- Для трейсера используем отдельную логику цвета
+    if isTeammate(player) then
+        return ESP.TeammateColor
+    end
+    
+    -- Если включена проверка видимости, используем соответствующие цвета
+    if ESP.VisibleCheck then
+        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
+    end
+    
+    -- Иначе используем цвет трейсера из настроек
+    return ESP.TracerColor
+end
+
 local function shouldShowPlayer(player)
     local character = player.Character
     if not character then return false end
@@ -413,7 +428,8 @@ local function updateTracer(player)
     
     esp.tracer.From = screenCenter
     esp.tracer.To = Vector2.new(hrp2D.X, hrp2D.Y)
-    esp.tracer.Color = getElementColor(player)
+    -- Используем отдельную функцию для цвета трейсера
+    esp.tracer.Color = getTracerColor(player)
     esp.tracer.Thickness = ESP.TracerThickness
     esp.tracer.Visible = true
 end
