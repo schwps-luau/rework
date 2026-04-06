@@ -1611,217 +1611,217 @@ function initLibrary()
                 end
 
                 function sectionTypes:Slider(opts)
-                    local options = utility.table(opts)
-                    local min = options.min or 0
-                    local max = options.max or 100
-                    local valueText = options.valueText or "Slider: [VALUE]/" .. tostring(max)
-                    local default = options.default or math.clamp(0, min, max)
-                    local decimals = options.decimals or 0.1
-                    local flag = options.flag
-                    local callback = options.callback or function() end
-                    local showTextBox = options.showTextBox or false
+                        local options = utility.table(opts)
+                        local min = options.min or 0
+                        local max = options.max or 100
+                        local valueText = options.valueText or "Slider: [VALUE]/" .. tostring(max)
+                        local default = options.default or math.clamp(0, min, max)
+                        local decimals = options.decimals or 0.1
+                        local flag = options.flag
+                        local callback = options.callback or function() end
+                        local showTextBox = options.showTextBox or true
 
-                    decimals = math.floor(10 ^ decimals)
+                        decimals = math.floor(10 ^ decimals)
 
-                    if flag then
-                        library.flags[flag] = default
-                    end
-                    callback(default)
+                        if flag then
+                                library.flags[flag] = default
+                        end
+                        callback(default)
 
-                    local value = default
-                    local sliding = false
+                        local value = default
+                        local sliding = false
 
-                    local sliderHolder = utility.create("Frame", {
-                        Size = UDim2.new(1, 0, 0, showTextBox and 32 or 16),
-                        BackgroundTransparency = 1,
-                        Parent = sectionContent
-                    })
-
-                    local slider = utility.create("Frame", {
-                        ZIndex = 3,
-                        Size = UDim2.new(1, (showTextBox and -50) or 0, 0, 16),
-                        BorderColor3 = selectedTheme.background,
-                        Position = UDim2.new(0, 0, 1, -13),
-                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                        Parent = sliderHolder
-                    })
-
-                    local fill = utility.create("Frame", {
-                        ZIndex = 4,
-                        Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
-                        BorderSizePixel = 0,
-                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                        Parent = slider
-                    })
-
-                    local fillGradient = utility.create("UIGradient", {
-                        Rotation = 90,
-                        Color = ColorSequence.new{
-                            ColorSequenceKeypoint.new(0, library.color),
-                            ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
-                        },
-                        Parent = fill
-                    })
-
-                    table.insert(coloredGradients, fillGradient)
-
-                    utility.create("UIGradient", {
-                        Rotation = 90,
-                        Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
-                        Parent = slider
-                    })
-
-                    local title = utility.create("TextLabel", {
-                        ZIndex = 5,
-                        Size = UDim2.new(1, 0, 1, 0),
-                        BackgroundTransparency = 1,
-                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                        FontSize = Enum.FontSize.Size12,
-                        TextSize = 12,
-                        TextColor3 = selectedTheme.text,
-                        Text = valueText:gsub("%[VALUE%]", tostring(default)),
-                        Font = Enum.Font.Gotham,
-                        Parent = slider
-                    })
-
-                    local textBox = nil
-                    if showTextBox then
-                        textBox = utility.create("TextBox", {
-                            ZIndex = 4,
-                            Size = UDim2.new(0, 44, 0, 16),
-                            Position = UDim2.new(1, -48, 1, -13),
-                            BorderColor3 = selectedTheme.background,
-                            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                            FontSize = Enum.FontSize.Size12,
-                            TextSize = 12,
-                            TextColor3 = selectedTheme.text,
-                            Text = tostring(default),
-                            Font = Enum.Font.Gotham,
-                            Parent = sliderHolder
+                        local sliderHolder = utility.create("Frame", {
+                                Size = UDim2.new(1, 0, 0, 16),
+                                BackgroundTransparency = 1,
+                                Parent = sectionContent
                         })
 
-                        local textBoxBg = utility.create("Frame", {
-                            ZIndex = 3,
-                            Size = UDim2.new(1, 0, 1, 0),
-                            BorderColor3 = selectedTheme.background,
-                            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                            Parent = textBox
+                        local slider = utility.create("Frame", {
+                                ZIndex = 3,
+                                Size = UDim2.new(1, (showTextBox and -50) or 0, 0, 16),
+                                BorderColor3 = selectedTheme.background,
+                                Position = UDim2.new(0, 0, 0, 0),
+                                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                Parent = sliderHolder
                         })
+
+                        local fill = utility.create("Frame", {
+                                ZIndex = 4,
+                                Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
+                                BorderSizePixel = 0,
+                                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                Parent = slider
+                        })
+
+                        local fillGradient = utility.create("UIGradient", {
+                                Rotation = 90,
+                                Color = ColorSequence.new{
+                                        ColorSequenceKeypoint.new(0, library.color),
+                                        ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
+                                },
+                                Parent = fill
+                        })
+
+                        table.insert(coloredGradients, fillGradient)
 
                         utility.create("UIGradient", {
-                            Rotation = 90,
-                            Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
-                            Parent = textBoxBg
+                                Rotation = 90,
+                                Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
+                                Parent = slider
                         })
 
-                        textBox.FocusLost:Connect(function()
-                            local num = tonumber(textBox.Text) or value
-                            num = math.clamp(num, min, max)
-                            local sizeX = (num - min) / (max - min)
-                            fill.Size = UDim2.new(sizeX, 0, 1, 0)
-                            value = math.floor(num * decimals) / decimals
-                            title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                            textBox.Text = tostring(value)
-                            if flag then
-                                library.flags[flag] = value
-                            end
-                            callback(value)
+                        local title = utility.create("TextLabel", {
+                                ZIndex = 5,
+                                Size = UDim2.new(1, 0, 1, 0),
+                                BackgroundTransparency = 1,
+                                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                FontSize = Enum.FontSize.Size12,
+                                TextSize = 12,
+                                TextColor3 = selectedTheme.text,
+                                Text = valueText:gsub("%[VALUE%]", tostring(default)),
+                                Font = Enum.Font.Gotham,
+                                Parent = slider
+                        })
+
+                        local textBox = nil
+                        if showTextBox then
+                                textBox = utility.create("TextBox", {
+                                        ZIndex = 4,
+                                        Size = UDim2.new(0, 44, 0, 16),
+                                        Position = UDim2.new(1, -48, 0, 0),
+                                        BorderColor3 = selectedTheme.background,
+                                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                        FontSize = Enum.FontSize.Size12,
+                                        TextSize = 12,
+                                        TextColor3 = selectedTheme.text,
+                                        Text = tostring(default),
+                                        Font = Enum.Font.Gotham,
+                                        Parent = sliderHolder
+                                })
+
+                                local textBoxBg = utility.create("Frame", {
+                                        ZIndex = 3,
+                                        Size = UDim2.new(1, 0, 1, 0),
+                                        BorderColor3 = selectedTheme.background,
+                                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                        Parent = textBox
+                                })
+
+                                utility.create("UIGradient", {
+                                        Rotation = 90,
+                                        Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
+                                        Parent = textBoxBg
+                                })
+
+                                textBox.FocusLost:Connect(function()
+                                        local num = tonumber(textBox.Text) or value
+                                        num = math.clamp(num, min, max)
+                                        local sizeX = (num - min) / (max - min)
+                                        fill.Size = UDim2.new(sizeX, 0, 1, 0)
+                                        value = math.floor(num * decimals) / decimals
+                                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                        textBox.Text = tostring(value)
+                                        if flag then
+                                                library.flags[flag] = value
+                                        end
+                                        callback(value)
+                                end)
+                        end
+
+                        local function slide(input)
+                                local sizeX = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+                                fill.Size = UDim2.new(sizeX, 0, 1, 0)
+                                value = math.floor((((max - min) * sizeX) + min) * decimals) / decimals
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                if textBox then
+                                        textBox.Text = tostring(value)
+                                end
+                                if flag then
+                                        library.flags[flag] = value
+                                end
+                                callback(value)
+                        end
+
+                        slider.InputBegan:Connect(function(input)
+                                if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+                                        sliding = true
+                                        slide(input)
+                                end
                         end)
-                    end
 
-                    local function slide(input)
-                        local sizeX = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
-                        fill.Size = UDim2.new(sizeX, 0, 1, 0)
-                        value = math.floor((((max - min) * sizeX) + min) * decimals) / decimals
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                        if textBox then
-                            textBox.Text = tostring(value)
+                        slider.InputEnded:Connect(function(input)
+                                if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+                                        sliding = false
+                                end
+                        end)
+
+                        inputService.InputChanged:Connect(function(input)
+                                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                                        if sliding then
+                                                slide(input)
+                                        end
+                                end
+                        end)
+
+                        local sliderTypes = utility.table()
+
+                        function sliderTypes:Show()
+                                sliderHolder.Visible = true
                         end
+
+                        function sliderTypes:Hide()
+                                sliderHolder.Visible = false
+                        end
+
+                        function sliderTypes:SetValueText(str)
+                                valueText = str
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                        end
+
+                        function sliderTypes:Set(num)
+                                num = math.floor(math.clamp(num, min, max) * decimals) / decimals
+                                value = num
+                                fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                if textBox then
+                                        textBox.Text = tostring(value)
+                                end
+                                if flag then
+                                        library.flags[flag] = value
+                                end
+                                callback(value)
+                        end
+
+                        function sliderTypes:SetMin(num)
+                                min = num
+                                value = math.floor(math.clamp(value, min, max) * decimals) / decimals
+                                fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                if flag then
+                                        library.flags[flag] = value
+                                end
+                                callback(value)
+                        end
+
+                        function sliderTypes:SetMax(num)
+                                max = num
+                                value = math.floor(math.clamp(value, min, max) * decimals) / decimals
+                                fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                if flag then
+                                        library.flags[flag] = value
+                                end
+                                callback(value)
+                        end
+
                         if flag then
-                            library.flags[flag] = value
+                                flags.sliders[flag] = function(num)
+                                        sliderTypes:Set(num)
+                                end
                         end
-                        callback(value)
-                    end
 
-                    slider.InputBegan:Connect(function(input)
-                        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                            sliding = true
-                            slide(input)
-                        end
-                    end)
-
-                    slider.InputEnded:Connect(function(input)
-                        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                            sliding = false
-                        end
-                    end)
-
-                    inputService.InputChanged:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                            if sliding then
-                                slide(input)
-                            end
-                        end
-                    end)
-
-                    local sliderTypes = utility.table()
-
-                    function sliderTypes:Show()
-                        sliderHolder.Visible = true
-                    end
-
-                    function sliderTypes:Hide()
-                        sliderHolder.Visible = false
-                    end
-
-                    function sliderTypes:SetValueText(str)
-                        valueText = str
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                    end
-
-                    function sliderTypes:Set(num)
-                        num = math.floor(math.clamp(num, min, max) * decimals) / decimals
-                        value = num
-                        fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                        if textBox then
-                            textBox.Text = tostring(value)
-                        end
-                        if flag then
-                            library.flags[flag] = value
-                        end
-                        callback(value)
-                    end
-
-                    function sliderTypes:SetMin(num)
-                        min = num
-                        value = math.floor(math.clamp(value, min, max) * decimals) / decimals
-                        fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                        if flag then
-                            library.flags[flag] = value
-                        end
-                        callback(value)
-                    end
-
-                    function sliderTypes:SetMax(num)
-                        max = num
-                        value = math.floor(math.clamp(value, min, max) * decimals) / decimals
-                        fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                        if flag then
-                            library.flags[flag] = value
-                        end
-                        callback(value)
-                    end
-
-                    if flag then
-                        flags.sliders[flag] = function(num)
-                            sliderTypes:Set(num)
-                        end
-                    end
-
-                    return sliderTypes
+                        return sliderTypes
                 end
 
                 function sectionTypes:ToggleSlider(opts)
