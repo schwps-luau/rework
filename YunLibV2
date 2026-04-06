@@ -123,7 +123,8 @@ function initLibrary()
         watermarks = {},
         selectedTheme = nil,
         _currentMenuName = nil,
-        _rainbowConnections = {}
+        _rainbowConnections = {},
+        _savedColors = {}
     }
 
     local coloredGradients = {}
@@ -1614,7 +1615,6 @@ function initLibrary()
                     return boxTypes
                 end
 
-                -- NEW: Slider with TextBox (showTextBox option)
                 function sectionTypes:Slider(opts)
                     local options = utility.table(opts)
                     local min = options.min or 0
@@ -3085,7 +3085,6 @@ function initLibrary()
                     return toggleKeybindTypes
                 end
 
-                -- NEW: ColorPicker with Rainbow mode
                 function sectionTypes:ColorPicker(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Color Picker"
@@ -3101,6 +3100,7 @@ function initLibrary()
                     local hsv = Color3.fromHSV(hue, sat, val)
                     local rainbowEnabled = rainbow
                     local rainbowConnection = nil
+                    local savedColor = default
 
                     if flag then
                         library.flags[flag] = default
@@ -3157,7 +3157,6 @@ function initLibrary()
                         Parent = icon
                     })
 
-                    -- Rainbow toggle button
                     local rainbowButton = utility.create("TextButton", {
                         ZIndex = 3,
                         Size = UDim2.new(0, 22, 0, 14),
@@ -3313,13 +3312,32 @@ function initLibrary()
                     end
 
                     local function toggleRainbow()
-                        rainbowEnabled = not rainbowEnabled
-                        rainbowButton.BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary
                         if rainbowEnabled then
-                            startRainbow()
-                        else
                             stopRainbow()
-                            updateSatVal({Position = saturationPicker.AbsolutePosition})
+                            rainbowEnabled = false
+                            rainbowButton.BackgroundColor3 = selectedTheme.tertiary
+                            local restoreColor = savedColor or Color3.fromHSV(hue, sat, val)
+                            hue, sat, val = restoreColor:ToHSV()
+                            hsv = restoreColor
+                            icon.BackgroundColor3 = restoreColor
+                            saturationFrame.BackgroundColor3 = restoreColor
+                            rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
+                            hex.Text = utility.rgb_to_hex(restoreColor)
+                            if flag then
+                                library.flags[flag] = restoreColor
+                            end
+                            callback(restoreColor)
+                            if saturationFrame.AbsoluteSize.X > 0 then
+                                saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
+                            end
+                            if hueFrame.AbsoluteSize.Y > 0 then
+                                huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
+                            end
+                        else
+                            savedColor = Color3.fromHSV(hue, sat, val)
+                            rainbowEnabled = true
+                            rainbowButton.BackgroundColor3 = library.color
+                            startRainbow()
                         end
                     end
 
@@ -3443,9 +3461,9 @@ function initLibrary()
                             toggleRainbow()
                         end
                         hue, sat, val = color:ToHSV()
-                        hsv = Color3.fromHSV(hue, sat, val)
-                        saturationFrame.BackgroundColor3 = hsv
-                        icon.BackgroundColor3 = hsv
+                        hsv = color
+                        saturationFrame.BackgroundColor3 = color
+                        icon.BackgroundColor3 = color
                         if saturationFrame.AbsoluteSize.X > 0 then
                             saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
                         end
@@ -3453,11 +3471,11 @@ function initLibrary()
                             huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
                         end
                         rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
-                        hex.Text = utility.rgb_to_hex(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
+                        hex.Text = utility.rgb_to_hex(color)
                         if flag then
-                            library.flags[flag] = Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255)
+                            library.flags[flag] = color
                         end
-                        callback(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
+                        callback(color)
                     end
 
                     function colorPickerTypes:SetHex(hexValue)
@@ -3865,22 +3883,7 @@ function initLibrary()
 
                     function toggleColorPickerTypes:SetHex(hexValue)
                         local color = utility.hex_to_rgb(hexValue)
-                        hue, sat, val = color:ToHSV()
-                        hsv = Color3.fromHSV(hue, sat, val)
-                        saturationFrame.BackgroundColor3 = hsv
-                        colorPickerIcon.BackgroundColor3 = hsv
-                        if saturationFrame.AbsoluteSize.X > 0 then
-                            saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
-                        end
-                        if hueFrame.AbsoluteSize.Y > 0 then
-                            huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
-                        end
-                        rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
-                        hex.Text = utility.rgb_to_hex(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
-                        if colorPickerFlag then
-                            library.flags[colorPickerFlag] = Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255)
-                        end
-                        colorPickerCallback(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
+                        toggleColorPickerTypes:SetRGB(color)
                     end
 
                     rgb.FocusLost:Connect(function()
