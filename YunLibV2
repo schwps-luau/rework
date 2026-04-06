@@ -1619,7 +1619,7 @@ function initLibrary()
                     local decimals = options.decimals or 0.1
                     local flag = options.flag
                     local callback = options.callback or function() end
-                    local showTextBox = options.showTextBox or true
+                    local showTextBox = options.showTextBox or false
 
                     decimals = math.floor(10 ^ decimals)
 
