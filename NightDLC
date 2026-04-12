@@ -10,7 +10,7 @@ local Library = {
         FontMedium = Enum.Font.GothamMedium
     },
     _Visible = true,
-    _CurrentX = 100,
+    _CurrentX = 0,
     _Initialized = false,
     _Keybinds = {},
     _LastKBState = ""
@@ -76,14 +76,19 @@ function Library:InitHUD()
     CreateSection(Row1, "User: <font color='#B432B4'>" .. Players.LocalPlayer.DisplayName .. "</font>")
     local fpsStat = CreateSection(Row2, "0 Fps"); local pingStat = CreateSection(Row2, "0 Ms"); local coordsStat = CreateSection(Row2, "0, 0, 0")
 
+    local lastUpdate = 0
     RunService.RenderStepped:Connect(function(dt)
         local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if hrp then
             local p = hrp.Position
             coordsStat.Text = string.format("%d, %d, %d", p.X, p.Y, p.Z)
         end
-        fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
-        pingStat.Text = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) .. " <font color='#B432B4'>Ms</font>"
+        
+        if tick() - lastUpdate >= 0.5 then -- Задержка обновления FPS/Ping
+            lastUpdate = tick()
+            fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
+            pingStat.Text = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) .. " <font color='#B432B4'>Ms</font>"
+        end
     end)
 
     local KBGui = Instance.new("Frame", HUD); KBGui.Name = "KeybindList"; KBGui.Size = UDim2.new(0, 180, 0, 30); KBGui.Position = UDim2.new(0, 20, 0, 350)
@@ -95,14 +100,14 @@ function Library:InitHUD()
 
     RunService.RenderStepped:Connect(function()
         local state = ""
-        for n, d in pairs(Library._Keybinds) do state = state .. n .. tostring(d.Enabled) .. d.Key end
+        for n, d in pairs(Library._Keybinds) do state = state .. n .. tostring(d.Enabled) .. (d.Key or "") end
         if Library._LastKBState ~= state then
             Library._LastKBState = state
             for _, v in pairs(KBList:GetChildren()) do if v:IsA("TextLabel") then v:Destroy() end end
             local c = 0
             for n, d in pairs(Library._Keybinds) do
                 c = c + 1
-                local l = Instance.new("TextLabel", KBList); l.Size = UDim2.new(1, -10, 0, 20); l.BackgroundTransparency = 1; l.Text = " " .. n .. " [" .. d.Key .. "]"; l.Font = Library._Config.FontMedium; l.TextSize = 11; l.TextXAlignment = 0
+                local l = Instance.new("TextLabel", KBList); l.Size = UDim2.new(1, -10, 0, 20); l.BackgroundTransparency = 1; l.Text = " " .. n .. " [" .. (d.Key or "None") .. "]"; l.Font = Library._Config.FontMedium; l.TextSize = 11; l.TextXAlignment = 0
                 l.TextColor3 = d.Enabled and Library.Accent or Color3.fromRGB(150, 150, 150)
             end
             KBGui.Size = UDim2.new(0, 180, 0, 30 + (c * 22))
