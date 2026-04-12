@@ -1,166 +1,222 @@
--- NightDLC Perfect Clone for Roblox
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
+-- NightDLC Open Source Framework for Roblox
+-- Style: 1:1 Reconstruction (Purple Accent, Glassmorphism)
 
-local Library = {}
-local Theme = {
-    Main = Color3.fromRGB(12, 12, 12),
-    Accent = Color3.fromRGB(65, 105, 255),
-    Module = Color3.fromRGB(18, 18, 18),
-    Setting = Color3.fromRGB(22, 22, 22),
-    Text = Color3.fromRGB(255, 255, 255),
-    TextDim = Color3.fromRGB(140, 140, 140),
+local Library = {
+    Categories = {},
+    Modules = {},
+    Accent = Color3.fromRGB(180, 50, 180),
     Font = Enum.Font.GothamMedium
 }
 
-function Library:CreateCategory(name, pos)
-    local ScreenGui = Instance.new("ScreenGui", CoreGui)
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+-- Вспомогательная функция анимации
+local function Tween(obj, time, goal)
+    TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
+end
+
+-- Инициализация HUD (Верхняя панель)
+function Library:InitHUD()
+    local HUD = Instance.new("ScreenGui", CoreGui)
+    local Container = Instance.new("Frame", HUD)
+    Container.Size = UDim2.new(0, 450, 0, 35)
+    Container.Position = UDim2.new(0, 15, 0, 15)
+    Container.BackgroundTransparency = 1
+
+    local Layout = Instance.new("UIListLayout", Container)
+    Layout.FillDirection = Enum.FillDirection.Horizontal
+    Layout.Padding = UDim.new(0, 10)
+
+    local function CreateWidget(icon, text)
+        local f = Instance.new("Frame", Container)
+        f.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        f.BackgroundTransparency = 0.2
+        f.AutomaticSize = Enum.AutomaticSize.XY
+        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
+        
+        local p = Instance.new("UIPadding", f)
+        p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
+
+        local l = Instance.new("TextLabel", f)
+        l.Size = UDim2.new(0, 0, 0, 28)
+        l.AutomaticSize = Enum.AutomaticSize.X
+        l.Text = icon .. "  |  " .. text
+        l.TextColor3 = Color3.fromRGB(255, 255, 255)
+        l.Font = Enum.Font.GothamSemibold
+        l.TextSize = 13
+        l.BackgroundTransparency = 1
+        return l
+    end
+
+    local fps = CreateWidget("⚡", "0 FPS")
+    local ping = CreateWidget("📶", "0 Ping")
+    local timeL = CreateWidget("🕒", "00:00:00")
+
+    RunService.RenderStepped:Connect(function(dt)
+        fps.Text = "⚡  |  " .. math.floor(1/dt) .. " FPS"
+        timeL.Text = "🕒  |  " .. os.date("%X")
+    end)
+end
+
+-- Создание окна категории
+function Library:CreateWindow(categoryName, startPos)
+    if not self.MainGui then
+        self.MainGui = Instance.new("ScreenGui", CoreGui)
+        self:InitHUD()
+    end
+
+    local Category = {Active = true}
     
-    local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 190, 0, 35)
-    Main.Position = pos
-    Main.BackgroundColor3 = Theme.Accent
+    local Main = Instance.new("Frame", self.MainGui)
+    Main.Name = categoryName
+    Main.Size = UDim2.new(0, 190, 0, 40)
+    Main.Position = startPos or UDim2.new(0.1, 0, 0.2, 0)
+    Main.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    Main.BackgroundTransparency = 0.25
     Main.BorderSizePixel = 0
-    
-    local Title = Instance.new("TextLabel", Main)
-    Title.Size = UDim2.new(1, 0, 1, 0)
-    Title.Text = name
-    Title.TextColor3 = Theme.Text
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 15
-    Title.BackgroundTransparency = 1
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+
+    local Header = Instance.new("TextLabel", Main)
+    Header.Size = UDim2.new(1, 0, 0, 40)
+    Header.Text = categoryName
+    Header.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Header.Font = Enum.Font.GothamBold
+    Header.TextSize = 16
+    Header.BackgroundTransparency = 1
 
     local Container = Instance.new("Frame", Main)
-    Container.Position = UDim2.new(0, 0, 1, 0)
+    Container.Position = UDim2.new(0, 0, 0, 45)
     Container.Size = UDim2.new(1, 0, 0, 0)
-    Container.BackgroundColor3 = Theme.Main
-    Container.BorderSizePixel = 0
+    Container.BackgroundTransparency = 1
     
     local Layout = Instance.new("UIListLayout", Container)
     Layout.SortOrder = Enum.SortOrder.LayoutOrder
+    Layout.Padding = UDim.new(0, 3)
 
-    -- Dragging Logic
-    local drag, dragStart, startPos
-    Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true dragStart = i.Position startPos = Main.Position end end)
-    UserInputService.InputChanged:Connect(function(i) if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = i.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end end)
-    UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end end)
+    -- Перетаскивание
+    local dragStart, startPosFrame, dragging
+    Main.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true; dragStart = i.Position; startPosFrame = Main.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = i.Position - dragStart
+            Main.Position = UDim2.new(startPosFrame.X.Scale, startPosFrame.X.Offset + delta.X, startPosFrame.Y.Scale, startPosFrame.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
-    local Category = {}
-
-    function Category:CreateModule(modName, callback)
-        local active = false
-        local expanded = false
+    function Category:CreateModule(name, callback)
+        local mod = {Enabled = false, Expanded = false}
         
-        local ModFrame = Instance.new("Frame", Container)
-        ModFrame.Size = UDim2.new(1, 0, 0, 32)
-        ModFrame.BackgroundColor3 = Theme.Module
-        ModFrame.BorderSizePixel = 0
-        ModFrame.ClipsDescendants = true
+        local MFrame = Instance.new("Frame", Container)
+        MFrame.Size = UDim2.new(1, 0, 0, 34)
+        MFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+        MFrame.BackgroundTransparency = 0.4
+        MFrame.BorderSizePixel = 0
+        MFrame.ClipsDescendants = true
+        Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6)
 
-        local ModBtn = Instance.new("TextButton", ModFrame)
-        ModBtn.Size = UDim2.new(1, 0, 0, 32)
-        ModBtn.BackgroundTransparency = 1
-        ModBtn.Text = "  " .. modName
-        ModBtn.TextColor3 = Theme.TextDim
-        ModBtn.TextXAlignment = Enum.TextXAlignment.Left
-        ModBtn.Font = Theme.Font
-        ModBtn.TextSize = 14
+        local MBtn = Instance.new("TextButton", MFrame)
+        MBtn.Size = UDim2.new(1, 0, 0, 34)
+        MBtn.BackgroundTransparency = 1
+        MBtn.Text = "  " .. name
+        MBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+        MBtn.Font = Enum.Font.Gotham
+        MBtn.TextSize = 14
+        MBtn.TextXAlignment = Enum.TextXAlignment.Left
+        MBtn.AutoButtonColor = false
 
-        local Settings = Instance.new("Frame", ModFrame)
-        Settings.Position = UDim2.new(0, 0, 0, 32)
-        Settings.Size = UDim2.new(1, 0, 0, 0)
-        Settings.BackgroundTransparency = 1
-        
-        local SetLayout = Instance.new("UIListLayout", Settings)
+        local SContainer = Instance.new("Frame", MFrame)
+        SContainer.Position = UDim2.new(0, 0, 0, 34)
+        SContainer.Size = UDim2.new(1, 0, 0, 0)
+        SContainer.BackgroundTransparency = 1
+        local SLayout = Instance.new("UIListLayout", SContainer)
 
-        local function Resize()
-            local targetSize = expanded and (32 + SetLayout.AbsoluteContentSize.Y) or 32
-            TweenService:Create(ModFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, targetSize)}):Play()
-            task.wait(0.2)
+        local function UpdateSize()
+            local targetH = mod.Expanded and (34 + SLayout.AbsoluteContentSize.Y + 5) or 34
+            Tween(MFrame, 0.3, {Size = UDim2.new(1, 0, 0, targetH)})
+            task.wait(0.3)
             Container.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
         end
 
-        ModBtn.InputBegan:Connect(function(i)
+        MBtn.InputBegan:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                active = not active
-                TweenService:Create(ModBtn, TweenInfo.new(0.2), {TextColor3 = active and Theme.Accent or Theme.TextDim}):Play()
-                callback(active)
+                mod.Enabled = not mod.Enabled
+                Tween(MBtn, 0.2, {TextColor3 = mod.Enabled and Library.Accent or Color3.fromRGB(180, 180, 180)})
+                callback(mod.Enabled)
             elseif i.UserInputType == Enum.UserInputType.MouseButton2 then
-                expanded = not expanded
-                Resize()
+                mod.Expanded = not mod.Expanded
+                UpdateSize()
             end
         end)
 
-        local Module = {}
+        local ModFuncs = {}
 
-        -- Пуллер (Вложенный Toggle)
-        function Module:AddToggle(text, default, cb)
-            local state = default
-            local Tgl = Instance.new("TextButton", Settings)
-            Tgl.Size = UDim2.new(1, 0, 0, 28)
-            Tgl.BackgroundColor3 = Theme.Setting
-            Tgl.Text = "  - " .. text
-            Tgl.TextColor3 = state and Theme.Accent or Theme.TextDim
-            Tgl.TextXAlignment = Enum.TextXAlignment.Left
-            Tgl.Font = Theme.Font
-            Tgl.TextSize = 12
-            
-            Tgl.MouseButton1Click:Connect(function()
-                state = not state
-                Tgl.TextColor3 = state and Theme.Accent or Theme.TextDim
-                cb(state)
-            end)
-            Resize()
-        end
-
-        -- Слайдер
-        function Module:AddSlider(text, min, max, def, cb)
-            local SFrame = Instance.new("Frame", Settings)
+        function ModFuncs:AddSlider(sName, min, max, def, cb)
+            local SFrame = Instance.new("Frame", SContainer)
             SFrame.Size = UDim2.new(1, 0, 0, 35)
-            SFrame.BackgroundColor3 = Theme.Setting
+            SFrame.BackgroundTransparency = 1
             
-            local Label = Instance.new("TextLabel", SFrame)
-            Label.Size = UDim2.new(1, 0, 0, 20)
-            Label.Text = "  " .. text .. ": " .. def
-            Label.BackgroundTransparency = 1
-            Label.TextColor3 = Theme.TextDim
-            Label.Font = Theme.Font
-            Label.TextSize = 11
-            Label.TextXAlignment = Enum.TextXAlignment.Left
+            local L = Instance.new("TextLabel", SFrame)
+            L.Size = UDim2.new(1, 0, 0, 20); L.Position = UDim2.new(0, 15, 0, 0)
+            L.Text = sName .. ": " .. def; L.TextColor3 = Color3.fromRGB(140, 140, 140)
+            L.Font = Enum.Font.Gotham; L.TextSize = 11; L.BackgroundTransparency = 1; L.TextXAlignment = 0
 
             local Bar = Instance.new("Frame", SFrame)
-            Bar.Size = UDim2.new(0.85, 0, 0, 2)
-            Bar.Position = UDim2.new(0.07, 0, 0.75, 0)
-            Bar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+            Bar.Size = UDim2.new(0.85, 0, 0, 2); Bar.Position = UDim2.new(0.07, 0, 0.75, 0)
+            Bar.BackgroundColor3 = Color3.fromRGB(50, 50, 55); Bar.BorderSizePixel = 0
 
             local Fill = Instance.new("Frame", Bar)
-            Fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0)
-            Fill.BackgroundColor3 = Theme.Accent
+            Fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0); Fill.BackgroundColor3 = Library.Accent; Fill.BorderSizePixel = 0
 
             Bar.InputBegan:Connect(function(i)
                 if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                    local move = UserInputService.InputChanged:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseMovement then
-                            local p = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-                            Fill.Size = UDim2.new(p, 0, 1, 0)
-                            local val = math.floor(min + (max - min) * p)
-                            Label.Text = "  " .. text .. ": " .. val
-                            cb(val)
-                        end
+                    local connection = RunService.RenderStepped:Connect(function()
+                        local mousePos = UserInputService:GetMouseLocation().X
+                        local barPos = Bar.AbsolutePosition.X
+                        local barSize = Bar.AbsoluteSize.X
+                        local perc = math.clamp((mousePos - barPos) / barSize, 0, 1)
+                        Fill.Size = UDim2.new(perc, 0, 1, 0)
+                        local val = math.floor(min + (max-min)*perc)
+                        L.Text = sName .. ": " .. val
+                        cb(val)
                     end)
-                    UserInputService.InputEnded:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 then move:Disconnect() end
+                    UserInputService.InputEnded:Connect(function(inp)
+                        if inp.UserInputType == Enum.UserInputType.MouseButton1 then connection:Disconnect() end
                     end)
                 end
             end)
-            Resize()
+            UpdateSize()
+            return ModFuncs
         end
 
-        return Module
+        function ModFuncs:AddToggle(tName, def, cb)
+            local tState = def
+            local TBtn = Instance.new("TextButton", SContainer)
+            TBtn.Size = UDim2.new(1, 0, 0, 26); TBtn.BackgroundTransparency = 1
+            TBtn.Text = "  > " .. tName; TBtn.Font = Enum.Font.Gotham; TBtn.TextSize = 12
+            TBtn.TextColor3 = tState and Library.Accent or Color3.fromRGB(120, 120, 120)
+            TBtn.TextXAlignment = 0
+
+            TBtn.MouseButton1Click:Connect(function()
+                tState = not tState
+                TBtn.TextColor3 = tState and Library.Accent or Color3.fromRGB(120, 120, 120)
+                cb(tState)
+            end)
+            UpdateSize()
+            return ModFuncs
+        end
+
+        return ModFuncs
     end
+
     return Category
 end
+
+return Library
