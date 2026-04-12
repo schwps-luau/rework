@@ -9,7 +9,7 @@ local Library = {
         StartY = 220,
         Transparency = 0.1, 
         FontBold = Enum.Font.GothamBold, 
-        FontBlack = Enum.Font.GothamBlack, -- Добавил для заголовков
+        FontBlack = Enum.Font.GothamBlack,
         FontMedium = Enum.Font.GothamMedium
     },
     _Visible = true,
@@ -96,7 +96,7 @@ function Library:InitHUD()
 
     local KBGui = Instance.new("Frame", HUD); KBGui.Name = "KeybindList"; KBGui.Size = UDim2.new(0, 180, 0, 30); KBGui.Position = UDim2.new(0, 20, 0, 350)
     KBGui.BackgroundColor3 = Color3.fromRGB(15, 15, 18); KBGui.BackgroundTransparency = Library._Config.Transparency; Instance.new("UICorner", KBGui); Instance.new("UIStroke", KBGui).Color = Color3.fromRGB(65, 65, 70)
-    local KBTitle = Instance.new("TextLabel", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 30); KBTitle.Text = "Keybinds"; KBTitle.Font = Library._Config.FontBold; KBTitle.TextColor3 = Color3.fromRGB(255, 255, 255); KBTitle.BackgroundTransparency = 1
+    local KBTitle = Instance.new("TextLabel", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 30); KBTitle.Text = "Keybinds"; KBTitle.Font = Library._Config.FontBlack; KBTitle.TextColor3 = Color3.fromRGB(255, 255, 255); KBTitle.BackgroundTransparency = 1
     local KBList = Instance.new("Frame", KBGui); KBList.Position = UDim2.new(0, 0, 0, 30); KBList.Size = UDim2.new(1, 0, 0, 0); KBList.BackgroundTransparency = 1
     Instance.new("UIListLayout", KBList).Padding = UDim.new(0, 2)
     MakeDraggable(KBGui)
@@ -110,7 +110,7 @@ function Library:InitHUD()
             local c = 0
             for n, d in pairs(Library._Keybinds) do
                 c = c + 1
-                local l = Instance.new("TextLabel", KBList); l.Size = UDim2.new(1, -10, 0, 20); l.BackgroundTransparency = 1; l.Text = " " .. n .. " [" .. (d.Key or "None") .. "]"; l.Font = Library._Config.FontMedium; l.TextSize = 11; l.TextXAlignment = 0
+                local l = Instance.new("TextLabel", KBList); l.Size = UDim2.new(1, -10, 0, 20); l.BackgroundTransparency = 1; l.Text = " " .. n .. " [" .. (d.Key or "None") .. "]"; l.Font = Library._Config.FontBlack; l.TextSize = 11; l.TextXAlignment = 0
                 l.TextColor3 = d.Enabled and Library.Accent or Color3.fromRGB(150, 150, 150)
             end
             KBGui.Size = UDim2.new(0, 180, 0, 30 + (c * 22))
