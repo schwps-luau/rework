@@ -30,7 +30,6 @@ local function GetPing()
     return 0
 end
 
--- [ HUD ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
     HUD.Name = "NightHUD_Final"
@@ -94,7 +93,6 @@ function Library:InitHUD()
     end)
 end
 
--- [ СОЗДАНИЕ ОКНА ]
 function Library:CreateWindow(name)
     local cfg = Library._Config 
 
@@ -208,35 +206,29 @@ function Library:CreateWindow(name)
             callback(Enabled)
         end
 
-        MBtn.MouseButton1Click:Connect(Toggle)
+        -- ЛКМ только переключает
+        MBtn.MouseButton1Click:Connect(function()
+            if not Binding then Toggle() end
+        end)
         
-        -- Кейбинд на колесико
-        MBtn.MouseButton2Click:Connect(Toggle) -- Пкм тоже тоглит
-        
-        UserInputService.InputBegan:Connect(function(input, gpe)
-            if gpe then return end
-            
-            -- Проверка нажатия колесика на кнопке
+        -- Специальное событие для Колесика (Binding)
+        MBtn.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton3 then
-                local mousePos = UserInputService:GetMouseLocation()
-                local btnPos = MBtn.AbsolutePosition
-                local btnSize = MBtn.AbsoluteSize
-                
-                if mousePos.X >= btnPos.X and mousePos.X <= btnPos.X + btnSize.X and
-                   mousePos.Y >= btnPos.Y + 36 and mousePos.Y <= btnPos.Y + btnSize.Y + 36 then
-                    Binding = true
+                Binding = true
+                UpdateText()
+            end
+        end)
+
+        -- Глобальный слушатель для клавиатуры
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if gpe and not Binding then return end
+            
+            if Binding then
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    CurrentKey = (input.KeyCode ~= Enum.KeyCode.Escape) and input.KeyCode or nil
+                    Binding = false
                     UpdateText()
                 end
-            -- Обработка установки клавиши
-            elseif Binding and input.UserInputType == Enum.UserInputType.Keyboard then
-                if input.KeyCode == Enum.KeyCode.Escape then
-                    CurrentKey = nil
-                else
-                    CurrentKey = input.KeyCode
-                end
-                Binding = false
-                UpdateText()
-            -- Работа самого кейбинда
             elseif CurrentKey and input.KeyCode == CurrentKey then
                 Toggle()
             end
