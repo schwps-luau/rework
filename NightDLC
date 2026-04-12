@@ -1,8 +1,9 @@
+-поыо
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     ToggleKey = Enum.KeyCode.RightShift,
     _Config = {
-        WindowWidth = 200, -- Немного сузил, чтобы 5 штук точно влезло
+        WindowWidth = 200,
         Spacing = 15,
         StartY = 220,
         MaxButtonsVisible = 12,
@@ -26,6 +27,34 @@ local function SafeTween(obj, goal)
     TweenService:Create(obj, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
 end
 
+-- Функция для перетаскивания объектов
+local function MakeDraggable(obj)
+    local dragging, dragInput, dragStart, startPos
+    obj.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = obj.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    obj.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    RunService.RenderStepped:Connect(function()
+        if dragging and dragInput then
+            local delta = dragInput.Position - dragStart
+            obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
 local function GetPing()
     local network = Stats.Network
     if network and network:FindFirstChild("ServerStatsItem") and network.ServerStatsItem:FindFirstChild("Data Ping") then
@@ -37,6 +66,7 @@ end
 function Library:InitKeybindList()
     local KBGui = Instance.new("Frame", Library.MainGui)
     KBGui.Name = "KeybindList"; KBGui.Size = UDim2.new(0, 180, 0, 30); KBGui.Position = UDim2.new(0, 20, 0, 350); KBGui.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+    KBGui.Active = true -- Нужно для перетаскивания
     Instance.new("UICorner", KBGui).CornerRadius = UDim.new(0, 8)
     Instance.new("UIStroke", KBGui).Color = Color3.fromRGB(65, 65, 70)
     
@@ -46,6 +76,9 @@ function Library:InitKeybindList()
     local List = Instance.new("Frame", KBGui)
     List.Name = "List"; List.Position = UDim2.new(0, 0, 0, 30); List.Size = UDim2.new(1, 0, 0, 0); List.BackgroundTransparency = 1
     Instance.new("UIListLayout", List).Padding = UDim.new(0, 5)
+
+    -- Делаем список перетаскиваемым
+    MakeDraggable(KBGui)
 
     local lastKBCount = -1
     RunService.RenderStepped:Connect(function()
@@ -100,15 +133,20 @@ function Library:InitHUD()
     local lastUpdate = 0
     RunService.RenderStepped:Connect(function(dt)
         LayoutContainer.Visible = Library._Visible
-        if Library._Visible and tick() - lastUpdate > 0.5 then
+        if not Library._Visible then return end
+
+        -- Координаты обновляются мгновенно
+        local lp = Players.LocalPlayer
+        if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = lp.Character.HumanoidRootPart.Position
+            coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
+        end
+
+        -- FPS и Пинг обновляются раз в 0.3 сек для читаемости
+        if tick() - lastUpdate > 0.3 then
             lastUpdate = tick()
             fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
             pingStat.Text = GetPing() .. " <font color='#B432B4'>Ms</font>"
-            local lp = Players.LocalPlayer
-            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                local pos = lp.Character.HumanoidRootPart.Position
-                coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
-            end
         end
     end)
     
