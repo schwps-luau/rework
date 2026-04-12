@@ -2,7 +2,14 @@ local Library = {
     Categories = {},
     Modules = {},
     Accent = Color3.fromRGB(180, 50, 180),
-    LastX = 50 -- Начальная позиция для авто-отступа
+    -- Глобальные настройки расположения
+    _Config = {
+        StartX = 20,
+        CurrentX = 20,
+        StartY = 80,
+        Spacing = 200, -- Расстояние между окнами
+        MaxPerRow = 5  -- Сколько окон в одном ряду перед переходом на новый
+    }
 }
 
 local UserInputService = game:GetService("UserInputService")
@@ -14,34 +21,39 @@ local function Tween(obj, time, goal)
     TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
 end
 
--- [ ПЕРЕДЕЛАННЫЙ ВАТЕРМАРК (HUD) ]
+-- [ ПЕРЕДЕЛАННЫЙ ВАТЕРМАРК - СТИЛЬ NIGHT ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
+    HUD.Name = "NightHUD"
+    
     local Container = Instance.new("Frame", HUD)
-    Container.Size = UDim2.new(0, 500, 0, 30)
+    Container.Size = UDim2.new(0, 600, 0, 30)
     Container.Position = UDim2.new(0, 15, 0, 15)
     Container.BackgroundTransparency = 1
 
     local Layout = Instance.new("UIListLayout", Container)
     Layout.FillDirection = Enum.FillDirection.Horizontal
-    Layout.Padding = UDim.new(0, 6)
+    Layout.Padding = UDim.new(0, 8)
 
-    local function CreateWidget(text)
+    local function CreateBlock(text)
         local f = Instance.new("Frame", Container)
-        f.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-        f.BackgroundTransparency = 0.05 -- Почти непрозрачный, как просил
+        f.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+        f.BackgroundTransparency = 0 -- Полностью непрозрачный
         f.AutomaticSize = Enum.AutomaticSize.XY
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
-        Instance.new("UIStroke", f).Color = Color3.fromRGB(40, 40, 45) -- Тонкая обводка
+        
+        local s = Instance.new("UIStroke", f)
+        s.Color = Color3.fromRGB(40, 40, 45)
+        s.Thickness = 1
         
         local p = Instance.new("UIPadding", f)
-        p.PaddingLeft = UDim.new(0, 8); p.PaddingRight = UDim.new(0, 8)
+        p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
 
         local l = Instance.new("TextLabel", f)
-        l.Size = UDim2.new(0, 0, 0, 24)
+        l.Size = UDim2.new(0, 0, 0, 26)
         l.AutomaticSize = Enum.AutomaticSize.X
         l.Text = text
-        l.RichText = true -- Для подсветки иконок
+        l.RichText = true
         l.TextColor3 = Color3.fromRGB(255, 255, 255)
         l.Font = Enum.Font.GothamMedium
         l.TextSize = 13
@@ -49,40 +61,56 @@ function Library:InitHUD()
         return l
     end
 
-    local brand = CreateWidget("<font color='#B432B4'>N</font> Alpha")
-    local stats = CreateWidget("244 <font color='#B432B4'>Fps</font> | 10:39:51")
-    local info = CreateWidget("125, 4, 157 | <font color='#B432B4'>0 Ping</font>")
+    local brand = CreateBlock("<font color='#B432B4'>N</font>ight <font color='#888888'>Alpha</font>")
+    local stats = CreateBlock("0 <font color='#B432B4'>Fps</font> | 00:00:00")
+    local pos = CreateBlock("0, 0, 0 | <font color='#B432B4'>0 Ping</font>")
 
     RunService.RenderStepped:Connect(function(dt)
-        local fpsVal = math.floor(1/dt)
-        stats.Text = fpsVal .. " <font color='#B432B4'>Fps</font> | " .. os.date("%X")
+        local fps = math.floor(1/dt)
+        stats.Text = fps .. " <font color='#B432B4'>Fps</font> | " .. os.date("%X")
+        
+        local lp = game.Players.LocalPlayer
+        if lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            local p = lp.Character.HumanoidRootPart.Position
+            pos.Text = math.floor(p.X) .. ", " .. math.floor(p.Y) .. ", " .. math.floor(p.Z) .. " | <font color='#B432B4'>0 Ping</font>"
+        end
     end)
 end
 
--- [ ОКНО С НЕПРОЗРАЧНЫМ ФРЕЙМОМ И ОТСТУПОМ ]
+-- [ ФУНКЦИЯ СОЗДАНИЯ ОКНА С АВТО-СЕТКОЙ ]
 function Library:CreateWindow(categoryName)
     if not self.MainGui then
         self.MainGui = Instance.new("ScreenGui", CoreGui)
+        self.MainGui.Name = "NightDLC_GUI"
         self:InitHUD()
+    end
+
+    -- Рассчитываем позицию для нового окна
+    local xPos = self._Config.CurrentX
+    local yPos = self._Config.StartY
+    
+    -- Сдвигаем CurrentX для следующего окна
+    self._Config.CurrentX = self._Config.CurrentX + self._Config.Spacing
+    
+    -- Если окон слишком много в ряду, переходим на новый ряд
+    if self._Config.CurrentX > (self._Config.Spacing * self._Config.MaxPerRow) then
+        self._Config.CurrentX = self._Config.StartX
+        self._Config.StartY = self._Config.StartY + 300 -- Сдвиг вниз (высота окна)
     end
 
     local Category = {}
     
     local Main = Instance.new("Frame", self.MainGui)
     Main.Name = categoryName
-    Main.Size = UDim2.new(0, 185, 0, 38)
-    -- Автоматический отступ (LastX увеличивается с каждым окном)
-    Main.Position = UDim2.new(0, self.LastX, 0, 80)
-    self.LastX = self.LastX + 200 -- Расстояние между окнами
-
-    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    Main.BackgroundTransparency = 0.05 -- Плотный фрейм
+    Main.Size = UDim2.new(0, 180, 0, 38)
+    Main.Position = UDim2.new(0, xPos, 0, yPos)
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+    Main.BackgroundTransparency = 0 -- Непрозрачный
     Main.BorderSizePixel = 0
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 5)
 
-    -- Обводка окна (Stroke) для стиля Найта
     local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Color = Color3.fromRGB(45, 45, 50)
+    Stroke.Color = Color3.fromRGB(40, 40, 45)
     Stroke.Thickness = 1.2
 
     local Header = Instance.new("TextLabel", Main)
@@ -90,18 +118,19 @@ function Library:CreateWindow(categoryName)
     Header.Text = categoryName
     Header.TextColor3 = Color3.fromRGB(255, 255, 255)
     Header.Font = Enum.Font.GothamBold
-    Header.TextSize = 15
+    Header.TextSize = 14
     Header.BackgroundTransparency = 1
 
     local Container = Instance.new("Frame", Main)
-    Container.Position = UDim2.new(0, 0, 1, 5) -- Небольшой зазор под шапкой
+    Container.Name = "Content"
+    Container.Position = UDim2.new(0, 0, 1, 2)
     Container.Size = UDim2.new(1, 0, 0, 0)
     Container.BackgroundTransparency = 1
     
     local Layout = Instance.new("UIListLayout", Container)
-    Layout.Padding = UDim.new(0, 2)
+    Layout.Padding = UDim.new(0, 1)
 
-    -- Dragging
+    -- Перетаскивание
     local dragStart, startPosFrame, dragging
     Main.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -117,45 +146,43 @@ function Library:CreateWindow(categoryName)
     UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
     function Category:CreateModule(name, callback)
-        local mod = {Enabled = false, Expanded = false}
+        local mod = {Enabled = false}
         
         local MFrame = Instance.new("Frame", Container)
-        MFrame.Size = UDim2.new(1, 0, 0, 32)
-        MFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        MFrame.BackgroundTransparency = 0.1 -- Плотная подложка модуля
-        Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 5)
-
+        MFrame.Size = UDim2.new(1, 0, 0, 30)
+        MFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+        MFrame.BorderSizePixel = 0
+        
         local MBtn = Instance.new("TextButton", MFrame)
         MBtn.Size = UDim2.new(1, 0, 1, 0)
         MBtn.BackgroundTransparency = 1
         MBtn.Text = "  " .. name
-        MBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+        MBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
         MBtn.Font = Enum.Font.Gotham
         MBtn.TextSize = 13
         MBtn.TextXAlignment = 0
         MBtn.AutoButtonColor = false
 
-        -- Элемент акцента (полоска сбоку как в Найте)
-        local AccentBar = Instance.new("Frame", MFrame)
-        AccentBar.Size = UDim2.new(0, 2, 0.7, 0)
-        AccentBar.Position = UDim2.new(1, -5, 0.15, 0)
-        AccentBar.BackgroundColor3 = self.Accent
-        AccentBar.BackgroundTransparency = 1
-        Instance.new("UICorner", AccentBar)
+        -- Индикатор включения (полоска справа)
+        local Indicator = Instance.new("Frame", MFrame)
+        Indicator.Size = UDim2.new(0, 2, 0, 0)
+        Indicator.Position = UDim2.new(1, -2, 0.5, 0)
+        Indicator.AnchorPoint = Vector2.new(0, 0.5)
+        Indicator.BackgroundColor3 = Library.Accent
+        Indicator.BorderSizePixel = 0
 
         MBtn.MouseButton1Click:Connect(function()
             mod.Enabled = not mod.Enabled
-            local targetColor = mod.Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
-            local targetBG = mod.Enabled and Color3.fromRGB(45, 35, 55) or Color3.fromRGB(25, 25, 30)
+            local targetText = mod.Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 160)
+            local targetIndHeight = mod.Enabled and 20 or 0
             
-            Tween(MBtn, 0.2, {TextColor3 = targetColor})
-            Tween(MFrame, 0.2, {BackgroundColor3 = targetBG})
-            Tween(AccentBar, 0.2, {BackgroundTransparency = mod.Enabled and 0 or 1})
+            Tween(MBtn, 0.2, {TextColor3 = targetText})
+            Tween(Indicator, 0.2, {Size = UDim2.new(0, 2, 0, targetIndHeight)})
             
             callback(mod.Enabled)
         end)
 
-        Container.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y + 10)
+        Container.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
         return mod
     end
 
