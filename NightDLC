@@ -169,11 +169,10 @@ function Library:CreateWindow(name)
 
         local Mod = {}
         
-        -- Слайдер из Yan Lib
         function Mod:CreateSlider(n, min, max, def, cb)
-            local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 38); f.BackgroundTransparency = 1
-            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, 0, 0, 18); t.Text = n .. ": " .. def; t.Font = cfg.FontMedium; t.TextSize = 11; t.TextColor3 = Color3.fromRGB(200, 200, 200); t.BackgroundTransparency = 1; t.TextXAlignment = 0
-            local b = Instance.new("Frame", f); b.Size = UDim2.new(1, 0, 0, 6); b.Position = UDim2.new(0, 0, 0.7, 0); b.BackgroundColor3 = Color3.fromRGB(40, 40, 45); Instance.new("UICorner", b)
+            local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 36); f.BackgroundTransparency = 1
+            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, 0, 0, 16); t.Text = n .. ": " .. def; t.Font = cfg.FontMedium; t.TextSize = 10; t.TextColor3 = Color3.fromRGB(200, 200, 200); t.BackgroundTransparency = 1; t.TextXAlignment = 0
+            local b = Instance.new("Frame", f); b.Size = UDim2.new(1, 0, 0, 4); b.Position = UDim2.new(0, 0, 0.7, 0); b.BackgroundColor3 = Color3.fromRGB(40, 40, 45); Instance.new("UICorner", b)
             local fill = Instance.new("Frame", b); fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0); fill.BackgroundColor3 = Library.Accent; Instance.new("UICorner", fill)
             
             local function Update(input)
@@ -182,28 +181,22 @@ function Library:CreateWindow(name)
                 fill.Size = UDim2.new(per, 0, 1, 0); t.Text = n .. ": " .. val; cb(val)
             end
 
-            local IsDragging = false
-            b.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then IsDragging = true; Update(input) end
-            end)
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then IsDragging = false end
-            end)
-            UserInputService.InputChanged:Connect(function(input)
-                if IsDragging and input.UserInputType == Enum.UserInputType.MouseMovement then Update(input) end
-            end)
+            local Dragging = false
+            b.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then Dragging = true; Update(i) end end)
+            UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then Dragging = false end end)
+            UserInputService.InputChanged:Connect(function(i) if Dragging and i.UserInputType == Enum.UserInputType.MouseMovement then Update(i) end end)
             return Mod
         end
 
         function Mod:CreateButton(n, cb)
-            local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.9, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(35, 35, 40); b.Text = n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.fromRGB(220, 220, 220); b.TextSize = 11; Instance.new("UICorner", b)
+            local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.9, 0, 0, 28); b.BackgroundColor3 = Color3.fromRGB(35, 35, 40); b.Text = n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.fromRGB(220, 220, 220); b.TextSize = 11; Instance.new("UICorner", b)
             b.MouseButton1Click:Connect(cb); return Mod
         end
 
         function Mod:CreateToggle(n, cb)
             local state = false
-            local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.9, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(30, 30, 35); b.Text = "  " .. n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.fromRGB(150, 150, 150); b.TextSize = 11; b.TextXAlignment = 0; Instance.new("UICorner", b)
-            local box = Instance.new("Frame", b); box.Size = UDim2.new(0, 16, 0, 16); box.Position = UDim2.new(1, -22, 0.5, 0); box.AnchorPoint = Vector2.new(0, 0.5); box.BackgroundColor3 = Color3.fromRGB(45, 45, 50); Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
+            local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.9, 0, 0, 28); b.BackgroundColor3 = Color3.fromRGB(30, 30, 35); b.Text = "  " .. n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.fromRGB(150, 150, 150); b.TextSize = 11; b.TextXAlignment = 0; Instance.new("UICorner", b)
+            local box = Instance.new("Frame", b); box.Size = UDim2.new(0, 14, 0, 14); box.Position = UDim2.new(1, -20, 0.5, 0); box.AnchorPoint = Vector2.new(0, 0.5); box.BackgroundColor3 = Color3.fromRGB(45, 45, 50); Instance.new("UICorner", box).CornerRadius = UDim.new(0, 3)
             
             b.MouseButton1Click:Connect(function()
                 state = not state; b.TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
@@ -214,7 +207,7 @@ function Library:CreateWindow(name)
         end
 
         function Mod:CreateDropdown(n, options, cb)
-            local d = Instance.new("TextButton", Nodes); d.Size = UDim2.new(0.9, 0, 0, 30); d.BackgroundColor3 = Color3.fromRGB(30, 30, 35); d.Text = "  " .. n .. ": " .. options[1]; d.Font = cfg.FontMedium; d.TextColor3 = Color3.fromRGB(200, 200, 200); d.TextSize = 11; d.TextXAlignment = 0; Instance.new("UICorner", d)
+            local d = Instance.new("TextButton", Nodes); d.Size = UDim2.new(0.9, 0, 0, 28); d.BackgroundColor3 = Color3.fromRGB(30, 30, 35); d.Text = "  " .. n .. ": " .. options[1]; d.Font = cfg.FontMedium; d.TextColor3 = Color3.fromRGB(200, 200, 200); d.TextSize = 11; d.TextXAlignment = 0; Instance.new("UICorner", d)
             local current = 1
             d.MouseButton1Click:Connect(function()
                 current = current + 1; if current > #options then current = 1 end
