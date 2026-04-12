@@ -1,6 +1,6 @@
 local Library = {
     CurrentX = 20,
-    CurrentY = 110, -- Опустил ниже, чтобы не перекрывать двухэтажный ватермарк
+    CurrentY = 115, 
     Spacing = 195,
     Accent = Color3.fromRGB(180, 50, 180)
 }
@@ -9,17 +9,17 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local Stats = game:GetService("Stats")
 
 local function Tween(obj, time, goal)
     TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
 end
 
--- [ ВАТЕРМАРК: 2 ЭТАЖА И СЕКЦИИ ]
+-- [ ПЕРЕДЕЛАННЫЙ HUD: 2 ЭТАЖА + ФИКС FPS/PING + КООРДИНАТЫ ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
-    HUD.Name = "NightHUD_V2"
+    HUD.Name = "NightHUD_Final"
     
-    -- Главный контейнер для этажей
     local LayoutContainer = Instance.new("Frame", HUD)
     LayoutContainer.Size = UDim2.new(0, 800, 0, 80)
     LayoutContainer.Position = UDim2.new(0, 15, 0, 15)
@@ -38,8 +38,8 @@ function Library:InitHUD()
         return r
     end
 
-    local Row1 = CreateRow() -- Верхний этаж
-    local Row2 = CreateRow() -- Нижний этаж
+    local Row1 = CreateRow() -- Первый этаж
+    local Row2 = CreateRow() -- Второй этаж
 
     local function CreateSection(parent, text)
         local f = Instance.new("Frame", parent)
@@ -62,21 +62,43 @@ function Library:InitHUD()
         return l
     end
 
-    -- Наполнение этажей (как в NightDLC)
+    -- Секции
     local brand = CreateSection(Row1, "<font color='#B432B4'>N</font>ight <font color='#888888'>Alpha</font>")
     local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. game.Players.LocalPlayer.Name .. "</font>")
     
-    local stats = CreateSection(Row2, "0 <font color='#B432B4'>Fps</font>")
-    local ping = CreateSection(Row2, "0 <font color='#B432B4'>ms</font>")
-    local timeL = CreateSection(Row2, os.date("%X"))
+    local fpsStat = CreateSection(Row2, "60 <font color='#B432B4'>Fps</font>")
+    local pingStat = CreateSection(Row2, "0 <font color='#B432B4'>Ms</font>")
+    local coordsStat = CreateSection(Row2, "0, 0, 0")
+    local timeStat = CreateSection(Row2, os.date("%X"))
 
+    -- Обновление статов
+    local lastUpdate = 0
     RunService.RenderStepped:Connect(function(dt)
-        stats.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
-        timeL.Text = os.date("%X")
+        lastUpdate = lastUpdate + dt
+        if lastUpdate >= 0.5 then -- Обновляем раз в полсекунды, чтобы не мельтешило
+            lastUpdate = 0
+            
+            -- FPS
+            fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
+            
+            -- Ping (Реальный сетевой пинг)
+            local p = math.floor(Stats.Network.ServerTickTagAverage:GetValue())
+            pingStat.Text = p .. " <font color='#B432B4'>Ms</font>"
+            
+            -- Time
+            timeStat.Text = os.date("%X")
+            
+            -- Coords
+            local lp = game.Players.LocalPlayer
+            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                local pos = lp.Character.HumanoidRootPart.Position
+                coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
+            end
+        end
     end)
 end
 
--- [ ОКНО С ИСПРАВЛЕННЫМ КОНТЕЙНЕРОМ ]
+-- [ ФУНКЦИЯ ОКНА ]
 function Library:CreateWindow(name)
     if not self.MainGui then
         self.MainGui = Instance.new("ScreenGui", CoreGui)
@@ -91,7 +113,7 @@ function Library:CreateWindow(name)
     Main.Size = UDim2.new(0, 180, 0, 38)
     Main.Position = UDim2.new(0, xPos, 0, self.CurrentY)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-    Main.BorderSizePixel = 0
+    Main.BackgroundTransparency = 0
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 5)
     Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 50)
 
@@ -107,12 +129,11 @@ function Library:CreateWindow(name)
     local Layout = Instance.new("UIListLayout", Content)
     Layout.Padding = UDim.new(0, 1)
 
-    -- Авто-размер контейнера под кнопки
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         Content.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
     end)
 
-    -- Dragging
+    -- Перетаскивание
     local dragStart, startPos, dragging
     Main.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -128,10 +149,9 @@ function Library:CreateWindow(name)
     UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
     local Category = {}
-
     function Category:CreateModule(modName, callback)
         local Enabled = false
-        local MFrame = Instance.new("Frame", Content) -- Привязка к Content именно ЭТОГО окна
+        local MFrame = Instance.new("Frame", Content)
         MFrame.Size = UDim2.new(1, 0, 0, 30)
         MFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
         MFrame.BorderSizePixel = 0
@@ -157,10 +177,8 @@ function Library:CreateWindow(name)
             Tween(Indicator, 0.2, {Size = UDim2.new(0, 2, 0, Enabled and 20 or 0)})
             callback(Enabled)
         end)
-        
         return {}
     end
-
     return Category
 end
 
