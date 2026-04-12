@@ -1,13 +1,14 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     _Config = {
-        WindowWidth = 210, -- Немного уже для аккуратности
+        WindowWidth = 210,
         Spacing = 15,
         StartY = 160,
-        MaxButtonsVisible = 12
+        MaxButtonsVisible = 12,
+        TotalWindows = 5 -- Обязательно укажи реальное кол-во окон здесь
     },
-    _CurrentX = 0, -- Глобальный счетчик для всех окон
-    _FirstWindow = true
+    _CurrentX = 0,
+    _Initialized = false
 }
 
 local UserInputService = game:GetService("UserInputService")
@@ -29,7 +30,7 @@ local function GetPing()
     return 0
 end
 
--- [ HUD ]
+-- [ HUD С DISPLAYNAME ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
     HUD.Name = "NightHUD_Final"
@@ -58,7 +59,7 @@ function Library:InitHUD()
         f.AutomaticSize = Enum.AutomaticSize.XY
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
         local s = Instance.new("UIStroke", f)
-        s.Color = Color3.fromRGB(45, 45, 50); s.Thickness = 1.2 -- Тоньше
+        s.Color = Color3.fromRGB(45, 45, 50); s.Thickness = 1.2
         
         local p = Instance.new("UIPadding", f)
         p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
@@ -71,8 +72,10 @@ function Library:InitHUD()
         return l
     end
 
+    -- Заменил Name на DisplayName
     local brand = CreateSection(Row1, "<font color='#B432B4'>N</font>ight Alpha")
-    local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. Players.LocalPlayer.Name .. "</font>")
+    local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. Players.LocalPlayer.DisplayName .. "</font>")
+    
     local fpsStat, pingStat, timeStat, coordsStat = CreateSection(Row2, "0 Fps"), CreateSection(Row2, "0 Ms"), CreateSection(Row2, "00:00:00"), CreateSection(Row2, "0, 0, 0")
 
     local lastFpsUpdate = 0
@@ -92,17 +95,15 @@ function Library:InitHUD()
     end)
 end
 
--- [ СОЗДАНИЕ ОКНА ]
 function Library:CreateWindow(name)
-    if not self.MainGui then
+    if not self._Initialized then
         self.MainGui = Instance.new("ScreenGui", CoreGui)
         self:InitHUD()
         
-        -- Расчет центральной позиции при первом запуске
-        local ScreenWidth = self.MainGui.AbsoluteSize.X ~= 0 and self.MainGui.AbsoluteSize.X or 1920
-        local totalWindowsExpected = 5 -- По умолчанию под 5 окон
-        local totalWidth = (self._Config.WindowWidth * totalWindowsExpected) + (self._Config.Spacing * (totalWindowsExpected - 1))
+        local ScreenWidth = self.MainGui.AbsoluteSize.X > 0 and self.MainGui.AbsoluteSize.X or 1920
+        local totalWidth = (self._Config.WindowWidth * self._Config.TotalWindows) + (self._Config.Spacing * (self._Config.TotalWindows - 1))
         self._CurrentX = (ScreenWidth / 2) - (totalWidth / 2)
+        self._Initialized = true
     end
 
     local xPos = self._CurrentX
@@ -114,10 +115,7 @@ function Library:CreateWindow(name)
     Main.Position = UDim2.new(0, xPos, 0, self._Config.StartY)
     Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
-    
-    local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Color = Color3.fromRGB(50, 50, 55)
-    Stroke.Thickness = 1.5 -- Аккуратная обводка
+    Instance.new("UIStroke", Main).Color = Color3.fromRGB(50, 50, 55)
 
     local Header = Instance.new("TextLabel", Main)
     Header.Size = UDim2.new(1, 0, 0, 45)
@@ -130,9 +128,8 @@ function Library:CreateWindow(name)
     Scroll.BackgroundTransparency = 1
     Scroll.ScrollBarThickness = 1
     Scroll.ScrollBarImageColor3 = Library.Accent
-    Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-    Scroll.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y
     Scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+    Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     
     local Layout = Instance.new("UIListLayout", Scroll)
     Layout.Padding = UDim.new(0, 5)
@@ -143,11 +140,12 @@ function Library:CreateWindow(name)
 
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         local btnHeight = 34 + 5
-        local maxVisibleHeight = (btnHeight * self._Config.MaxButtonsVisible)
         local currentHeight = Layout.AbsoluteContentSize.Y + 10
-        local finalHeight = math.min(currentHeight, maxVisibleHeight)
+        local maxHeight = (btnHeight * self._Config.MaxButtonsVisible)
         
+        local finalHeight = math.min(currentHeight, maxHeight)
         Scroll.Size = UDim2.new(1, 0, 0, finalHeight)
+        Scroll.CanvasSize = UDim2.new(0, 0, 0, currentHeight)
         Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, finalHeight + 55)
     end)
 
@@ -173,8 +171,7 @@ function Library:CreateWindow(name)
         MFrame.Size = UDim2.new(0, self._Config.WindowWidth - 16, 0, 34)
         MFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
         Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6)
-        local MStroke = Instance.new("UIStroke", MFrame)
-        MStroke.Color = Color3.fromRGB(40, 40, 45); MStroke.Thickness = 1
+        Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(40, 40, 45)
 
         local MBtn = Instance.new("TextButton", MFrame)
         MBtn.Size = UDim2.new(1, 0, 1, 0)
