@@ -1,8 +1,10 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     ToggleKey = Enum.KeyCode.RightShift,
+    TotalWindows = 5, -- Добавлено
+    MaxButtonsVisible = 12, -- Добавлено
     _Config = {
-        WindowWidth = 230,
+        WindowWidth = 200,
         Spacing = 15,
         StartY = 220,
         Transparency = 0.1, 
@@ -10,7 +12,7 @@ local Library = {
         FontMedium = Enum.Font.GothamMedium
     },
     _Visible = true,
-    _CurrentX = 50,
+    _CurrentX = 100,
     _Initialized = false,
     _Keybinds = {},
     _LastKBState = ""
@@ -84,7 +86,7 @@ function Library:InitHUD()
             coordsStat.Text = string.format("%d, %d, %d", p.X, p.Y, p.Z)
         end
         
-        if tick() - lastUpdate >= 0.5 then -- Задержка обновления FPS/Ping
+        if tick() - lastUpdate >= 0.5 then
             lastUpdate = tick()
             fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
             pingStat.Text = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) .. " <font color='#B432B4'>Ms</font>"
@@ -119,6 +121,7 @@ function Library:CreateWindow(name)
     local cfg = Library._Config
     if not Library._Initialized then Library:InitHUD(); Library._Initialized = true end
 
+    Library.TotalWindows = Library.TotalWindows + 1 -- Учёт окон
     local Main = Instance.new("Frame", Library.MainGui)
     Main.Name = name; Main.Size = UDim2.new(0, cfg.WindowWidth, 0, 40); Main.Position = UDim2.new(0, Library._CurrentX, 0, cfg.StartY)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18); Main.BackgroundTransparency = cfg.Transparency
