@@ -1,0 +1,181 @@
+-- NightDLC Perfect Clone for Roblox
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+local Library = {}
+local Theme = {
+    Main = Color3.fromRGB(12, 12, 12),
+    Accent = Color3.fromRGB(65, 105, 255),
+    Module = Color3.fromRGB(18, 18, 18),
+    Setting = Color3.fromRGB(22, 22, 22),
+    Text = Color3.fromRGB(255, 255, 255),
+    TextDim = Color3.fromRGB(140, 140, 140),
+    Font = Enum.Font.GothamMedium
+}
+
+function Library:CreateCategory(name, pos)
+    local ScreenGui = Instance.new("ScreenGui", CoreGui)
+    
+    local Main = Instance.new("Frame", ScreenGui)
+    Main.Size = UDim2.new(0, 190, 0, 35)
+    Main.Position = pos
+    Main.BackgroundColor3 = Theme.Accent
+    Main.BorderSizePixel = 0
+    
+    local Title = Instance.new("TextLabel", Main)
+    Title.Size = UDim2.new(1, 0, 1, 0)
+    Title.Text = name
+    Title.TextColor3 = Theme.Text
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 15
+    Title.BackgroundTransparency = 1
+
+    local Container = Instance.new("Frame", Main)
+    Container.Position = UDim2.new(0, 0, 1, 0)
+    Container.Size = UDim2.new(1, 0, 0, 0)
+    Container.BackgroundColor3 = Theme.Main
+    Container.BorderSizePixel = 0
+    
+    local Layout = Instance.new("UIListLayout", Container)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+    -- Dragging Logic
+    local drag, dragStart, startPos
+    Main.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true dragStart = i.Position startPos = Main.Position end end)
+    UserInputService.InputChanged:Connect(function(i) if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = i.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end end)
+    UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end end)
+
+    local Category = {}
+
+    function Category:CreateModule(modName, callback)
+        local active = false
+        local expanded = false
+        
+        local ModFrame = Instance.new("Frame", Container)
+        ModFrame.Size = UDim2.new(1, 0, 0, 32)
+        ModFrame.BackgroundColor3 = Theme.Module
+        ModFrame.BorderSizePixel = 0
+        ModFrame.ClipsDescendants = true
+
+        local ModBtn = Instance.new("TextButton", ModFrame)
+        ModBtn.Size = UDim2.new(1, 0, 0, 32)
+        ModBtn.BackgroundTransparency = 1
+        ModBtn.Text = "  " .. modName
+        ModBtn.TextColor3 = Theme.TextDim
+        ModBtn.TextXAlignment = Enum.TextXAlignment.Left
+        ModBtn.Font = Theme.Font
+        ModBtn.TextSize = 14
+
+        local Settings = Instance.new("Frame", ModFrame)
+        Settings.Position = UDim2.new(0, 0, 0, 32)
+        Settings.Size = UDim2.new(1, 0, 0, 0)
+        Settings.BackgroundTransparency = 1
+        
+        local SetLayout = Instance.new("UIListLayout", Settings)
+
+        local function Resize()
+            local targetSize = expanded and (32 + SetLayout.AbsoluteContentSize.Y) or 32
+            TweenService:Create(ModFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, targetSize)}):Play()
+            task.wait(0.2)
+            Container.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
+        end
+
+        ModBtn.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                active = not active
+                TweenService:Create(ModBtn, TweenInfo.new(0.2), {TextColor3 = active and Theme.Accent or Theme.TextDim}):Play()
+                callback(active)
+            elseif i.UserInputType == Enum.UserInputType.MouseButton2 then
+                expanded = not expanded
+                Resize()
+            end
+        end)
+
+        local Module = {}
+
+        -- Пуллер (Вложенный Toggle)
+        function Module:AddToggle(text, default, cb)
+            local state = default
+            local Tgl = Instance.new("TextButton", Settings)
+            Tgl.Size = UDim2.new(1, 0, 0, 28)
+            Tgl.BackgroundColor3 = Theme.Setting
+            Tgl.Text = "  - " .. text
+            Tgl.TextColor3 = state and Theme.Accent or Theme.TextDim
+            Tgl.TextXAlignment = Enum.TextXAlignment.Left
+            Tgl.Font = Theme.Font
+            Tgl.TextSize = 12
+            
+            Tgl.MouseButton1Click:Connect(function()
+                state = not state
+                Tgl.TextColor3 = state and Theme.Accent or Theme.TextDim
+                cb(state)
+            end)
+            Resize()
+        end
+
+        -- Слайдер
+        function Module:AddSlider(text, min, max, def, cb)
+            local SFrame = Instance.new("Frame", Settings)
+            SFrame.Size = UDim2.new(1, 0, 0, 35)
+            SFrame.BackgroundColor3 = Theme.Setting
+            
+            local Label = Instance.new("TextLabel", SFrame)
+            Label.Size = UDim2.new(1, 0, 0, 20)
+            Label.Text = "  " .. text .. ": " .. def
+            Label.BackgroundTransparency = 1
+            Label.TextColor3 = Theme.TextDim
+            Label.Font = Theme.Font
+            Label.TextSize = 11
+            Label.TextXAlignment = Enum.TextXAlignment.Left
+
+            local Bar = Instance.new("Frame", SFrame)
+            Bar.Size = UDim2.new(0.85, 0, 0, 2)
+            Bar.Position = UDim2.new(0.07, 0, 0.75, 0)
+            Bar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+
+            local Fill = Instance.new("Frame", Bar)
+            Fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0)
+            Fill.BackgroundColor3 = Theme.Accent
+
+            Bar.InputBegan:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                    local move = UserInputService.InputChanged:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseMovement then
+                            local p = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+                            Fill.Size = UDim2.new(p, 0, 1, 0)
+                            local val = math.floor(min + (max - min) * p)
+                            Label.Text = "  " .. text .. ": " .. val
+                            cb(val)
+                        end
+                    end)
+                    UserInputService.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then move:Disconnect() end
+                    end)
+                end
+            end)
+            Resize()
+        end
+
+        return Module
+    end
+    return Category
+end
+
+-- ================= ИСПОЛЬЗОВАНИЕ =================
+
+local Combat = Library:CreateCategory("Combat", UDim2.new(0, 100, 0, 100))
+
+local Aura = Combat:CreateModule("KillAura", function(t) print("Aura:", t) end)
+Aura:AddToggle("AutoBlock", true, function(v) end)
+Aura:AddSlider("Range", 3, 10, 5, function(v) end)
+
+local Velocity = Combat:CreateModule("Velocity", function(t) end)
+Velocity:AddSlider("Horizontal", 0, 100, 0, function(v) end)
+
+local Movement = Library:CreateCategory("Movement", UDim2.new(0, 300, 0, 100))
+Movement:CreateModule("Fly", function(t) end)
+Movement:CreateModule("Speed", function(t) end)
