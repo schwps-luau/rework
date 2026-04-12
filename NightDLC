@@ -1,3 +1,4 @@
+--prefinal version
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     _Config = {
