@@ -4,7 +4,7 @@ local Library = {
     _Config = {
         WindowWidth = 230,
         Spacing = 15,
-        StartY = 220, -- Чуть ниже для красоты
+        StartY = 220,
         MaxButtonsVisible = 12,
         TotalWindows = 5 
     },
@@ -21,11 +21,14 @@ local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
 local Players = game:GetService("Players")
 
+-- Улучшенная функция анимации с проверкой
 local function Tween(obj, time, goal)
-    if not obj then return end
+    if not obj or typeof(obj) ~= "Instance" then return end
     local info = TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(obj, info, goal)
-    tween:Play()
+    local success, tween = pcall(function()
+        return TweenService:Create(obj, info, goal)
+    end)
+    if success then tween:Play() end
     return tween
 end
 
@@ -56,7 +59,8 @@ function Library:InitKeybindList()
     local List = Instance.new("Frame", KBGui)
     List.Name = "List"; List.Position = UDim2.new(0, 0, 0, 30); List.Size = UDim2.new(1, 0, 0, 0)
     List.BackgroundTransparency = 1
-    Instance.new("UIListLayout", List).Padding = UDim.new(0, 5)
+    local Layout = Instance.new("UIListLayout", List)
+    Layout.Padding = UDim.new(0, 5)
 
     RunService.RenderStepped:Connect(function()
         KBGui.Visible = self._Visible
@@ -196,13 +200,14 @@ function Library:CreateWindow(name)
         local function Toggle()
             Enabled = not Enabled
             
-            local targetBtnColor = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)
-            local targetFrameColor = Enabled and Color3.fromRGB(35, 25, 45) or Color3.fromRGB(22, 22, 26)
-            local targetIndSize = Enabled and UDim2.new(0, 4, 0, 22) or UDim2.new(0, 4, 0, 0)
+            -- Гарантированные Color3
+            local btnColor = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)
+            local frameColor = Enabled and Color3.fromRGB(35, 25, 45) or Color3.fromRGB(22, 22, 26)
+            local indSize = Enabled and UDim2.new(0, 4, 0, 22) or UDim2.new(0, 4, 0, 0)
             
-            Tween(MBtn, 0.2, {TextColor3 = targetBtnColor})
-            Tween(MFrame, 0.2, {BackgroundColor3 = targetFrameColor})
-            Tween(Ind, 0.2, {Size = targetIndSize})
+            Tween(MBtn, 0.2, {TextColor3 = btnColor})
+            Tween(MFrame, 0.2, {BackgroundColor3 = frameColor})
+            Tween(Ind, 0.2, {Size = indSize})
             
             callback(Enabled)
         end
