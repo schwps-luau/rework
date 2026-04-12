@@ -1,11 +1,12 @@
-local Library = {
+
+local Lbrary = {
     Accent = Color3.fromRGB(180, 50, 180),
     _Config = {
         WindowWidth = 210,
         Spacing = 15,
         StartY = 160,
         MaxButtonsVisible = 12,
-        TotalWindows = 5 -- Обязательно укажи реальное кол-во окон здесь
+        TotalWindows = 5 
     },
     _CurrentX = 0,
     _Initialized = false
@@ -30,7 +31,7 @@ local function GetPing()
     return 0
 end
 
--- [ HUD С DISPLAYNAME ]
+-- [ HUD ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
     HUD.Name = "NightHUD_Final"
@@ -72,9 +73,8 @@ function Library:InitHUD()
         return l
     end
 
-    -- Заменил Name на DisplayName
     local brand = CreateSection(Row1, "<font color='#B432B4'>N</font>ight Alpha")
-    local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. Players.LocalPlayer.DisplayName .. "</font>")
+    local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. (Players.LocalPlayer and Players.LocalPlayer.DisplayName or "Player") .. "</font>")
     
     local fpsStat, pingStat, timeStat, coordsStat = CreateSection(Row2, "0 Fps"), CreateSection(Row2, "0 Ms"), CreateSection(Row2, "00:00:00"), CreateSection(Row2, "0, 0, 0")
 
@@ -95,24 +95,28 @@ function Library:InitHUD()
     end)
 end
 
+-- [ ОКНО ]
 function Library:CreateWindow(name)
+    -- Фикс ошибки индексации nil
+    local cfg = Library._Config 
+
     if not self._Initialized then
         self.MainGui = Instance.new("ScreenGui", CoreGui)
         self:InitHUD()
         
         local ScreenWidth = self.MainGui.AbsoluteSize.X > 0 and self.MainGui.AbsoluteSize.X or 1920
-        local totalWidth = (self._Config.WindowWidth * self._Config.TotalWindows) + (self._Config.Spacing * (self._Config.TotalWindows - 1))
-        self._CurrentX = (ScreenWidth / 2) - (totalWidth / 2)
+        local totalWidth = (cfg.WindowWidth * cfg.TotalWindows) + (cfg.Spacing * (cfg.TotalWindows - 1))
+        Library._CurrentX = (ScreenWidth / 2) - (totalWidth / 2)
         self._Initialized = true
     end
 
-    local xPos = self._CurrentX
-    self._CurrentX = self._CurrentX + self._Config.WindowWidth + self._Config.Spacing
+    local xPos = Library._CurrentX
+    Library._CurrentX = Library._CurrentX + cfg.WindowWidth + cfg.Spacing
 
     local Main = Instance.new("Frame", self.MainGui)
     Main.Name = name
-    Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 50)
-    Main.Position = UDim2.new(0, xPos, 0, self._Config.StartY)
+    Main.Size = UDim2.new(0, cfg.WindowWidth, 0, 50)
+    Main.Position = UDim2.new(0, xPos, 0, cfg.StartY)
     Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
     Instance.new("UIStroke", Main).Color = Color3.fromRGB(50, 50, 55)
@@ -141,12 +145,12 @@ function Library:CreateWindow(name)
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         local btnHeight = 34 + 5
         local currentHeight = Layout.AbsoluteContentSize.Y + 10
-        local maxHeight = (btnHeight * self._Config.MaxButtonsVisible)
+        local maxHeight = (btnHeight * cfg.MaxButtonsVisible)
         
         local finalHeight = math.min(currentHeight, maxHeight)
         Scroll.Size = UDim2.new(1, 0, 0, finalHeight)
         Scroll.CanvasSize = UDim2.new(0, 0, 0, currentHeight)
-        Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, finalHeight + 55)
+        Main.Size = UDim2.new(0, cfg.WindowWidth, 0, finalHeight + 55)
     end)
 
     -- Перетаскивание
@@ -168,7 +172,7 @@ function Library:CreateWindow(name)
     function Category:CreateModule(modName, callback)
         local Enabled = false
         local MFrame = Instance.new("Frame", Scroll)
-        MFrame.Size = UDim2.new(0, self._Config.WindowWidth - 16, 0, 34)
+        MFrame.Size = UDim2.new(0, cfg.WindowWidth - 16, 0, 34)
         MFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
         Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6)
         Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(40, 40, 45)
@@ -190,7 +194,7 @@ function Library:CreateWindow(name)
             Enabled = not Enabled
             Tween(MBtn, 0.2, {TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)})
             Tween(MFrame, 0.2, {BackgroundColor3 = Enabled and Color3.fromRGB(30, 25, 40) or Color3.fromRGB(24, 24, 28)})
-            Tween(Ind, 0.2, {Size = UDim2.new(0, 3, 0, Enabled and 20 or 0)})
+            Tween(Ind, 0.2, {Size = UDim2.new(0, 3, 0, Enabled and 22 or 0)})
             callback(Enabled)
         end)
         return {}
