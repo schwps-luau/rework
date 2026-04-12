@@ -1,6 +1,6 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
-    ToggleKey = Enum.KeyCode.RightShift, -- Установлен RightShift
+    ToggleKey = Enum.KeyCode.RightShift,
     _Config = {
         WindowWidth = 230,
         Spacing = 15,
@@ -21,10 +21,10 @@ local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
 local Players = game:GetService("Players")
 
-local function Tween(obj, time, goal)
+-- Самый простой твин без лишнего мусора
+local function SimpleTween(obj, goal)
     if not obj then return end
-    local info = TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-    TweenService:Create(obj, info, goal):Play()
+    TweenService:Create(obj, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
 end
 
 local function GetPing()
@@ -79,7 +79,7 @@ function Library:InitHUD()
     
     local function CreateRow()
         local r = Instance.new("Frame", LayoutContainer); r.Size = UDim2.new(1, 0, 0, 28); r.BackgroundTransparency = 1
-        local l = Instance.new("UIListLayout", r); l.FillDirection = Enum.FillDirection.Horizontal; l.Padding = UDim.new(0, 8)
+        Instance.new("UIListLayout", r).FillDirection = Enum.FillDirection.Horizontal; r.UIListLayout.Padding = UDim.new(0, 8)
         return r
     end
     local Row1, Row2 = CreateRow(), CreateRow()
@@ -90,7 +90,7 @@ function Library:InitHUD()
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
         local s = Instance.new("UIStroke", f); s.Color = Color3.fromRGB(65, 65, 70); s.Thickness = 2 
         local l = Instance.new("TextLabel", f); l.Size = UDim2.new(0, 0, 0, 26); l.AutomaticSize = Enum.AutomaticSize.X; l.RichText = true; l.Text = defaultText; l.TextColor3 = Color3.fromRGB(255, 255, 255); l.Font = Enum.Font.GothamBold; l.TextSize = 13; l.BackgroundTransparency = 1
-        Instance.new("UIPadding", f).PaddingLeft = UDim.new(0, 10); Instance.new("UIPadding", f).PaddingRight = UDim.new(0, 10)
+        Instance.new("UIPadding", f).PaddingLeft = UDim.new(0, 10); f.UIPadding.PaddingRight = UDim.new(0, 10)
         return l
     end
 
@@ -156,12 +156,15 @@ function Library:CreateWindow(name)
 
         local function Toggle()
             Enabled = not Enabled
-            local bCol = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)
-            local fCol = Enabled and Color3.fromRGB(35, 25, 45) or Color3.fromRGB(22, 22, 26)
-            local iSize = Enabled and UDim2.new(0, 4, 0, 22) or UDim2.new(0, 4, 0, 0)
-            Tween(MBtn, 0.2, {TextColor3 = bCol})
-            Tween(MFrame, 0.2, {BackgroundColor3 = fCol})
-            Tween(Ind, 0.2, {Size = iSize})
+            if Enabled then
+                SimpleTween(MBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)})
+                SimpleTween(MFrame, {BackgroundColor3 = Color3.fromRGB(35, 25, 45)})
+                SimpleTween(Ind, {Size = UDim2.new(0, 4, 0, 22)})
+            else
+                SimpleTween(MBtn, {TextColor3 = Color3.fromRGB(170, 170, 170)})
+                SimpleTween(MFrame, {BackgroundColor3 = Color3.fromRGB(22, 22, 26)})
+                SimpleTween(Ind, {Size = UDim2.new(0, 4, 0, 0)})
+            end
             callback(Enabled)
         end
 
