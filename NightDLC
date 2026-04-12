@@ -1,18 +1,10 @@
--- NightDLC Total Reconstruction Framework
--- Style matching: image_4.png, image_5.png, image_6.png
-
 local Library = {
-    Categories = {},
-    Modules = {},
     Accent = Color3.fromRGB(180, 50, 180),
-    Font = Enum.Font.GothamMedium,
-    
-    -- Динамическая сетка
     _Config = {
-        WindowWidth = 210,
+        WindowWidth = 215,
         CurrentX = 25,
-        Spacing = 220,
-        StartY = 110 -- Опускаем ниже двухэтажного HUD
+        Spacing = 225,
+        StartY = 115
     }
 }
 
@@ -27,7 +19,7 @@ local function Tween(obj, time, goal)
     TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
 end
 
--- [ ВАТЕРМАРК СТИЛЯ NIGHTAlpha - КОПИЯ image_6.png ]
+-- [ ОБНОВЛЕННЫЙ HUD: БЫСТРОЕ ОБНОВЛЕНИЕ ВСЕХ ДАННЫХ ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
     HUD.Name = "NightHUD_Final"
@@ -37,33 +29,26 @@ function Library:InitHUD()
     LayoutContainer.Position = UDim2.new(0, 20, 0, 20)
     LayoutContainer.BackgroundTransparency = 1
     
-    local MainLayout = Instance.new("UIListLayout", LayoutContainer)
-    MainLayout.Padding = UDim.new(0, 7)
-
     local function CreateRow()
         local r = Instance.new("Frame", LayoutContainer)
         r.Size = UDim2.new(1, 0, 0, 30)
         r.BackgroundTransparency = 1
         local l = Instance.new("UIListLayout", r)
         l.FillDirection = Enum.FillDirection.Horizontal
-        l.Padding = UDim.new(0, 7)
+        l.Padding = UDim.new(0, 8)
         return r
     end
 
-    local Row1 = CreateRow() -- Верхний ряд
-    local Row2 = CreateRow() -- Нижний ряд
+    local Row1 = CreateRow()
+    local Row2 = CreateRow()
+    Instance.new("UIListLayout", LayoutContainer).Padding = UDim.new(0, 8)
 
     local function CreateSection(parent, defaultText)
         local f = Instance.new("Frame", parent)
         f.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
-        f.BackgroundTransparency = 0 -- Непрозрачный
         f.AutomaticSize = Enum.AutomaticSize.XY
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
-        
-        -- Обводка "блока"
-        local s = Instance.new("UIStroke", f)
-        s.Color = Color3.fromRGB(45, 45, 50)
-        s.Thickness = 1
+        Instance.new("UIStroke", f).Color = Color3.fromRGB(45, 45, 50)
         
         local p = Instance.new("UIPadding", f)
         p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
@@ -71,182 +56,143 @@ function Library:InitHUD()
         local l = Instance.new("TextLabel", f)
         l.Size = UDim2.new(0, 0, 0, 28)
         l.AutomaticSize = Enum.AutomaticSize.X
-        l.RichText = true
-        l.Text = defaultText
+        l.RichText = true; l.Text = defaultText
         l.TextColor3 = Color3.fromRGB(255, 255, 255)
         l.Font = Enum.Font.GothamMedium; l.TextSize = 13; l.BackgroundTransparency = 1
         return l
     end
 
-    -- Наполнение (image_6.png style)
     local brand = CreateSection(Row1, "<font color='#B432B4'>N</font>ight Alpha")
     local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. Players.LocalPlayer.Name .. "</font>")
     
     local fpsStat = CreateSection(Row2, "0 <font color='#B432B4'>Fps</font>")
     local pingStat = CreateSection(Row2, "0 <font color='#B432B4'>Ms</font>")
-    local timeStat = CreateSection(Row2, os.date("%X"))
+    local timeStat = CreateSection(Row2, "00:00:00")
     local coordsStat = CreateSection(Row2, "0, 0, 0")
 
-    -- Обновление (сглаженное)
-    local lastUpdate = 0
-    RunService.RenderStepped:Connect(function(dt)
-        lastUpdate = lastUpdate + dt
-        if lastUpdate >= 0.3 then -- Обновляем статы 3 раза в секунду, чтобы не мельтешило
-            lastUpdate = 0
-            
-            local fps = math.floor(1/dt)
-            fpsStat.Text = fps .. " <font color='#B432B4'>Fps</font>"
-            
-            local p = math.floor(Stats.Network.ServerTickTagAverage:GetValue())
-            pingStat.Text = p .. " <font color='#B432B4'>Ms</font>"
-            
-            timeStat.Text = os.date("%X")
-            
-            local lp = Players.LocalPlayer
-            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                local pos = lp.Character.HumanoidRootPart.Position
-                coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
-            end
+    -- Единый цикл обновления для всего HUD (Очень быстро)
+    RunService.Heartbeat:Connect(function()
+        -- FPS
+        local fps = math.floor(1 / RunService.RenderStepped:Wait())
+        fpsStat.Text = fps .. " <font color='#B432B4'>Fps</font>"
+        
+        -- Пинг
+        local ping = math.floor(Stats.Network.ServerTickTagAverage:GetValue())
+        pingStat.Text = ping .. " <font color='#B432B4'>Ms</font>"
+        
+        -- Время
+        timeStat.Text = os.date("%X")
+        
+        -- Координаты
+        local lp = Players.LocalPlayer
+        if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = lp.Character.HumanoidRootPart.Position
+            coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
         end
     end)
 end
 
--- [ СОЗДАНИЕ ЦЕЛЬНОГО ОКНА - КОПИЯ image_4.png/image_5.png ]
+-- [ ЦЕЛЬНОЕ ОКНО С ГРАДИЕНТОМ И РАЗДЕЛИТЕЛЯМИ ]
 function Library:CreateWindow(name)
     if not self.MainGui then
         self.MainGui = Instance.new("ScreenGui", CoreGui)
-        self.MainGui.Name = "NightGUI"
         self:InitHUD()
     end
 
     local xPos = self._Config.CurrentX
     self._Config.CurrentX = self._Config.CurrentX + self._Config.Spacing
 
-    -- Основной "цельный" фрейм окна
-    local MainFrame = Instance.new("Frame", self.MainGui)
-    MainFrame.Name = name .. "_Window"
-    MainFrame.Size = UDim2.new(0, self._Config.WindowWidth, 0, 300) -- Дефолтная высота, потом авто-ресайз
-    MainFrame.Position = UDim2.new(0, xPos, 0, self._Config.StartY)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
-    MainFrame.BackgroundTransparency = 0.05 -- Плотный, как на фото
-    MainFrame.BorderSizePixel = 0
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
-    
-    -- Обводка окна
-    local Stroke = Instance.new("UIStroke", MainFrame)
-    Stroke.Color = Color3.fromRGB(45, 45, 50)
-    Stroke.Thickness = 1.3
-    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    local Main = Instance.new("Frame", self.MainGui)
+    Main.Name = name
+    Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 45)
+    Main.Position = UDim2.new(0, xPos, 0, self._Config.StartY)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+    Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 50)
 
-    -- Заголовок (внутри того же фрейма)
-    local Header = Instance.new("TextLabel", MainFrame)
-    Header.Size = UDim2.new(1, 0, 0, 45) -- Чуть выше
-    Header.Text = name
-    Header.TextColor3 = Color3.fromRGB(255, 255, 255)
+    -- Фиолетовый градиент внизу (как на фото)
+    local Grad = Instance.new("Frame", Main)
+    Grad.Size = UDim2.new(1, 0, 0, 40)
+    Grad.Position = UDim2.new(0, 0, 1, -40)
+    Grad.BackgroundTransparency = 0
+    Instance.new("UICorner", Grad).CornerRadius = UDim.new(0, 8)
+    local UIGrad = Instance.new("UIGradient", Grad)
+    UIGrad.Rotation = 90
+    UIGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 23)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(45, 20, 60))
+    })
+    UIGrad.Transparency = NumberSequence.new(0, 0.5)
+    Grad.ZIndex = 1
+
+    local Header = Instance.new("TextLabel", Main)
+    Header.Size = UDim2.new(1, 0, 0, 45)
+    Header.Text = name; Header.TextColor3 = Color3.fromRGB(255, 255, 255)
     Header.Font = Enum.Font.GothamBold; Header.TextSize = 15; Header.BackgroundTransparency = 1
+    Header.ZIndex = 5
 
-    -- Контейнер для кнопок (Content)
-    local Content = Instance.new("Frame", MainFrame)
-    Content.Name = "ModuleContainer"
-    Content.Position = UDim2.new(0, 0, 0, 45) -- Сразу под заголовком
+    local Content = Instance.new("Frame", Main)
+    Content.Position = UDim2.new(0, 0, 0, 45)
     Content.Size = UDim2.new(1, 0, 0, 0)
     Content.BackgroundTransparency = 1
+    Content.ZIndex = 5
     local Layout = Instance.new("UIListLayout", Content)
-    Layout.SortOrder = Enum.SortOrder.LayoutOrder
-    Layout.Padding = UDim.new(0, 0) -- Кнопки прилипают друг к другу
 
-    -- Авто-ресайз окна по количеству кнопок
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        local totalHeight = 45 + Layout.AbsoluteContentSize.Y + 10 -- Шапка + модули + отступ снизу
-        Tween(MainFrame, 0.2, {Size = UDim2.new(0, self._Config.WindowWidth, 0, totalHeight)})
-        Content.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
+        Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, Layout.AbsoluteContentSize.Y + 55)
     end)
 
-    -- Градиент снизу окна (фиолетовый отсвет, как в image_4.png)
-    local GradientFrame = Instance.new("Frame", MainFrame)
-    GradientFrame.Size = UDim2.new(1, 0, 0, 50)
-    GradientFrame.Position = UDim2.new(0, 0, 1, -50)
-    GradientFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- Белый для градиента
-    GradientFrame.BackgroundTransparency = 0
-    Instance.new("UICorner", GradientFrame).CornerRadius = UDim.new(0, 8)
-    local UIGradient = Instance.new("UIGradient", GradientFrame)
-    UIGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 23)), -- Цвет окна
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(45, 20, 60)) -- Темно-фиолетовый акцент
-    })
-    UIGradient.Rotation = 90
-    UIGradient.Transparency = NumberSequence.new(0, 0.4) -- Затухание градиента
-    GradientFrame.ZIndex = 0 -- Чтобы был за кнопками
-
-    -- Dragging Logic
+    -- Перетаскивание
     local dragStart, startPos, dragging
-    MainFrame.InputBegan:Connect(function(i)
+    Main.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true; dragStart = i.Position; startPos = MainFrame.Position
+            dragging = true; dragStart = i.Position; startPos = Main.Position
         end
     end)
     UserInputService.InputChanged:Connect(function(i)
         if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = i.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
-    -- Объект Категории
     local Category = {}
-
     function Category:CreateModule(modName, callback)
         local Enabled = false
-        
         local MFrame = Instance.new("Frame", Content)
         MFrame.Size = UDim2.new(1, 0, 0, 34)
-        MFrame.BackgroundTransparency = 1 -- Прозрачный, т.к. окно цельное
+        MFrame.BackgroundTransparency = 1
         
-        -- Разделитель между кнопками (image_5.png style)
-        local Separator = Instance.new("Frame", MFrame)
-        Separator.Size = UDim2.new(1, -20, 0, 1) -- Чуть короче ширины окна
-        Separator.Position = UDim2.new(0, 10, 0, 0)
-        Separator.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-        Separator.BorderSizePixel = 0
-        Separator.ZIndex = 2
+        -- Разделитель (Separator)
+        local Sep = Instance.new("Frame", MFrame)
+        Sep.Size = UDim2.new(1, -20, 0, 1)
+        Sep.Position = UDim2.new(0, 10, 0, 0)
+        Sep.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+        Sep.BorderSizePixel = 0
 
         local MBtn = Instance.new("TextButton", MFrame)
         MBtn.Size = UDim2.new(1, 0, 1, 0)
         MBtn.BackgroundTransparency = 1
         MBtn.Text = "  " .. modName
-        MBtn.TextColor3 = Color3.fromRGB(180, 180, 180) -- Серый неактивный
+        MBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
         MBtn.Font = Enum.Font.GothamMedium; MBtn.TextSize = 13; MBtn.TextXAlignment = 0
-        MBtn.AutoButtonColor = false
-        MBtn.ZIndex = 3 -- Поверх градиента и разделителя
 
-        local Indicator = Instance.new("Frame", MFrame)
-        Indicator.Size = UDim2.new(0, 3, 0, 0) -- Чуть толще полоска
-        Indicator.Position = UDim2.new(1, -6, 0.5, 0)
-        Indicator.AnchorPoint = Vector2.new(0, 0.5)
-        Indicator.BackgroundColor3 = Library.Accent
-        Indicator.BorderSizePixel = 0
-        Indicator.ZIndex = 3
+        local Ind = Instance.new("Frame", MFrame)
+        Ind.Size = UDim2.new(0, 3, 0, 0)
+        Ind.Position = UDim2.new(1, -6, 0.5, 0)
+        Ind.AnchorPoint = Vector2.new(0, 0.5)
+        Ind.BackgroundColor3 = Library.Accent
+        Ind.BorderSizePixel = 0
 
         MBtn.MouseButton1Click:Connect(function()
             Enabled = not Enabled
-            local textCol = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
-            local indSize = Enabled and 22 or 0
-            
-            Tween(MBtn, 0.2, {TextColor3 = textCol})
-            Tween(Indicator, 0.2, {Size = UDim2.new(0, 3, 0, indSize)})
-            
+            Tween(MBtn, 0.2, {TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)})
+            Tween(Ind, 0.2, {Size = UDim2.new(0, 3, 0, Enabled and 22 or 0)})
             callback(Enabled)
         end)
-        
-        -- Скрытие первого разделителя в окне
-        if #Content:GetChildren() == 2 then Separator.Visible = false end
-
-        return {
-            -- Тут будут методы для ПКМ настроек
-        }
+        return {}
     end
-
     return Category
 end
 
