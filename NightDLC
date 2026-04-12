@@ -1,12 +1,12 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
-    ToggleKey = Enum.KeyCode.RightShift, -- Кнопка скрытия меню
+    ToggleKey = Enum.KeyCode.RightShift,
     _Config = {
         WindowWidth = 230,
         Spacing = 15,
-        StartY = 200,      -- Окна опущены ниже
+        StartY = 220, -- Чуть ниже для красоты
         MaxButtonsVisible = 12,
-        TotalWindows = 5   -- Измени на свое кол-во окон
+        TotalWindows = 5 
     },
     _Visible = true,
     _CurrentX = 0,
@@ -22,7 +22,11 @@ local Stats = game:GetService("Stats")
 local Players = game:GetService("Players")
 
 local function Tween(obj, time, goal)
-    TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
+    if not obj then return end
+    local info = TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(obj, info, goal)
+    tween:Play()
+    return tween
 end
 
 local function GetPing()
@@ -52,8 +56,7 @@ function Library:InitKeybindList()
     local List = Instance.new("Frame", KBGui)
     List.Name = "List"; List.Position = UDim2.new(0, 0, 0, 30); List.Size = UDim2.new(1, 0, 0, 0)
     List.BackgroundTransparency = 1
-    local Layout = Instance.new("UIListLayout", List)
-    Layout.Padding = UDim.new(0, 5)
+    Instance.new("UIListLayout", List).Padding = UDim.new(0, 5)
 
     RunService.RenderStepped:Connect(function()
         KBGui.Visible = self._Visible
@@ -102,12 +105,10 @@ function Library:InitHUD()
     local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. (Players.LocalPlayer and Players.LocalPlayer.DisplayName or "Player") .. "</font>")
     local fpsStat, pingStat, timeStat, coordsStat = CreateSection(Row2, "0 Fps"), CreateSection(Row2, "0 Ms"), CreateSection(Row2, "00:00:00"), CreateSection(Row2, "0, 0, 0")
 
-    local lastFpsUpdate = 0
     RunService.RenderStepped:Connect(function(dt)
         LayoutContainer.Visible = self._Visible
         if self._Visible then
-            lastFpsUpdate = lastFpsUpdate + dt
-            if lastFpsUpdate >= 0.5 then fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"; lastFpsUpdate = 0 end
+            fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
             pingStat.Text = GetPing() .. " <font color='#B432B4'>Ms</font>"
             timeStat.Text = os.date("%X")
             local lp = Players.LocalPlayer
@@ -194,9 +195,15 @@ function Library:CreateWindow(name)
 
         local function Toggle()
             Enabled = not Enabled
-            Tween(MBtn, 0.2, {TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)})
-            Tween(MFrame, 0.2, {BackgroundColor3 = Enabled and Color3.fromRGB(35, 25, 45) or Color3.fromRGB(22, 22, 26)})
-            Tween(Ind, 0.2, {Size = UDim2.new(0, 4, 0, Enabled and 22 or 0)})
+            
+            local targetBtnColor = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)
+            local targetFrameColor = Enabled and Color3.fromRGB(35, 25, 45) or Color3.fromRGB(22, 22, 26)
+            local targetIndSize = Enabled and UDim2.new(0, 4, 0, 22) or UDim2.new(0, 4, 0, 0)
+            
+            Tween(MBtn, 0.2, {TextColor3 = targetBtnColor})
+            Tween(MFrame, 0.2, {BackgroundColor3 = targetFrameColor})
+            Tween(Ind, 0.2, {Size = targetIndSize})
+            
             callback(Enabled)
         end
 
