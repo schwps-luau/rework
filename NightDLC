@@ -1,15 +1,8 @@
 local Library = {
-    Categories = {},
-    Modules = {},
-    Accent = Color3.fromRGB(180, 50, 180),
-    -- Глобальные настройки расположения
-    _Config = {
-        StartX = 20,
-        CurrentX = 20,
-        StartY = 80,
-        Spacing = 200, -- Расстояние между окнами
-        MaxPerRow = 5  -- Сколько окон в одном ряду перед переходом на новый
-    }
+    CurrentX = 20,
+    CurrentY = 110, -- Опустил ниже, чтобы не перекрывать двухэтажный ватермарк
+    Spacing = 195,
+    Accent = Color3.fromRGB(180, 50, 180)
 }
 
 local UserInputService = game:GetService("UserInputService")
@@ -21,29 +14,40 @@ local function Tween(obj, time, goal)
     TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
 end
 
--- [ ПЕРЕДЕЛАННЫЙ ВАТЕРМАРК - СТИЛЬ NIGHT ]
+-- [ ВАТЕРМАРК: 2 ЭТАЖА И СЕКЦИИ ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
-    HUD.Name = "NightHUD"
+    HUD.Name = "NightHUD_V2"
     
-    local Container = Instance.new("Frame", HUD)
-    Container.Size = UDim2.new(0, 600, 0, 30)
-    Container.Position = UDim2.new(0, 15, 0, 15)
-    Container.BackgroundTransparency = 1
+    -- Главный контейнер для этажей
+    local LayoutContainer = Instance.new("Frame", HUD)
+    LayoutContainer.Size = UDim2.new(0, 800, 0, 80)
+    LayoutContainer.Position = UDim2.new(0, 15, 0, 15)
+    LayoutContainer.BackgroundTransparency = 1
+    
+    local MainLayout = Instance.new("UIListLayout", LayoutContainer)
+    MainLayout.Padding = UDim.new(0, 6)
 
-    local Layout = Instance.new("UIListLayout", Container)
-    Layout.FillDirection = Enum.FillDirection.Horizontal
-    Layout.Padding = UDim.new(0, 8)
+    local function CreateRow()
+        local r = Instance.new("Frame", LayoutContainer)
+        r.Size = UDim2.new(1, 0, 0, 28)
+        r.BackgroundTransparency = 1
+        local l = Instance.new("UIListLayout", r)
+        l.FillDirection = Enum.FillDirection.Horizontal
+        l.Padding = UDim.new(0, 6)
+        return r
+    end
 
-    local function CreateBlock(text)
-        local f = Instance.new("Frame", Container)
-        f.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
-        f.BackgroundTransparency = 0 -- Полностью непрозрачный
+    local Row1 = CreateRow() -- Верхний этаж
+    local Row2 = CreateRow() -- Нижний этаж
+
+    local function CreateSection(parent, text)
+        local f = Instance.new("Frame", parent)
+        f.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
         f.AutomaticSize = Enum.AutomaticSize.XY
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
-        
         local s = Instance.new("UIStroke", f)
-        s.Color = Color3.fromRGB(40, 40, 45)
+        s.Color = Color3.fromRGB(45, 45, 50)
         s.Thickness = 1
         
         local p = Instance.new("UIPadding", f)
@@ -52,103 +56,82 @@ function Library:InitHUD()
         local l = Instance.new("TextLabel", f)
         l.Size = UDim2.new(0, 0, 0, 26)
         l.AutomaticSize = Enum.AutomaticSize.X
-        l.Text = text
-        l.RichText = true
+        l.Text = text; l.RichText = true
         l.TextColor3 = Color3.fromRGB(255, 255, 255)
-        l.Font = Enum.Font.GothamMedium
-        l.TextSize = 13
-        l.BackgroundTransparency = 1
+        l.Font = Enum.Font.GothamMedium; l.TextSize = 13; l.BackgroundTransparency = 1
         return l
     end
 
-    local brand = CreateBlock("<font color='#B432B4'>N</font>ight <font color='#888888'>Alpha</font>")
-    local stats = CreateBlock("0 <font color='#B432B4'>Fps</font> | 00:00:00")
-    local pos = CreateBlock("0, 0, 0 | <font color='#B432B4'>0 Ping</font>")
+    -- Наполнение этажей (как в NightDLC)
+    local brand = CreateSection(Row1, "<font color='#B432B4'>N</font>ight <font color='#888888'>Alpha</font>")
+    local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. game.Players.LocalPlayer.Name .. "</font>")
+    
+    local stats = CreateSection(Row2, "0 <font color='#B432B4'>Fps</font>")
+    local ping = CreateSection(Row2, "0 <font color='#B432B4'>ms</font>")
+    local timeL = CreateSection(Row2, os.date("%X"))
 
     RunService.RenderStepped:Connect(function(dt)
-        local fps = math.floor(1/dt)
-        stats.Text = fps .. " <font color='#B432B4'>Fps</font> | " .. os.date("%X")
-        
-        local lp = game.Players.LocalPlayer
-        if lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-            local p = lp.Character.HumanoidRootPart.Position
-            pos.Text = math.floor(p.X) .. ", " .. math.floor(p.Y) .. ", " .. math.floor(p.Z) .. " | <font color='#B432B4'>0 Ping</font>"
-        end
+        stats.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
+        timeL.Text = os.date("%X")
     end)
 end
 
--- [ ФУНКЦИЯ СОЗДАНИЯ ОКНА С АВТО-СЕТКОЙ ]
-function Library:CreateWindow(categoryName)
+-- [ ОКНО С ИСПРАВЛЕННЫМ КОНТЕЙНЕРОМ ]
+function Library:CreateWindow(name)
     if not self.MainGui then
         self.MainGui = Instance.new("ScreenGui", CoreGui)
-        self.MainGui.Name = "NightDLC_GUI"
         self:InitHUD()
     end
 
-    -- Рассчитываем позицию для нового окна
-    local xPos = self._Config.CurrentX
-    local yPos = self._Config.StartY
-    
-    -- Сдвигаем CurrentX для следующего окна
-    self._Config.CurrentX = self._Config.CurrentX + self._Config.Spacing
-    
-    -- Если окон слишком много в ряду, переходим на новый ряд
-    if self._Config.CurrentX > (self._Config.Spacing * self._Config.MaxPerRow) then
-        self._Config.CurrentX = self._Config.StartX
-        self._Config.StartY = self._Config.StartY + 300 -- Сдвиг вниз (высота окна)
-    end
+    local xPos = self.CurrentX
+    self.CurrentX = self.CurrentX + self.Spacing
 
-    local Category = {}
-    
     local Main = Instance.new("Frame", self.MainGui)
-    Main.Name = categoryName
+    Main.Name = name
     Main.Size = UDim2.new(0, 180, 0, 38)
-    Main.Position = UDim2.new(0, xPos, 0, yPos)
+    Main.Position = UDim2.new(0, xPos, 0, self.CurrentY)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-    Main.BackgroundTransparency = 0 -- Непрозрачный
     Main.BorderSizePixel = 0
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 5)
-
-    local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Color = Color3.fromRGB(40, 40, 45)
-    Stroke.Thickness = 1.2
+    Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 50)
 
     local Header = Instance.new("TextLabel", Main)
     Header.Size = UDim2.new(1, 0, 1, 0)
-    Header.Text = categoryName
-    Header.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Header.Font = Enum.Font.GothamBold
-    Header.TextSize = 14
-    Header.BackgroundTransparency = 1
+    Header.Text = name; Header.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Header.Font = Enum.Font.GothamBold; Header.TextSize = 14; Header.BackgroundTransparency = 1
 
-    local Container = Instance.new("Frame", Main)
-    Container.Name = "Content"
-    Container.Position = UDim2.new(0, 0, 1, 2)
-    Container.Size = UDim2.new(1, 0, 0, 0)
-    Container.BackgroundTransparency = 1
-    
-    local Layout = Instance.new("UIListLayout", Container)
+    local Content = Instance.new("Frame", Main)
+    Content.Position = UDim2.new(0, 0, 1, 2)
+    Content.Size = UDim2.new(1, 0, 0, 0)
+    Content.BackgroundTransparency = 1
+    local Layout = Instance.new("UIListLayout", Content)
     Layout.Padding = UDim.new(0, 1)
 
-    -- Перетаскивание
-    local dragStart, startPosFrame, dragging
+    -- Авто-размер контейнера под кнопки
+    Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Content.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
+    end)
+
+    -- Dragging
+    local dragStart, startPos, dragging
     Main.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true; dragStart = i.Position; startPosFrame = Main.Position
+            dragging = true; dragStart = i.Position; startPos = Main.Position
         end
     end)
     UserInputService.InputChanged:Connect(function(i)
         if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = i.Position - dragStart
-            Main.Position = UDim2.new(startPosFrame.X.Scale, startPosFrame.X.Offset + delta.X, startPosFrame.Y.Scale, startPosFrame.Y.Offset + delta.Y)
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
-    function Category:CreateModule(name, callback)
-        local mod = {Enabled = false}
-        
-        local MFrame = Instance.new("Frame", Container)
+    local Category = {}
+
+    function Category:CreateModule(modName, callback)
+        local Enabled = false
+        local MFrame = Instance.new("Frame", Content) -- Привязка к Content именно ЭТОГО окна
         MFrame.Size = UDim2.new(1, 0, 0, 30)
         MFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
         MFrame.BorderSizePixel = 0
@@ -156,14 +139,11 @@ function Library:CreateWindow(categoryName)
         local MBtn = Instance.new("TextButton", MFrame)
         MBtn.Size = UDim2.new(1, 0, 1, 0)
         MBtn.BackgroundTransparency = 1
-        MBtn.Text = "  " .. name
+        MBtn.Text = "  " .. modName
         MBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
-        MBtn.Font = Enum.Font.Gotham
-        MBtn.TextSize = 13
-        MBtn.TextXAlignment = 0
+        MBtn.Font = Enum.Font.Gotham; MBtn.TextSize = 13; MBtn.TextXAlignment = 0
         MBtn.AutoButtonColor = false
 
-        -- Индикатор включения (полоска справа)
         local Indicator = Instance.new("Frame", MFrame)
         Indicator.Size = UDim2.new(0, 2, 0, 0)
         Indicator.Position = UDim2.new(1, -2, 0.5, 0)
@@ -172,18 +152,13 @@ function Library:CreateWindow(categoryName)
         Indicator.BorderSizePixel = 0
 
         MBtn.MouseButton1Click:Connect(function()
-            mod.Enabled = not mod.Enabled
-            local targetText = mod.Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 160)
-            local targetIndHeight = mod.Enabled and 20 or 0
-            
-            Tween(MBtn, 0.2, {TextColor3 = targetText})
-            Tween(Indicator, 0.2, {Size = UDim2.new(0, 2, 0, targetIndHeight)})
-            
-            callback(mod.Enabled)
+            Enabled = not Enabled
+            Tween(MBtn, 0.2, {TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 160)})
+            Tween(Indicator, 0.2, {Size = UDim2.new(0, 2, 0, Enabled and 20 or 0)})
+            callback(Enabled)
         end)
-
-        Container.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
-        return mod
+        
+        return {}
     end
 
     return Category
