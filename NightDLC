@@ -1,11 +1,8 @@
--- NightDLC Open Source Framework for Roblox
--- Style: 1:1 Reconstruction (Purple Accent, Glassmorphism)
-
 local Library = {
     Categories = {},
     Modules = {},
     Accent = Color3.fromRGB(180, 50, 180),
-    Font = Enum.Font.GothamMedium
+    LastX = 50 -- Начальная позиция для авто-отступа
 }
 
 local UserInputService = game:GetService("UserInputService")
@@ -13,90 +10,98 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 
--- Вспомогательная функция анимации
 local function Tween(obj, time, goal)
     TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
 end
 
--- Инициализация HUD (Верхняя панель)
+-- [ ПЕРЕДЕЛАННЫЙ ВАТЕРМАРК (HUD) ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
     local Container = Instance.new("Frame", HUD)
-    Container.Size = UDim2.new(0, 450, 0, 35)
+    Container.Size = UDim2.new(0, 500, 0, 30)
     Container.Position = UDim2.new(0, 15, 0, 15)
     Container.BackgroundTransparency = 1
 
     local Layout = Instance.new("UIListLayout", Container)
     Layout.FillDirection = Enum.FillDirection.Horizontal
-    Layout.Padding = UDim.new(0, 10)
+    Layout.Padding = UDim.new(0, 6)
 
-    local function CreateWidget(icon, text)
+    local function CreateWidget(text)
         local f = Instance.new("Frame", Container)
-        f.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        f.BackgroundTransparency = 0.2
+        f.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+        f.BackgroundTransparency = 0.05 -- Почти непрозрачный, как просил
         f.AutomaticSize = Enum.AutomaticSize.XY
-        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
+        Instance.new("UIStroke", f).Color = Color3.fromRGB(40, 40, 45) -- Тонкая обводка
         
         local p = Instance.new("UIPadding", f)
-        p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
+        p.PaddingLeft = UDim.new(0, 8); p.PaddingRight = UDim.new(0, 8)
 
         local l = Instance.new("TextLabel", f)
-        l.Size = UDim2.new(0, 0, 0, 28)
+        l.Size = UDim2.new(0, 0, 0, 24)
         l.AutomaticSize = Enum.AutomaticSize.X
-        l.Text = icon .. "  |  " .. text
+        l.Text = text
+        l.RichText = true -- Для подсветки иконок
         l.TextColor3 = Color3.fromRGB(255, 255, 255)
-        l.Font = Enum.Font.GothamSemibold
+        l.Font = Enum.Font.GothamMedium
         l.TextSize = 13
         l.BackgroundTransparency = 1
         return l
     end
 
-    local fps = CreateWidget("⚡", "0 FPS")
-    local ping = CreateWidget("📶", "0 Ping")
-    local timeL = CreateWidget("🕒", "00:00:00")
+    local brand = CreateWidget("<font color='#B432B4'>N</font> Alpha")
+    local stats = CreateWidget("244 <font color='#B432B4'>Fps</font> | 10:39:51")
+    local info = CreateWidget("125, 4, 157 | <font color='#B432B4'>0 Ping</font>")
 
     RunService.RenderStepped:Connect(function(dt)
-        fps.Text = "⚡  |  " .. math.floor(1/dt) .. " FPS"
-        timeL.Text = "🕒  |  " .. os.date("%X")
+        local fpsVal = math.floor(1/dt)
+        stats.Text = fpsVal .. " <font color='#B432B4'>Fps</font> | " .. os.date("%X")
     end)
 end
 
--- Создание окна категории
-function Library:CreateWindow(categoryName, startPos)
+-- [ ОКНО С НЕПРОЗРАЧНЫМ ФРЕЙМОМ И ОТСТУПОМ ]
+function Library:CreateWindow(categoryName)
     if not self.MainGui then
         self.MainGui = Instance.new("ScreenGui", CoreGui)
         self:InitHUD()
     end
 
-    local Category = {Active = true}
+    local Category = {}
     
     local Main = Instance.new("Frame", self.MainGui)
     Main.Name = categoryName
-    Main.Size = UDim2.new(0, 190, 0, 40)
-    Main.Position = startPos or UDim2.new(0.1, 0, 0.2, 0)
-    Main.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    Main.BackgroundTransparency = 0.25
+    Main.Size = UDim2.new(0, 185, 0, 38)
+    -- Автоматический отступ (LastX увеличивается с каждым окном)
+    Main.Position = UDim2.new(0, self.LastX, 0, 80)
+    self.LastX = self.LastX + 200 -- Расстояние между окнами
+
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Main.BackgroundTransparency = 0.05 -- Плотный фрейм
     Main.BorderSizePixel = 0
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+
+    -- Обводка окна (Stroke) для стиля Найта
+    local Stroke = Instance.new("UIStroke", Main)
+    Stroke.Color = Color3.fromRGB(45, 45, 50)
+    Stroke.Thickness = 1.2
 
     local Header = Instance.new("TextLabel", Main)
-    Header.Size = UDim2.new(1, 0, 0, 40)
+    Header.Size = UDim2.new(1, 0, 1, 0)
     Header.Text = categoryName
     Header.TextColor3 = Color3.fromRGB(255, 255, 255)
     Header.Font = Enum.Font.GothamBold
-    Header.TextSize = 16
+    Header.TextSize = 15
     Header.BackgroundTransparency = 1
 
     local Container = Instance.new("Frame", Main)
-    Container.Position = UDim2.new(0, 0, 0, 45)
+    Container.Position = UDim2.new(0, 0, 1, 5) -- Небольшой зазор под шапкой
     Container.Size = UDim2.new(1, 0, 0, 0)
     Container.BackgroundTransparency = 1
     
     local Layout = Instance.new("UIListLayout", Container)
-    Layout.SortOrder = Enum.SortOrder.LayoutOrder
-    Layout.Padding = UDim.new(0, 3)
+    Layout.Padding = UDim.new(0, 2)
 
-    -- Перетаскивание
+    -- Dragging
     local dragStart, startPosFrame, dragging
     Main.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -115,105 +120,43 @@ function Library:CreateWindow(categoryName, startPos)
         local mod = {Enabled = false, Expanded = false}
         
         local MFrame = Instance.new("Frame", Container)
-        MFrame.Size = UDim2.new(1, 0, 0, 34)
-        MFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-        MFrame.BackgroundTransparency = 0.4
-        MFrame.BorderSizePixel = 0
-        MFrame.ClipsDescendants = true
-        Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6)
+        MFrame.Size = UDim2.new(1, 0, 0, 32)
+        MFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        MFrame.BackgroundTransparency = 0.1 -- Плотная подложка модуля
+        Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 5)
 
         local MBtn = Instance.new("TextButton", MFrame)
-        MBtn.Size = UDim2.new(1, 0, 0, 34)
+        MBtn.Size = UDim2.new(1, 0, 1, 0)
         MBtn.BackgroundTransparency = 1
         MBtn.Text = "  " .. name
         MBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
         MBtn.Font = Enum.Font.Gotham
-        MBtn.TextSize = 14
-        MBtn.TextXAlignment = Enum.TextXAlignment.Left
+        MBtn.TextSize = 13
+        MBtn.TextXAlignment = 0
         MBtn.AutoButtonColor = false
 
-        local SContainer = Instance.new("Frame", MFrame)
-        SContainer.Position = UDim2.new(0, 0, 0, 34)
-        SContainer.Size = UDim2.new(1, 0, 0, 0)
-        SContainer.BackgroundTransparency = 1
-        local SLayout = Instance.new("UIListLayout", SContainer)
+        -- Элемент акцента (полоска сбоку как в Найте)
+        local AccentBar = Instance.new("Frame", MFrame)
+        AccentBar.Size = UDim2.new(0, 2, 0.7, 0)
+        AccentBar.Position = UDim2.new(1, -5, 0.15, 0)
+        AccentBar.BackgroundColor3 = self.Accent
+        AccentBar.BackgroundTransparency = 1
+        Instance.new("UICorner", AccentBar)
 
-        local function UpdateSize()
-            local targetH = mod.Expanded and (34 + SLayout.AbsoluteContentSize.Y + 5) or 34
-            Tween(MFrame, 0.3, {Size = UDim2.new(1, 0, 0, targetH)})
-            task.wait(0.3)
-            Container.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
-        end
-
-        MBtn.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                mod.Enabled = not mod.Enabled
-                Tween(MBtn, 0.2, {TextColor3 = mod.Enabled and Library.Accent or Color3.fromRGB(180, 180, 180)})
-                callback(mod.Enabled)
-            elseif i.UserInputType == Enum.UserInputType.MouseButton2 then
-                mod.Expanded = not mod.Expanded
-                UpdateSize()
-            end
+        MBtn.MouseButton1Click:Connect(function()
+            mod.Enabled = not mod.Enabled
+            local targetColor = mod.Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 180)
+            local targetBG = mod.Enabled and Color3.fromRGB(45, 35, 55) or Color3.fromRGB(25, 25, 30)
+            
+            Tween(MBtn, 0.2, {TextColor3 = targetColor})
+            Tween(MFrame, 0.2, {BackgroundColor3 = targetBG})
+            Tween(AccentBar, 0.2, {BackgroundTransparency = mod.Enabled and 0 or 1})
+            
+            callback(mod.Enabled)
         end)
 
-        local ModFuncs = {}
-
-        function ModFuncs:AddSlider(sName, min, max, def, cb)
-            local SFrame = Instance.new("Frame", SContainer)
-            SFrame.Size = UDim2.new(1, 0, 0, 35)
-            SFrame.BackgroundTransparency = 1
-            
-            local L = Instance.new("TextLabel", SFrame)
-            L.Size = UDim2.new(1, 0, 0, 20); L.Position = UDim2.new(0, 15, 0, 0)
-            L.Text = sName .. ": " .. def; L.TextColor3 = Color3.fromRGB(140, 140, 140)
-            L.Font = Enum.Font.Gotham; L.TextSize = 11; L.BackgroundTransparency = 1; L.TextXAlignment = 0
-
-            local Bar = Instance.new("Frame", SFrame)
-            Bar.Size = UDim2.new(0.85, 0, 0, 2); Bar.Position = UDim2.new(0.07, 0, 0.75, 0)
-            Bar.BackgroundColor3 = Color3.fromRGB(50, 50, 55); Bar.BorderSizePixel = 0
-
-            local Fill = Instance.new("Frame", Bar)
-            Fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0); Fill.BackgroundColor3 = Library.Accent; Fill.BorderSizePixel = 0
-
-            Bar.InputBegan:Connect(function(i)
-                if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                    local connection = RunService.RenderStepped:Connect(function()
-                        local mousePos = UserInputService:GetMouseLocation().X
-                        local barPos = Bar.AbsolutePosition.X
-                        local barSize = Bar.AbsoluteSize.X
-                        local perc = math.clamp((mousePos - barPos) / barSize, 0, 1)
-                        Fill.Size = UDim2.new(perc, 0, 1, 0)
-                        local val = math.floor(min + (max-min)*perc)
-                        L.Text = sName .. ": " .. val
-                        cb(val)
-                    end)
-                    UserInputService.InputEnded:Connect(function(inp)
-                        if inp.UserInputType == Enum.UserInputType.MouseButton1 then connection:Disconnect() end
-                    end)
-                end
-            end)
-            UpdateSize()
-            return ModFuncs
-        end
-
-        function ModFuncs:AddToggle(tName, def, cb)
-            local tState = def
-            local TBtn = Instance.new("TextButton", SContainer)
-            TBtn.Size = UDim2.new(1, 0, 0, 26); TBtn.BackgroundTransparency = 1
-            TBtn.Text = "  > " .. tName; TBtn.Font = Enum.Font.Gotham; TBtn.TextSize = 12
-            TBtn.TextColor3 = tState and Library.Accent or Color3.fromRGB(120, 120, 120)
-            TBtn.TextXAlignment = 0
-
-            TBtn.MouseButton1Click:Connect(function()
-                tState = not tState
-                TBtn.TextColor3 = tState and Library.Accent or Color3.fromRGB(120, 120, 120)
-                cb(tState)
-            end)
-            UpdateSize()
-            return ModFuncs
-        end
-
-        return ModFuncs
+        Container.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y + 10)
+        return mod
     end
 
     return Category
