@@ -1,8 +1,8 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
-    ToggleKey = Enum.KeyCode.RightShift, -- Установлен RightShift
+    ToggleKey = Enum.KeyCode.RightShift,
     _Config = {
-        WindowWidth = 230,
+        WindowWidth = 200, -- Немного сузил, чтобы 5 штук точно влезло
         Spacing = 15,
         StartY = 220,
         MaxButtonsVisible = 12,
@@ -21,7 +21,6 @@ local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
 local Players = game:GetService("Players")
 
--- Безопасная функция анимации
 local function SafeTween(obj, goal)
     if not obj then return end
     TweenService:Create(obj, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
@@ -36,91 +35,88 @@ local function GetPing()
 end
 
 function Library:InitKeybindList()
-    local KBGui = Instance.new("Frame")
-    KBGui.Name = "KeybindList"
-    KBGui.Size = UDim2.new(0, 180, 0, 30)
-    KBGui.Position = UDim2.new(0, 20, 0, 350)
-    KBGui.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-    KBGui.Parent = Library.MainGui
-    
+    local KBGui = Instance.new("Frame", Library.MainGui)
+    KBGui.Name = "KeybindList"; KBGui.Size = UDim2.new(0, 180, 0, 30); KBGui.Position = UDim2.new(0, 20, 0, 350); KBGui.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
     Instance.new("UICorner", KBGui).CornerRadius = UDim.new(0, 8)
-    local s = Instance.new("UIStroke", KBGui)
-    s.Color = Color3.fromRGB(65, 65, 70); s.Thickness = 2.5
+    Instance.new("UIStroke", KBGui).Color = Color3.fromRGB(65, 65, 70)
     
     local Title = Instance.new("TextLabel", KBGui)
-    Title.Size = UDim2.new(1, 0, 0, 30)
-    Title.Text = "Keybinds"; Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.Font = Enum.Font.GothamBold; Title.TextSize = 14; Title.BackgroundTransparency = 1
+    Title.Size = UDim2.new(1, 0, 0, 30); Title.Text = "Keybinds"; Title.TextColor3 = Color3.fromRGB(255, 255, 255); Title.Font = Enum.Font.GothamBold; Title.TextSize = 14; Title.BackgroundTransparency = 1
 
     local List = Instance.new("Frame", KBGui)
-    List.Name = "List"; List.Position = UDim2.new(0, 0, 0, 30); List.Size = UDim2.new(1, 0, 0, 0)
-    List.BackgroundTransparency = 1
+    List.Name = "List"; List.Position = UDim2.new(0, 0, 0, 30); List.Size = UDim2.new(1, 0, 0, 0); List.BackgroundTransparency = 1
     Instance.new("UIListLayout", List).Padding = UDim.new(0, 5)
 
+    local lastKBCount = -1
     RunService.RenderStepped:Connect(function()
         KBGui.Visible = Library._Visible
         if not Library._Visible then return end
-        for _, child in pairs(List:GetChildren()) do if child:IsA("TextLabel") then child:Destroy() end end
-        local count = 0
-        for name, key in pairs(Library._Keybinds) do
-            count = count + 1
-            local l = Instance.new("TextLabel", List)
-            l.Size = UDim2.new(1, -20, 0, 20); l.BackgroundTransparency = 1; l.Text = "  " .. name .. ": " .. key
-            l.TextColor3 = Color3.fromRGB(180, 180, 180); l.Font = Enum.Font.GothamMedium; l.TextSize = 12; l.TextXAlignment = 0
+        
+        local currentCount = 0
+        for _ in pairs(Library._Keybinds) do currentCount = currentCount + 1 end
+        
+        if currentCount ~= lastKBCount then
+            lastKBCount = currentCount
+            for _, child in pairs(List:GetChildren()) do if child:IsA("TextLabel") then child:Destroy() end end
+            for name, key in pairs(Library._Keybinds) do
+                local l = Instance.new("TextLabel", List)
+                l.Size = UDim2.new(1, -20, 0, 20); l.BackgroundTransparency = 1; l.Text = "  " .. name .. ": " .. key
+                l.TextColor3 = Color3.fromRGB(180, 180, 180); l.Font = Enum.Font.GothamMedium; l.TextSize = 12; l.TextXAlignment = 0
+            end
+            KBGui.Size = UDim2.new(0, 180, 0, 30 + (currentCount * 25))
         end
-        KBGui.Size = UDim2.new(0, 180, 0, 30 + (count * 25))
     end)
 end
 
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
-    HUD.Name = "NightHUD_Final"
-    Library.MainGui = HUD
+    HUD.Name = "NightHUD_Final"; Library.MainGui = HUD
     
     local LayoutContainer = Instance.new("Frame", HUD)
     LayoutContainer.Size = UDim2.new(0, 600, 0, 100); LayoutContainer.Position = UDim2.new(0, 20, 0, 20); LayoutContainer.BackgroundTransparency = 1
-    
+    Instance.new("UIListLayout", LayoutContainer).Padding = UDim.new(0, 8)
+
     local function CreateRow()
-        local r = Instance.new("Frame", LayoutContainer)
-        r.Size = UDim2.new(1, 0, 0, 28); r.BackgroundTransparency = 1
-        Instance.new("UIListLayout", r).FillDirection = Enum.FillDirection.Horizontal; r.UIListLayout.Padding = UDim.new(0, 8)
+        local r = Instance.new("Frame", LayoutContainer); r.Size = UDim2.new(1, 0, 0, 28); r.BackgroundTransparency = 1
+        local l = Instance.new("UIListLayout", r); l.FillDirection = Enum.FillDirection.Horizontal; l.Padding = UDim.new(0, 8)
         return r
     end
     local Row1, Row2 = CreateRow(), CreateRow()
-    Instance.new("UIListLayout", LayoutContainer).Padding = UDim.new(0, 8)
 
     local function CreateSection(parent, defaultText)
-        local f = Instance.new("Frame")
-        f.BackgroundColor3 = Color3.fromRGB(12, 12, 15); f.AutomaticSize = Enum.AutomaticSize.XY
-        f.Parent = parent
-        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
-        local s = Instance.new("UIStroke", f); s.Color = Color3.fromRGB(65, 65, 70); s.Thickness = 2 
+        local f = Instance.new("Frame", parent); f.BackgroundColor3 = Color3.fromRGB(12, 12, 15); f.AutomaticSize = Enum.AutomaticSize.XY
+        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5); Instance.new("UIStroke", f).Color = Color3.fromRGB(65, 65, 70)
         local l = Instance.new("TextLabel", f); l.Size = UDim2.new(0, 0, 0, 26); l.AutomaticSize = Enum.AutomaticSize.X; l.RichText = true; l.Text = defaultText; l.TextColor3 = Color3.fromRGB(255, 255, 255); l.Font = Enum.Font.GothamBold; l.TextSize = 13; l.BackgroundTransparency = 1
         Instance.new("UIPadding", f).PaddingLeft = UDim.new(0, 10); f.UIPadding.PaddingRight = UDim.new(0, 10)
         return l
     end
 
+    CreateSection(Row1, "<font color='#B432B4'>N</font>ight Alpha")
+    CreateSection(Row1, "User: <font color='#B432B4'>" .. (Players.LocalPlayer.DisplayName) .. "</font>")
     local fpsStat = CreateSection(Row2, "0 Fps")
     local pingStat = CreateSection(Row2, "0 Ms")
-    CreateSection(Row1, "<font color='#B432B4'>N</font>ight Alpha")
-    CreateSection(Row1, "User: <font color='#B432B4'>" .. (Players.LocalPlayer and Players.LocalPlayer.DisplayName or "Player") .. "</font>")
+    local coordsStat = CreateSection(Row2, "0, 0, 0")
 
+    local lastUpdate = 0
     RunService.RenderStepped:Connect(function(dt)
         LayoutContainer.Visible = Library._Visible
-        if Library._Visible then
+        if Library._Visible and tick() - lastUpdate > 0.5 then
+            lastUpdate = tick()
             fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
             pingStat.Text = GetPing() .. " <font color='#B432B4'>Ms</font>"
+            local lp = Players.LocalPlayer
+            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                local pos = lp.Character.HumanoidRootPart.Position
+                coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
+            end
         end
     end)
     
     Library:InitKeybindList()
-    
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if not gpe and input.KeyCode == Library.ToggleKey then
+    UserInputService.InputBegan:Connect(function(i, g)
+        if not g and i.KeyCode == Library.ToggleKey then
             Library._Visible = not Library._Visible
-            for _, win in pairs(Library.MainGui:GetChildren()) do
-                if win:IsA("Frame") then win.Visible = Library._Visible end
-            end
+            for _, v in pairs(Library.MainGui:GetChildren()) do if v:IsA("Frame") then v.Visible = Library._Visible end end
         end
     end)
 end
@@ -129,31 +125,28 @@ function Library:CreateWindow(name)
     local cfg = Library._Config 
     if not Library._Initialized then
         Library:InitHUD()
-        Library._CurrentX = (1920 / 2) - (((cfg.WindowWidth * cfg.TotalWindows) + (cfg.Spacing * (cfg.TotalWindows - 1))) / 2)
+        local sw = Library.MainGui.AbsoluteSize.X > 0 and Library.MainGui.AbsoluteSize.X or 1920
+        Library._CurrentX = (sw / 2) - (((cfg.WindowWidth + cfg.Spacing) * cfg.TotalWindows) / 2)
         Library._Initialized = true
     end
 
     local xPos = Library._CurrentX
     Library._CurrentX = Library._CurrentX + cfg.WindowWidth + cfg.Spacing
 
-    local Main = Instance.new("Frame")
-    Main.Name = name; Main.Size = UDim2.new(0, cfg.WindowWidth, 0, 50); Main.Position = UDim2.new(0, xPos, 0, cfg.StartY)
-    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18); Main.Parent = Library.MainGui
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
-    Instance.new("UIStroke", Main).Color = Color3.fromRGB(65, 65, 70); Main.UIStroke.Thickness = 2.5 
+    local Main = Instance.new("Frame", Library.MainGui)
+    Main.Name = name; Main.Size = UDim2.new(0, cfg.WindowWidth, 0, 50); Main.Position = UDim2.new(0, xPos, 0, cfg.StartY); Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10); Instance.new("UIStroke", Main).Color = Color3.fromRGB(65, 65, 70)
 
     local Header = Instance.new("TextLabel", Main)
     Header.Size = UDim2.new(1, 0, 0, 50); Header.Text = name; Header.TextColor3 = Color3.fromRGB(255, 255, 255); Header.Font = Enum.Font.GothamBold; Header.TextSize = 16; Header.BackgroundTransparency = 1
 
     local Scroll = Instance.new("ScrollingFrame", Main)
-    Scroll.Position = UDim2.new(0, 0, 0, 50); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 2; Scroll.ScrollBarImageColor3 = Library.Accent; Scroll.CanvasSize = UDim2.new(0, 0, 0, 0); Scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+    Scroll.Position = UDim2.new(0, 0, 0, 50); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 0; Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Instance.new("UIListLayout", Scroll).Padding = UDim.new(0, 5); Scroll.UIListLayout.HorizontalAlignment = "Center"
     
-    local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 7); Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    Instance.new("UIPadding", Scroll).PaddingTop = UDim.new(0, 5)
-
-    Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        local h = math.min(Layout.AbsoluteContentSize.Y + 15, (38 + 7) * cfg.MaxButtonsVisible)
-        Scroll.Size = UDim2.new(1, 0, 0, h); Scroll.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 15)
+    Scroll.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        local h = math.min(Scroll.UIListLayout.AbsoluteContentSize.Y + 10, 400)
+        Scroll.Size = UDim2.new(1, 0, 0, h); Scroll.CanvasSize = UDim2.new(0, 0, 0, Scroll.UIListLayout.AbsoluteContentSize.Y + 10)
         Main.Size = UDim2.new(0, cfg.WindowWidth, 0, h + 60)
     end)
 
@@ -161,48 +154,35 @@ function Library:CreateWindow(name)
     function Category:CreateModule(modName, callback)
         local Enabled, Binding, CurrentKey = false, false, nil
         local MFrame = Instance.new("Frame", Scroll)
-        MFrame.Size = UDim2.new(0, cfg.WindowWidth - 18, 0, 38); MFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-        Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 8)
-        Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(50, 50, 55); MFrame.UIStroke.Thickness = 1.2
+        MFrame.Size = UDim2.new(1, -10, 0, 32); MFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+        Instance.new("UICorner", MFrame).CornerRadius = UDim.new(0, 6); Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(45, 45, 50)
 
         local MBtn = Instance.new("TextButton", MFrame)
-        MBtn.Size = UDim2.new(1, 0, 1, 0); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.TextColor3 = Color3.fromRGB(170, 170, 170); MBtn.Font = Enum.Font.GothamBold; MBtn.TextSize = 13; MBtn.TextXAlignment = 0
+        MBtn.Size = UDim2.new(1, 0, 1, 0); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.TextColor3 = Color3.fromRGB(170, 170, 170); MBtn.Font = Enum.Font.GothamBold; MBtn.TextSize = 12; MBtn.TextXAlignment = 0
 
         local Ind = Instance.new("Frame", MFrame)
-        Ind.Size = UDim2.new(0, 4, 0, 0); Ind.Position = UDim2.new(1, -10, 0.5, 0); Ind.AnchorPoint = Vector2.new(0, 0.5); Ind.BackgroundColor3 = Library.Accent; Ind.BorderSizePixel = 0
+        Ind.Size = UDim2.new(0, 3, 0, 0); Ind.Position = UDim2.new(1, -8, 0.5, 0); Ind.AnchorPoint = Vector2.new(0, 0.5); Ind.BackgroundColor3 = Library.Accent; Ind.BorderSizePixel = 0
 
         local function Toggle()
             Enabled = not Enabled
-            if Enabled then
-                SafeTween(MBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)})
-                SafeTween(MFrame, {BackgroundColor3 = Color3.fromRGB(35, 25, 45)})
-                SafeTween(Ind, {Size = UDim2.new(0, 4, 0, 22)})
-            else
-                SafeTween(MBtn, {TextColor3 = Color3.fromRGB(170, 170, 170)})
-                SafeTween(MFrame, {BackgroundColor3 = Color3.fromRGB(22, 22, 26)})
-                SafeTween(Ind, {Size = UDim2.new(0, 4, 0, 0)})
-            end
+            SafeTween(MBtn, {TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)})
+            SafeTween(MFrame, {BackgroundColor3 = Enabled and Color3.fromRGB(35, 25, 45) or Color3.fromRGB(22, 22, 26)})
+            SafeTween(Ind, {Size = Enabled and UDim2.new(0, 3, 0, 18) or UDim2.new(0, 3, 0, 0)})
             callback(Enabled)
         end
 
         MBtn.MouseButton1Click:Connect(function() if not Binding then Toggle() end end)
-        MBtn.InputBegan:Connect(function(input) 
-            if input.UserInputType == Enum.UserInputType.MouseButton3 then 
-                Binding = true; MBtn.Text = "  " .. modName .. " [?]"
-            end 
-        end)
+        MBtn.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton3 then Binding = true; MBtn.Text = "  " .. modName .. " [?]" end end)
 
-        UserInputService.InputBegan:Connect(function(input, gpe)
-            if Binding and input.UserInputType == Enum.UserInputType.Keyboard then
-                if input.KeyCode ~= Enum.KeyCode.Escape then
-                    CurrentKey = input.KeyCode
-                    Library._Keybinds[modName] = input.KeyCode.Name
+        UserInputService.InputBegan:Connect(function(i, g)
+            if Binding and i.UserInputType == Enum.UserInputType.Keyboard then
+                if i.KeyCode ~= Enum.KeyCode.Escape then
+                    CurrentKey = i.KeyCode; Library._Keybinds[modName] = i.KeyCode.Name
                 else
-                    CurrentKey = nil
-                    Library._Keybinds[modName] = nil
+                    CurrentKey = nil; Library._Keybinds[modName] = nil
                 end
                 Binding = false; MBtn.Text = "  " .. modName
-            elseif not gpe and CurrentKey and input.KeyCode == CurrentKey then
+            elseif not g and CurrentKey and i.KeyCode == CurrentKey then
                 Toggle()
             end
         end)
