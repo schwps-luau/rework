@@ -1,5 +1,4 @@
-
-local Lbrary = {
+local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     _Config = {
         WindowWidth = 210,
@@ -95,9 +94,8 @@ function Library:InitHUD()
     end)
 end
 
--- [ ОКНО ]
+-- [ СОЗДАНИЕ ОКНА ]
 function Library:CreateWindow(name)
-    -- Фикс ошибки индексации nil
     local cfg = Library._Config 
 
     if not self._Initialized then
@@ -146,14 +144,13 @@ function Library:CreateWindow(name)
         local btnHeight = 34 + 5
         local currentHeight = Layout.AbsoluteContentSize.Y + 10
         local maxHeight = (btnHeight * cfg.MaxButtonsVisible)
-        
         local finalHeight = math.min(currentHeight, maxHeight)
         Scroll.Size = UDim2.new(1, 0, 0, finalHeight)
         Scroll.CanvasSize = UDim2.new(0, 0, 0, currentHeight)
         Main.Size = UDim2.new(0, cfg.WindowWidth, 0, finalHeight + 55)
     end)
 
-    -- Перетаскивание
+    -- Dragging
     local dragStart, startPos, dragging
     Main.InputBegan:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -171,6 +168,9 @@ function Library:CreateWindow(name)
     local Category = {}
     function Category:CreateModule(modName, callback)
         local Enabled = false
+        local Binding = false
+        local CurrentKey = nil
+        
         local MFrame = Instance.new("Frame", Scroll)
         MFrame.Size = UDim2.new(0, cfg.WindowWidth - 16, 0, 34)
         MFrame.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
@@ -190,13 +190,58 @@ function Library:CreateWindow(name)
         Ind.AnchorPoint = Vector2.new(0, 0.5)
         Ind.BackgroundColor3 = Library.Accent; Ind.BorderSizePixel = 0
 
-        MBtn.MouseButton1Click:Connect(function()
+        local function UpdateText()
+            if Binding then
+                MBtn.Text = "  " .. modName .. " [?]"
+            elseif CurrentKey then
+                MBtn.Text = "  " .. modName .. " [" .. CurrentKey.Name .. "]"
+            else
+                MBtn.Text = "  " .. modName
+            end
+        end
+
+        local function Toggle()
             Enabled = not Enabled
             Tween(MBtn, 0.2, {TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)})
             Tween(MFrame, 0.2, {BackgroundColor3 = Enabled and Color3.fromRGB(30, 25, 40) or Color3.fromRGB(24, 24, 28)})
-            Tween(Ind, 0.2, {Size = UDim2.new(0, 3, 0, Enabled and 22 or 0)})
+            Tween(Ind, 0.2, {Size = UDim2.new(0, 3, 0, Enabled and 20 or 0)})
             callback(Enabled)
+        end
+
+        MBtn.MouseButton1Click:Connect(Toggle)
+        
+        -- Кейбинд на колесико
+        MBtn.MouseButton2Click:Connect(Toggle) -- Пкм тоже тоглит
+        
+        UserInputService.InputBegan:Connect(function(input, gpe)
+            if gpe then return end
+            
+            -- Проверка нажатия колесика на кнопке
+            if input.UserInputType == Enum.UserInputType.MouseButton3 then
+                local mousePos = UserInputService:GetMouseLocation()
+                local btnPos = MBtn.AbsolutePosition
+                local btnSize = MBtn.AbsoluteSize
+                
+                if mousePos.X >= btnPos.X and mousePos.X <= btnPos.X + btnSize.X and
+                   mousePos.Y >= btnPos.Y + 36 and mousePos.Y <= btnPos.Y + btnSize.Y + 36 then
+                    Binding = true
+                    UpdateText()
+                end
+            -- Обработка установки клавиши
+            elseif Binding and input.UserInputType == Enum.UserInputType.Keyboard then
+                if input.KeyCode == Enum.KeyCode.Escape then
+                    CurrentKey = nil
+                else
+                    CurrentKey = input.KeyCode
+                end
+                Binding = false
+                UpdateText()
+            -- Работа самого кейбинда
+            elseif CurrentKey and input.KeyCode == CurrentKey then
+                Toggle()
+            end
         end)
+
         return {}
     end
     return Category
