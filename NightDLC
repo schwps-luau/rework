@@ -1,8 +1,13 @@
 local Library = {
-    CurrentX = 20,
-    CurrentY = 115, 
-    Spacing = 195,
-    Accent = Color3.fromRGB(180, 50, 180)
+    Categories = {},
+    Accent = Color3.fromRGB(180, 50, 180),
+    -- Настройки сетки
+    _Config = {
+        WindowWidth = 220, -- Увеличенная ширина окна
+        Padding = 25,      -- Отступ от краев экрана
+        CurrentX = 0,
+        CurrentY = 120,
+    }
 }
 
 local UserInputService = game:GetService("UserInputService")
@@ -10,19 +15,20 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
+local Players = game:GetService("Players")
 
 local function Tween(obj, time, goal)
     TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
 end
 
--- [ ПЕРЕДЕЛАННЫЙ HUD: 2 ЭТАЖА + ФИКС FPS/PING + КООРДИНАТЫ ]
+-- [ ВАТЕРМАРК: 2 ЭТАЖА ]
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
-    HUD.Name = "NightHUD_Final"
+    HUD.Name = "NightHUD_Final_V3"
     
     local LayoutContainer = Instance.new("Frame", HUD)
     LayoutContainer.Size = UDim2.new(0, 800, 0, 80)
-    LayoutContainer.Position = UDim2.new(0, 15, 0, 15)
+    LayoutContainer.Position = UDim2.new(0, 20, 0, 20)
     LayoutContainer.BackgroundTransparency = 1
     
     local MainLayout = Instance.new("UIListLayout", LayoutContainer)
@@ -38,99 +44,113 @@ function Library:InitHUD()
         return r
     end
 
-    local Row1 = CreateRow() -- Первый этаж
-    local Row2 = CreateRow() -- Второй этаж
+    local Row1 = CreateRow()
+    local Row2 = CreateRow()
 
-    local function CreateSection(parent, text)
+    local function CreateSection(parent)
         local f = Instance.new("Frame", parent)
-        f.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
+        f.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
         f.AutomaticSize = Enum.AutomaticSize.XY
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
         local s = Instance.new("UIStroke", f)
-        s.Color = Color3.fromRGB(45, 45, 50)
+        s.Color = Color3.fromRGB(55, 55, 60)
         s.Thickness = 1
         
         local p = Instance.new("UIPadding", f)
-        p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
+        p.PaddingLeft = UDim.new(0, 12); p.PaddingRight = UDim.new(0, 12)
 
         local l = Instance.new("TextLabel", f)
         l.Size = UDim2.new(0, 0, 0, 26)
         l.AutomaticSize = Enum.AutomaticSize.X
-        l.Text = text; l.RichText = true
+        l.RichText = true
         l.TextColor3 = Color3.fromRGB(255, 255, 255)
         l.Font = Enum.Font.GothamMedium; l.TextSize = 13; l.BackgroundTransparency = 1
         return l
     end
 
-    -- Секции
-    local brand = CreateSection(Row1, "<font color='#B432B4'>N</font>ight <font color='#888888'>Alpha</font>")
-    local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. game.Players.LocalPlayer.Name .. "</font>")
+    local brand = CreateSection(Row1)
+    brand.Text = "<font color='#B432B4'>N</font>ight <font color='#888888'>Alpha</font>"
     
-    local fpsStat = CreateSection(Row2, "60 <font color='#B432B4'>Fps</font>")
-    local pingStat = CreateSection(Row2, "0 <font color='#B432B4'>Ms</font>")
-    local coordsStat = CreateSection(Row2, "0, 0, 0")
-    local timeStat = CreateSection(Row2, os.date("%X"))
+    local user = CreateSection(Row1)
+    user.Text = "User: <font color='#B432B4'>" .. Players.LocalPlayer.Name .. "</font>"
+    
+    local fpsStat = CreateSection(Row2)
+    local pingStat = CreateSection(Row2)
+    local coordsStat = CreateSection(Row2)
+    local timeStat = CreateSection(Row2)
 
-    -- Обновление статов
-    local lastUpdate = 0
-    RunService.RenderStepped:Connect(function(dt)
-        lastUpdate = lastUpdate + dt
-        if lastUpdate >= 0.5 then -- Обновляем раз в полсекунды, чтобы не мельтешило
-            lastUpdate = 0
-            
-            -- FPS
-            fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
-            
-            -- Ping (Реальный сетевой пинг)
-            local p = math.floor(Stats.Network.ServerTickTagAverage:GetValue())
-            pingStat.Text = p .. " <font color='#B432B4'>Ms</font>"
-            
-            -- Time
-            timeStat.Text = os.date("%X")
-            
-            -- Coords
-            local lp = game.Players.LocalPlayer
-            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                local pos = lp.Character.HumanoidRootPart.Position
-                coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
-            end
+    -- ОБНОВЛЕНИЕ ТЕКСТА
+    RunService.RenderStepped:Connect(function()
+        local fps = math.floor(1/RunService.RenderStepped:Wait())
+        fpsStat.Text = fps .. " <font color='#B432B4'>Fps</font>"
+        
+        local p = math.floor(Stats.Network.ServerTickTagAverage:GetValue())
+        pingStat.Text = p .. " <font color='#B432B4'>Ms</font>"
+        
+        timeStat.Text = os.date("%X")
+        
+        local lp = Players.LocalPlayer
+        if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            local pos = lp.Character.HumanoidRootPart.Position
+            coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
+        else
+            coordsStat.Text = "0, 0, 0"
         end
     end)
 end
 
--- [ ФУНКЦИЯ ОКНА ]
+-- [ ФУНКЦИЯ СОЗДАНИЯ ОКНА С ШИРОКОЙ СЕТКОЙ ]
 function Library:CreateWindow(name)
     if not self.MainGui then
         self.MainGui = Instance.new("ScreenGui", CoreGui)
         self:InitHUD()
+        
+        -- Расчет динамического расстояния между 5 окнами
+        local ScreenWidth = self.MainGui.AbsoluteSize.X
+        if ScreenWidth == 0 then ScreenWidth = 1920 end -- Дефолт если еще не загрузилось
+        
+        local AvailableSpace = ScreenWidth - (self._Config.Padding * 2)
+        self._Config.Spacing = AvailableSpace / 5
+        self._Config.CurrentX = self._Config.Padding
     end
 
-    local xPos = self.CurrentX
-    self.CurrentX = self.CurrentX + self.Spacing
+    local xPos = self._Config.CurrentX
+    self._Config.CurrentX = self._Config.CurrentX + self._Config.Spacing
 
     local Main = Instance.new("Frame", self.MainGui)
     Main.Name = name
-    Main.Size = UDim2.new(0, 180, 0, 38)
-    Main.Position = UDim2.new(0, xPos, 0, self.CurrentY)
+    Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 40) -- Окна стали шире
+    Main.Position = UDim2.new(0, xPos, 0, self._Config.CurrentY)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-    Main.BackgroundTransparency = 0
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 5)
-    Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 50)
+    Main.BorderSizePixel = 0
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
+    local Stroke = Instance.new("UIStroke", Main)
+    Stroke.Color = Color3.fromRGB(50, 50, 55)
+    Stroke.Thickness = 1.2
 
     local Header = Instance.new("TextLabel", Main)
     Header.Size = UDim2.new(1, 0, 1, 0)
     Header.Text = name; Header.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Header.Font = Enum.Font.GothamBold; Header.TextSize = 14; Header.BackgroundTransparency = 1
+    Header.Font = Enum.Font.GothamBold; Header.TextSize = 15; Header.BackgroundTransparency = 1
 
-    local Content = Instance.new("Frame", Main)
-    Content.Position = UDim2.new(0, 0, 1, 2)
+    local BackFrame = Instance.new("Frame", Main)
+    BackFrame.Size = UDim2.new(1, 0, 0, 0)
+    BackFrame.Position = UDim2.new(0, 0, 1, 3)
+    BackFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    BackFrame.BackgroundTransparency = 0.05
+    Instance.new("UICorner", BackFrame).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", BackFrame).Color = Color3.fromRGB(45, 45, 50)
+
+    local Content = Instance.new("Frame", BackFrame)
     Content.Size = UDim2.new(1, 0, 0, 0)
     Content.BackgroundTransparency = 1
     local Layout = Instance.new("UIListLayout", Content)
     Layout.Padding = UDim.new(0, 1)
 
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Content.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
+        local targetSize = Layout.AbsoluteContentSize.Y
+        Content.Size = UDim2.new(1, 0, 0, targetSize)
+        BackFrame.Size = UDim2.new(1, 0, 0, targetSize + 4)
     end)
 
     -- Перетаскивание
@@ -152,21 +172,20 @@ function Library:CreateWindow(name)
     function Category:CreateModule(modName, callback)
         local Enabled = false
         local MFrame = Instance.new("Frame", Content)
-        MFrame.Size = UDim2.new(1, 0, 0, 30)
-        MFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
-        MFrame.BorderSizePixel = 0
+        MFrame.Size = UDim2.new(1, 0, 0, 32)
+        MFrame.BackgroundTransparency = 1
         
         local MBtn = Instance.new("TextButton", MFrame)
         MBtn.Size = UDim2.new(1, 0, 1, 0)
         MBtn.BackgroundTransparency = 1
         MBtn.Text = "  " .. modName
         MBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
-        MBtn.Font = Enum.Font.Gotham; MBtn.TextSize = 13; MBtn.TextXAlignment = 0
+        MBtn.Font = Enum.Font.Gotham; MBtn.TextSize = 14; MBtn.TextXAlignment = 0
         MBtn.AutoButtonColor = false
 
         local Indicator = Instance.new("Frame", MFrame)
         Indicator.Size = UDim2.new(0, 2, 0, 0)
-        Indicator.Position = UDim2.new(1, -2, 0.5, 0)
+        Indicator.Position = UDim2.new(1, -6, 0.5, 0)
         Indicator.AnchorPoint = Vector2.new(0, 0.5)
         Indicator.BackgroundColor3 = Library.Accent
         Indicator.BorderSizePixel = 0
@@ -174,7 +193,7 @@ function Library:CreateWindow(name)
         MBtn.MouseButton1Click:Connect(function()
             Enabled = not Enabled
             Tween(MBtn, 0.2, {TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 160)})
-            Tween(Indicator, 0.2, {Size = UDim2.new(0, 2, 0, Enabled and 20 or 0)})
+            Tween(Indicator, 0.2, {Size = UDim2.new(0, 2, 0, Enabled and 22 or 0)})
             callback(Enabled)
         end)
         return {}
