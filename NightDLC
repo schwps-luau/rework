@@ -1,14 +1,15 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     ToggleKey = Enum.KeyCode.RightShift,
-    TotalWindows = 5, -- Добавлено
-    MaxButtonsVisible = 12, -- Добавлено
+    TotalWindows = 0,
+    MaxButtonsVisible = 10,
     _Config = {
-        WindowWidth = 200,
+        WindowWidth = 230,
         Spacing = 15,
         StartY = 220,
         Transparency = 0.1, 
         FontBold = Enum.Font.GothamBold, 
+        FontBlack = Enum.Font.GothamBlack, -- Добавил для заголовков
         FontMedium = Enum.Font.GothamMedium
     },
     _Visible = true,
@@ -121,14 +122,16 @@ function Library:CreateWindow(name)
     local cfg = Library._Config
     if not Library._Initialized then Library:InitHUD(); Library._Initialized = true end
 
-    Library.TotalWindows = Library.TotalWindows + 1 -- Учёт окон
+    Library.TotalWindows = Library.TotalWindows + 1
     local Main = Instance.new("Frame", Library.MainGui)
     Main.Name = name; Main.Size = UDim2.new(0, cfg.WindowWidth, 0, 40); Main.Position = UDim2.new(0, Library._CurrentX, 0, cfg.StartY)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18); Main.BackgroundTransparency = cfg.Transparency
     Instance.new("UICorner", Main); Instance.new("UIStroke", Main).Color = Color3.fromRGB(65, 65, 70)
     Library._CurrentX = Library._CurrentX + cfg.WindowWidth + cfg.Spacing
 
-    local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = cfg.FontBold; Header.TextColor3 = Color3.fromRGB(255, 255, 255); Header.BackgroundTransparency = 1
+    local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = cfg.FontBlack; -- Сделал шрифт жирнее
+    Header.TextColor3 = Color3.fromRGB(255, 255, 255); Header.BackgroundTransparency = 1; Header.TextSize = 14
+    
     local Scroll = Instance.new("ScrollingFrame", Main); Scroll.Position = UDim2.new(0, 0, 0, 40); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 0
     local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 5); Layout.HorizontalAlignment = "Center"
 
