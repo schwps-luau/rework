@@ -13,7 +13,7 @@ local Library = {
         FontMedium = Enum.Font.GothamMedium
     },
     _Visible = true,
-    _CurrentX = 50,
+    _CurrentX = 25,
     _Initialized = false,
     _Keybinds = {},
     _LastKBState = ""
