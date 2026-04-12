@@ -164,18 +164,3 @@ function Library:CreateCategory(name, pos)
     end
     return Category
 end
-
--- ================= ИСПОЛЬЗОВАНИЕ =================
-
-local Combat = Library:CreateCategory("Combat", UDim2.new(0, 100, 0, 100))
-
-local Aura = Combat:CreateModule("KillAura", function(t) print("Aura:", t) end)
-Aura:AddToggle("AutoBlock", true, function(v) end)
-Aura:AddSlider("Range", 3, 10, 5, function(v) end)
-
-local Velocity = Combat:CreateModule("Velocity", function(t) end)
-Velocity:AddSlider("Horizontal", 0, 100, 0, function(v) end)
-
-local Movement = Library:CreateCategory("Movement", UDim2.new(0, 300, 0, 100))
-Movement:CreateModule("Fly", function(t) end)
-Movement:CreateModule("Speed", function(t) end)
