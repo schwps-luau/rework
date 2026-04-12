@@ -1,7 +1,6 @@
---у
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
-    ToggleKey = Enum.KeyCode.RightControl,
+    ToggleKey = Enum.KeyCode.RightShift, -- Установлен RightShift
     _Config = {
         WindowWidth = 230,
         Spacing = 15,
@@ -24,7 +23,8 @@ local Players = game:GetService("Players")
 
 local function Tween(obj, time, goal)
     if not obj then return end
-    TweenService:Create(obj, TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
+    local info = TweenInfo.new(time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    TweenService:Create(obj, info, goal):Play()
 end
 
 local function GetPing()
@@ -76,6 +76,7 @@ function Library:InitHUD()
     self.MainGui = HUD
     local LayoutContainer = Instance.new("Frame", HUD)
     LayoutContainer.Size = UDim2.new(0, 600, 0, 100); LayoutContainer.Position = UDim2.new(0, 20, 0, 20); LayoutContainer.BackgroundTransparency = 1
+    
     local function CreateRow()
         local r = Instance.new("Frame", LayoutContainer); r.Size = UDim2.new(1, 0, 0, 28); r.BackgroundTransparency = 1
         local l = Instance.new("UIListLayout", r); l.FillDirection = Enum.FillDirection.Horizontal; l.Padding = UDim.new(0, 8)
@@ -83,6 +84,7 @@ function Library:InitHUD()
     end
     local Row1, Row2 = CreateRow(), CreateRow()
     Instance.new("UIListLayout", LayoutContainer).Padding = UDim.new(0, 8)
+
     local function CreateSection(parent, defaultText)
         local f = Instance.new("Frame", parent); f.BackgroundColor3 = Color3.fromRGB(12, 12, 15); f.AutomaticSize = Enum.AutomaticSize.XY
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
@@ -91,20 +93,17 @@ function Library:InitHUD()
         Instance.new("UIPadding", f).PaddingLeft = UDim.new(0, 10); Instance.new("UIPadding", f).PaddingRight = UDim.new(0, 10)
         return l
     end
-    local brand = CreateSection(Row1, "<font color='#B432B4'>N</font>ight Alpha")
-    local user = CreateSection(Row1, "User: <font color='#B432B4'>" .. (Players.LocalPlayer and Players.LocalPlayer.DisplayName or "Player") .. "</font>")
-    local fpsStat, pingStat, timeStat, coordsStat = CreateSection(Row2, "0 Fps"), CreateSection(Row2, "0 Ms"), CreateSection(Row2, "00:00:00"), CreateSection(Row2, "0, 0, 0")
+
+    local fpsStat = CreateSection(Row2, "0 Fps")
+    local pingStat = CreateSection(Row2, "0 Ms")
+    CreateSection(Row1, "<font color='#B432B4'>N</font>ight Alpha")
+    CreateSection(Row1, "User: <font color='#B432B4'>" .. (Players.LocalPlayer and Players.LocalPlayer.DisplayName or "Player") .. "</font>")
+
     RunService.RenderStepped:Connect(function(dt)
         LayoutContainer.Visible = self._Visible
         if self._Visible then
             fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
             pingStat.Text = GetPing() .. " <font color='#B432B4'>Ms</font>"
-            timeStat.Text = os.date("%X")
-            local lp = Players.LocalPlayer
-            if lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                local pos = lp.Character.HumanoidRootPart.Position
-                coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
-            end
         end
     end)
     self:InitKeybindList()
