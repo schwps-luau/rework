@@ -1,6 +1,6 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
-    ToggleKey = Enum.KeyCode.RightShift -- КНОПКА ДЛЯ ЗАКРЫТИЯ МЕНЮ
+    ToggleKey = Enum.KeyCode.RightShift, -- КНОПКА ДЛЯ ЗАКРЫТИЯ МЕНЮ
     _Config = {
         WindowWidth = 230,
         Spacing = 15,
