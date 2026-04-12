@@ -1,15 +1,17 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
+    ToggleKey = Enum.KeyCode.RightControl, -- КНОПКА ДЛЯ ЗАКРЫТИЯ МЕНЮ
     _Config = {
-        WindowWidth = 230, -- Вернул ширину
+        WindowWidth = 230,
         Spacing = 15,
-        StartY = 200,      -- Окна стали ниже
+        StartY = 200,
         MaxButtonsVisible = 12,
         TotalWindows = 5 
     },
+    _Visible = true,
     _CurrentX = 0,
     _Initialized = false,
-    _Keybinds = {} -- Список для хранения активных биндов
+    _Keybinds = {} 
 }
 
 local UserInputService = game:GetService("UserInputService")
@@ -34,8 +36,9 @@ end
 -- [ КЕЙБИНД ЛИСТ ]
 function Library:InitKeybindList()
     local KBGui = Instance.new("Frame", self.MainGui)
+    KBGui.Name = "KeybindList"
     KBGui.Size = UDim2.new(0, 180, 0, 30)
-    KBGui.Position = UDim2.new(0, 20, 0, 300) -- Позиция слева
+    KBGui.Position = UDim2.new(0, 20, 0, 300)
     KBGui.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
     Instance.new("UICorner", KBGui).CornerRadius = UDim.new(0, 8)
     local s = Instance.new("UIStroke", KBGui)
@@ -47,22 +50,21 @@ function Library:InitKeybindList()
     Title.Font = Enum.Font.GothamBold; Title.TextSize = 14; Title.BackgroundTransparency = 1
 
     local List = Instance.new("Frame", KBGui)
-    List.Position = UDim2.new(0, 0, 0, 30); List.Size = UDim2.new(1, 0, 0, 0)
+    List.Name = "List"; List.Position = UDim2.new(0, 0, 0, 30); List.Size = UDim2.new(1, 0, 0, 0)
     List.BackgroundTransparency = 1
     local Layout = Instance.new("UIListLayout", List)
     Layout.Padding = UDim.new(0, 5)
 
     RunService.RenderStepped:Connect(function()
+        if not self._Visible then KBGui.Visible = false return else KBGui.Visible = true end
+        
         for _, child in pairs(List:GetChildren()) do if child:IsA("TextLabel") then child:Destroy() end end
         local count = 0
         for name, key in pairs(Library._Keybinds) do
             count = count + 1
             local l = Instance.new("TextLabel", List)
-            l.Size = UDim2.new(1, -20, 0, 20)
-            l.BackgroundTransparency = 1
-            l.Text = "  " .. name .. ": " .. key
-            l.TextColor3 = Color3.fromRGB(180, 180, 180)
-            l.Font = Enum.Font.GothamMedium; l.TextSize = 12; l.TextXAlignment = 0
+            l.Size = UDim2.new(1, -20, 0, 20); l.BackgroundTransparency = 1; l.Text = "  " .. name .. ": " .. key
+            l.TextColor3 = Color3.fromRGB(180, 180, 180); l.Font = Enum.Font.GothamMedium; l.TextSize = 12; l.TextXAlignment = 0
         end
         KBGui.Size = UDim2.new(0, 180, 0, 30 + (count * 25))
     end)
@@ -75,6 +77,7 @@ function Library:InitHUD()
     
     local LayoutContainer = Instance.new("Frame", HUD)
     LayoutContainer.Size = UDim2.new(0, 600, 0, 100); LayoutContainer.Position = UDim2.new(0, 20, 0, 20); LayoutContainer.BackgroundTransparency = 1
+    
     local function CreateRow()
         local r = Instance.new("Frame", LayoutContainer); r.Size = UDim2.new(1, 0, 0, 28); r.BackgroundTransparency = 1
         local l = Instance.new("UIListLayout", r); l.FillDirection = Enum.FillDirection.Horizontal; l.Padding = UDim.new(0, 8)
@@ -86,7 +89,7 @@ function Library:InitHUD()
     local function CreateSection(parent, defaultText)
         local f = Instance.new("Frame", parent); f.BackgroundColor3 = Color3.fromRGB(12, 12, 15); f.AutomaticSize = Enum.AutomaticSize.XY
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
-        local s = Instance.new("UIStroke", f); s.Color = Color3.fromRGB(65, 65, 70); s.Thickness = 2 -- Жирная обводка HUD
+        local s = Instance.new("UIStroke", f); s.Color = Color3.fromRGB(65, 65, 70); s.Thickness = 2 
         local l = Instance.new("TextLabel", f); l.Size = UDim2.new(0, 0, 0, 26); l.AutomaticSize = Enum.AutomaticSize.X; l.RichText = true; l.Text = defaultText; l.TextColor3 = Color3.fromRGB(255, 255, 255); l.Font = Enum.Font.GothamBold; l.TextSize = 13; l.BackgroundTransparency = 1
         Instance.new("UIPadding", f).PaddingLeft = UDim.new(0, 10)
         return l
@@ -98,17 +101,32 @@ function Library:InitHUD()
 
     local lastFpsUpdate = 0
     RunService.RenderStepped:Connect(function(dt)
-        lastFpsUpdate = lastFpsUpdate + dt
-        if lastFpsUpdate >= 0.5 then fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"; lastFpsUpdate = 0 end
-        pingStat.Text = GetPing() .. " <font color='#B432B4'>Ms</font>"
-        timeStat.Text = os.date("%X")
-        local lp = Players.LocalPlayer
-        if lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-            local pos = lp.Character.HumanoidRootPart.Position
-            coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
+        -- Скрытие HUD вместе с меню
+        LayoutContainer.Visible = self._Visible
+        
+        if self._Visible then
+            lastFpsUpdate = lastFpsUpdate + dt
+            if lastFpsUpdate >= 0.5 then fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"; lastFpsUpdate = 0 end
+            pingStat.Text = GetPing() .. " <font color='#B432B4'>Ms</font>"
+            timeStat.Text = os.date("%X")
+            local lp = Players.LocalPlayer
+            if lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                local pos = lp.Character.HumanoidRootPart.Position
+                coordsStat.Text = string.format("%d, %d, %d", math.floor(pos.X), math.floor(pos.Y), math.floor(pos.Z))
+            end
         end
     end)
     self:InitKeybindList()
+    
+    -- Глобальный тогл меню
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if not gpe and input.KeyCode == self.ToggleKey then
+            self._Visible = not self._Visible
+            for _, win in pairs(self.MainGui:GetChildren()) do
+                if win:IsA("Frame") then win.Visible = self._Visible end
+            end
+        end
+    end)
 end
 
 function Library:CreateWindow(name)
@@ -128,7 +146,7 @@ function Library:CreateWindow(name)
     Main.Name = name; Main.Size = UDim2.new(0, cfg.WindowWidth, 0, 50); Main.Position = UDim2.new(0, xPos, 0, cfg.StartY)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
-    local s = Instance.new("UIStroke", Main); s.Color = Color3.fromRGB(65, 65, 70); s.Thickness = 2.5 -- Жирная обводка
+    local s = Instance.new("UIStroke", Main); s.Color = Color3.fromRGB(65, 65, 70); s.Thickness = 2.5 
 
     local Header = Instance.new("TextLabel", Main)
     Header.Size = UDim2.new(1, 0, 0, 50); Header.Text = name; Header.TextColor3 = Color3.fromRGB(255, 255, 255); Header.Font = Enum.Font.GothamBold; Header.TextSize = 16; Header.BackgroundTransparency = 1
