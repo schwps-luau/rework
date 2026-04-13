@@ -4,6 +4,7 @@ local Library = {
     Transparency = 0.5,
     ModuleTransparency = 0.85,
     Blur = true,
+    -- Настройки ватермарка
     Watermark = true,
     WatermarkUser = true,
     WatermarkTime = true,
@@ -24,7 +25,8 @@ local Library = {
     _Initialized = false,
     _Keybinds = {},
     _Modules = {},
-    _Visible = true
+    _Visible = true,
+    _CurrentX = 20
 }
 
 local TextService = game:GetService("TextService")
@@ -38,11 +40,18 @@ local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
 
--- Вспомогательные функции
 local function SafeTween(obj, goal, t)
-    local tween = TweenService:Create(obj, TweenInfo.new(t or 0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal)
-    tween:Play()
-    return tween
+    local info = TweenInfo.new(t or 0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    TweenService:Create(obj, info, goal):Play()
+end
+
+-- Метод исправлен и перенесен в основную таблицу
+function Library:CreateStyledFrame(parent, size, pos, trans)
+    local f = Instance.new("Frame", parent)
+    f.Size = size or UDim2.new(0, 100, 0, 30); f.Position = pos or UDim2.new(0,0,0,0)
+    f.BackgroundColor3 = Color3.fromRGB(10, 10, 12); f.BackgroundTransparency = trans or self.Transparency
+    Instance.new("UICorner", f).CornerRadius = self._Config.Rounding
+    return f
 end
 
 local function MakeDraggable(obj)
@@ -67,7 +76,7 @@ function Library:InitHUD()
     if self._Initialized then return end
     self._Initialized = true
 
-    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V9_Pro"; self.MainGui = HUD
+    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V10_Final"; self.MainGui = HUD
     local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Size = 0; MenuBlur.Enabled = self.Blur
     
     local MenuContainer = Instance.new("CanvasGroup", HUD)
@@ -75,21 +84,18 @@ function Library:InitHUD()
     MenuContainer.Position = UDim2.new(0, 0, 0.05, 0); MenuContainer.GroupTransparency = 1
     self.MenuContainer = MenuContainer
 
-    -- Анимация загрузки
     task.spawn(function()
         SafeTween(MenuContainer, {Position = UDim2.new(0,0,0,0), GroupTransparency = 0}, 0.6)
         if self.Blur then SafeTween(MenuBlur, {Size = 18}, 0.6) end
     end)
 
-    -- ВАТЕРМАРК С ПРИНУДИТЕЛЬНЫМ ОБНОВЛЕНИЕМ
     local WMMain = Instance.new("Frame", HUD)
     WMMain.Position = UDim2.new(0, 20, 0, 20); WMMain.BackgroundTransparency = 1; WMMain.Size = UDim2.new(0, 800, 0, 70)
-    WMMain.Visible = self.Watermark
     local WMList = Instance.new("UIListLayout", WMMain); WMList.Padding = UDim.new(0, 6); WMList.SortOrder = Enum.SortOrder.LayoutOrder
 
     local function CreateFloor(order)
         local f = Instance.new("Frame", WMMain); f.Size = UDim2.new(1, 0, 0, 28); f.BackgroundTransparency = 1; f.LayoutOrder = order
-        Instance.new("UIListLayout", f).FillDirection = Enum.FillDirection.Horizontal; f.UIListLayout.Padding = UDim.new(0, 6)
+        local l = Instance.new("UIListLayout", f); l.FillDirection = Enum.FillDirection.Horizontal; l.Padding = UDim.new(0, 6)
         return f
     end
 
@@ -114,15 +120,10 @@ function Library:InitHUD()
     local m_fps, f_fps = CreateWMModule(Floor2, 2)
     local m_ping, f_ping = CreateWMModule(Floor2, 3)
 
-    -- Цикл обновления
     RunService.RenderStepped:Connect(function(dt)
-        f_user.Visible = self.WatermarkUser
-        f_time.Visible = self.WatermarkTime
-        f_pos.Visible = self.WatermarkCoordinates
-        f_fps.Visible = self.WatermarkFps
-        f_ping.Visible = self.WatermarkPing
+        f_user.Visible = self.WatermarkUser; f_time.Visible = self.WatermarkTime
+        f_pos.Visible = self.WatermarkCoordinates; f_fps.Visible = self.WatermarkFps; f_ping.Visible = self.WatermarkPing
         WMMain.Visible = self.Watermark
-
         m_time.Text = os.date("%X")
         m_fps.Text = math.floor(1/dt) .. " <font color='#"..self.Accent:ToHex().."'>fps</font>"
         m_ping.Text = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) .. " <font color='#"..self.Accent:ToHex().."'>ms</font>"
@@ -134,7 +135,7 @@ end
 function Library:CreateWindow(name)
     self:InitHUD()
     local Main = self:CreateStyledFrame(self.MenuContainer, UDim2.new(0, self._Config.WindowWidth, 0, 40), UDim2.new(0, self._CurrentX, 0, self._Config.StartY), self.Transparency)
-    self._CurrentX = (self._CurrentX or 40) + self._Config.WindowWidth + self._Config.Spacing
+    self._CurrentX = self._CurrentX + self._Config.WindowWidth + self._Config.Spacing
 
     local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = self._Config.FontBold; Header.TextColor3 = Color3.new(1,1,1); Header.BackgroundTransparency = 1; Header.TextSize = 14
     local Scroll = Instance.new("ScrollingFrame", Main); Scroll.Position = UDim2.new(0, 0, 0, 40); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 0
@@ -156,7 +157,7 @@ function Library:CreateWindow(name)
         local NLayout = Instance.new("UIListLayout", Nodes); NLayout.Padding = UDim.new(0, 6); NLayout.HorizontalAlignment = "Center"
 
         NLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            if Opened then SafeTween(MFrame, {Size = UDim2.new(1, -12, 0, Library._Config.ModuleHeight + NLayout.AbsoluteContentSize.Y + 10)}) end
+            if Opened then MFrame.Size = UDim2.new(1, -12, 0, Library._Config.ModuleHeight + NLayout.AbsoluteContentSize.Y + 10) end
         end)
 
         MBtn.MouseButton1Click:Connect(function()
@@ -173,12 +174,13 @@ function Library:CreateWindow(name)
 
         local Mod = {}
 
-        -- НОВЫЙ СЛАЙДЕР (КАК НА СКРИНШОТЕ)
-        function Mod:CreateSlider(name, min, max, def, cb)
+        -- Слайдер с Decimals (десятичными числами)
+        function Mod:CreateSlider(name, min, max, def, decimals, cb)
             local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 38); f.BackgroundTransparency = 1
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -40, 0, 20); t.Text = name; t.Font = Library._Config.FontMedium; t.TextSize = 12; t.TextColor3 = Color3.new(1,1,1); t.BackgroundTransparency = 1; t.TextXAlignment = 0
-            local valLabel = Instance.new("Frame", f); valLabel.Size = UDim2.new(0, 35, 0, 18); valLabel.Position = UDim2.new(1, -35, 0, 0); valLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 45); Instance.new("UICorner", valLabel).CornerRadius = UDim.new(0,4)
-            local vText = Instance.new("TextLabel", valLabel); vText.Size = UDim2.new(1,0,1,0); vText.Text = tostring(def); vText.Font = Library._Config.FontMedium; vText.TextSize = 10; vText.TextColor3 = Color3.new(1,1,1); vText.BackgroundTransparency = 1
+            
+            local valBox = Instance.new("Frame", f); valBox.Size = UDim2.new(0, 45, 0, 18); valBox.Position = UDim2.new(1, -45, 0, 0); valBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45); Instance.new("UICorner", valBox).CornerRadius = UDim.new(0,4)
+            local vText = Instance.new("TextLabel", valBox); vText.Size = UDim2.new(1,0,1,0); vText.Text = string.format("%."..decimals.."f", def); vText.Font = Library._Config.FontMedium; vText.TextSize = 10; vText.TextColor3 = Color3.new(1,1,1); vText.BackgroundTransparency = 1
             
             local bar = Instance.new("Frame", f); bar.Size = UDim2.new(1, 0, 0, 4); bar.Position = UDim2.new(0, 0, 0, 28); bar.BackgroundColor3 = Color3.fromRGB(40, 40, 45); Instance.new("UICorner", bar)
             local fill = Instance.new("Frame", bar); fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0); fill.BackgroundColor3 = Library.Accent; Instance.new("UICorner", fill)
@@ -187,76 +189,54 @@ function Library:CreateWindow(name)
             local move = false
             local function update(input)
                 local per = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-                local val = math.floor(min + (max - min) * per)
-                fill.Size = UDim2.new(per, 0, 1, 0); vText.Text = tostring(val); cb(val)
+                local val = min + (max - min) * per
+                if decimals == 0 then val = math.floor(val) end
+                fill.Size = UDim2.new(per, 0, 1, 0); vText.Text = string.format("%."..decimals.."f", val); cb(val)
             end
             bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then move = true; update(i) end end)
             UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then move = false end end)
             UserInputService.InputChanged:Connect(function(i) if move and i.UserInputType == Enum.UserInputType.MouseMovement then update(i) end end)
         end
 
-        -- НОВЫЙ ТОГЛ (ГАЛОЧКА / КРЕСТИК)
         function Mod:CreateToggle(name, cb)
             local state = false
             local f = Instance.new("TextButton", Nodes); f.Size = UDim2.new(0.9, 0, 0, 26); f.BackgroundTransparency = 1; f.Text = name; f.Font = Library._Config.FontMedium; f.TextSize = 12; f.TextColor3 = Color3.fromRGB(200, 200, 200); f.TextXAlignment = 0
             local box = Instance.new("Frame", f); box.Size = UDim2.new(0, 18, 0, 18); box.Position = UDim2.new(1, -18, 0.5, -9); box.BackgroundColor3 = Color3.fromRGB(40, 40, 45); Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
             local icon = Instance.new("TextLabel", box); icon.Size = UDim2.new(1,0,1,0); icon.Text = "✕"; icon.TextColor3 = Color3.fromRGB(100, 100, 110); icon.BackgroundTransparency = 1; icon.TextSize = 12; icon.Font = Enum.Font.GothamBold
-
             f.MouseButton1Click:Connect(function()
-                state = not state
-                icon.Text = state and "✓" or "✕"
-                icon.TextColor3 = state and Color3.new(1,1,1) or Color3.fromRGB(100, 100, 110)
-                SafeTween(box, {BackgroundColor3 = state and Library.Accent or Color3.fromRGB(40, 40, 45)}, 0.2)
-                cb(state)
+                state = not state; icon.Text = state and "✓" or "✕"; icon.TextColor3 = state and Color3.new(1,1,1) or Color3.fromRGB(100, 100, 110)
+                SafeTween(box, {BackgroundColor3 = state and Library.Accent or Color3.fromRGB(40, 40, 45)}, 0.2); cb(state)
             end)
         end
 
-        -- КОЛОРПИКЕР (3 ПОЛОСЫ)
         function Mod:CreateColorPicker(name, def, cb)
             local h, s, v = Color3.toHSV(def)
             local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 65); f.BackgroundTransparency = 1
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, 0, 0, 20); t.Text = name; t.Font = Library._Config.FontMedium; t.TextSize = 12; t.TextColor3 = Color3.new(1,1,1); t.BackgroundTransparency = 1; t.TextXAlignment = 0
-            
-            local function createBar(pos, gradient)
+            local function createBar(pos, grad)
                 local b = Instance.new("Frame", f); b.Size = UDim2.new(1, 0, 0, 8); b.Position = pos; b.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", b)
-                local g = Instance.new("UIGradient", b); g.Color = gradient
+                local g = Instance.new("UIGradient", b); g.Color = grad
                 local p = Instance.new("Frame", b); p.Size = UDim2.new(0, 2, 1, 4); p.AnchorPoint = Vector2.new(0.5, 0.5); p.Position = UDim2.new(0.5, 0, 0.5, 0); p.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UIStroke", p).Color = Color3.new(0,0,0)
                 return b, p, g
             end
-
-            local HueB, HueP = createBar(UDim2.new(0,0,0,25), ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromHSV(0,1,1)), ColorSequenceKeypoint.new(0.16, Color3.fromHSV(0.16,1,1)),
-                ColorSequenceKeypoint.new(0.33, Color3.fromHSV(0.33,1,1)), ColorSequenceKeypoint.new(0.5, Color3.fromHSV(0.5,1,1)),
-                ColorSequenceKeypoint.new(0.66, Color3.fromHSV(0.66,1,1)), ColorSequenceKeypoint.new(0.83, Color3.fromHSV(0.83,1,1)),
-                ColorSequenceKeypoint.new(1, Color3.fromHSV(1,1,1))
-            }))
-            
+            local HueB, HueP = createBar(UDim2.new(0,0,0,25), ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHSV(0,1,1)), ColorSequenceKeypoint.new(1, Color3.fromHSV(1,1,1))}))
             local SatB, SatP, SatG = createBar(UDim2.new(0,0,0,40), ColorSequence.new(Color3.new(1,1,1)))
             local ValB, ValP, ValG = createBar(UDim2.new(0,0,0,55), ColorSequence.new(Color3.new(1,1,1)))
-
-            local function update()
-                local color = Color3.fromHSV(h, s, v)
-                SatG.Color = ColorSequence.new(Color3.new(1,1,1), color)
-                ValG.Color = ColorSequence.new(Color3.new(0,0,0), color)
-                HueP.Position = UDim2.new(h, 0, 0.5, 0)
-                SatP.Position = UDim2.new(s, 0, 0.5, 0)
-                ValP.Position = UDim2.new(v, 0, 0.5, 0)
-                cb(color)
+            local function upd()
+                local color = Color3.fromHSV(h, s, v); SatG.Color = ColorSequence.new(Color3.new(1,1,1), color); ValG.Color = ColorSequence.new(Color3.new(0,0,0), color)
+                HueP.Position = UDim2.new(h, 0, 0.5, 0); SatP.Position = UDim2.new(s, 0, 0.5, 0); ValP.Position = UDim2.new(v, 0, 0.5, 0); cb(color)
             end
-
-            local function setup(bar, var)
-                local d = false
-                bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = true end end)
+            local function set(bar, var)
+                local d = false; bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = true end end)
                 UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = false end end)
                 UserInputService.InputChanged:Connect(function(i)
                     if d and i.UserInputType == Enum.UserInputType.MouseMovement then
-                        local per = math.clamp((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-                        if var == "h" then h = per elseif var == "s" then s = per else v = per end
-                        update()
+                        local p = math.clamp((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+                        if var == "h" then h = p elseif var == "s" then s = p else v = p end; upd()
                     end
                 end)
             end
-            setup(HueB, "h"); setup(SatB, "s"); setup(ValB, "v"); update()
+            set(HueB, "h"); set(SatB, "s"); set(ValB, "v"); upd()
         end
         return Mod
     end
