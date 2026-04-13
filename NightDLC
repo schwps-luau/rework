@@ -12,7 +12,7 @@ local Library = {
         Rounding = UDim.new(0, 10)
     },
     _Visible = true,
-    _CurrentX = 2х,
+    _CurrentX = 20,
     _Initialized = false,
     _Keybinds = {},
     _Modules = {},
