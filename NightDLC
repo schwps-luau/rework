@@ -1,10 +1,10 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     ToggleKey = Enum.KeyCode.RightShift,
-    TotalWindows = 0,
-    MaxButtonsVisible = 10,
+    TotalWindows = 5,
+    MaxButtonsVisible = 12,
     _Config = {
-        WindowWidth = 230,
+        WindowWidth = 230, -- Вернул на 200, чтобы текст не плыл
         Spacing = 15,
         StartY = 220,
         Transparency = 0.5, 
@@ -94,11 +94,18 @@ function Library:InitHUD()
         end
     end)
 
-    local KBGui = Instance.new("Frame", HUD); KBGui.Name = "KeybindList"; KBGui.Size = UDim2.new(0, 180, 0, 30); KBGui.Position = UDim2.new(0, 20, 0, 350)
+    -- УЛУЧШЕННЫЙ KEYBIND LIST
+    local KBGui = Instance.new("Frame", HUD); KBGui.Name = "KeybindList"; KBGui.Size = UDim2.new(0, 180, 0, 32); KBGui.Position = UDim2.new(0, 20, 0, 350)
     KBGui.BackgroundColor3 = Color3.fromRGB(15, 15, 18); KBGui.BackgroundTransparency = Library._Config.Transparency; Instance.new("UICorner", KBGui); Instance.new("UIStroke", KBGui).Color = Color3.fromRGB(65, 65, 70)
-    local KBTitle = Instance.new("TextLabel", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 30); KBTitle.Text = "Keybinds"; KBTitle.Font = Library._Config.FontBlack; KBTitle.TextColor3 = Color3.fromRGB(255, 255, 255); KBTitle.BackgroundTransparency = 1
-    local KBList = Instance.new("Frame", KBGui); KBList.Position = UDim2.new(0, 0, 0, 30); KBList.Size = UDim2.new(1, 0, 0, 0); KBList.BackgroundTransparency = 1
+    
+    local KBLine = Instance.new("Frame", KBGui); KBLine.Size = UDim2.new(1, 0, 0, 2); KBLine.BackgroundColor3 = Library.Accent; KBLine.BorderSizePixel = 0; Instance.new("UICorner", KBLine)
+    
+    local KBTitle = Instance.new("TextLabel", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = Library._Config.FontBlack; KBTitle.TextSize = 13; KBTitle.TextColor3 = Color3.fromRGB(255, 255, 255); KBTitle.BackgroundTransparency = 1
+    
+    local KBList = Instance.new("Frame", KBGui); KBList.Position = UDim2.new(0, 0, 0, 32); KBList.Size = UDim2.new(1, 0, 0, 0); KBList.BackgroundTransparency = 1
     Instance.new("UIListLayout", KBList).Padding = UDim.new(0, 2)
+    Instance.new("UIPadding", KBList).PaddingLeft = UDim.new(0, 10); KBList.UIPadding.PaddingRight = UDim.new(0, 10)
+    
     MakeDraggable(KBGui)
 
     RunService.RenderStepped:Connect(function()
@@ -107,13 +114,15 @@ function Library:InitHUD()
         if Library._LastKBState ~= state then
             Library._LastKBState = state
             for _, v in pairs(KBList:GetChildren()) do if v:IsA("TextLabel") then v:Destroy() end end
-            local c = 0
+            local count = 0
             for n, d in pairs(Library._Keybinds) do
-                c = c + 1
-                local l = Instance.new("TextLabel", KBList); l.Size = UDim2.new(1, -10, 0, 20); l.BackgroundTransparency = 1; l.Text = " " .. n .. " [" .. (d.Key or "None") .. "]"; l.Font = Library._Config.FontBlack; l.TextSize = 11; l.TextXAlignment = 0
-                l.TextColor3 = d.Enabled and Library.Accent or Color3.fromRGB(150, 150, 150)
+                count = count + 1
+                local l = Instance.new("TextLabel", KBList); l.Size = UDim2.new(1, 0, 0, 22); l.BackgroundTransparency = 1; l.RichText = true
+                l.Text = string.format("%s <font color='#808080'>[%s]</font>", n, d.Key or "None")
+                l.Font = Library._Config.FontBold; l.TextSize = 11; l.TextXAlignment = 0
+                l.TextColor3 = d.Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(140, 140, 140)
             end
-            KBGui.Size = UDim2.new(0, 180, 0, 30 + (c * 22))
+            SafeTween(KBGui, {Size = UDim2.new(0, 180, 0, 35 + (count * 24))})
         end
     end)
 end
@@ -129,7 +138,7 @@ function Library:CreateWindow(name)
     Instance.new("UICorner", Main); Instance.new("UIStroke", Main).Color = Color3.fromRGB(65, 65, 70)
     Library._CurrentX = Library._CurrentX + cfg.WindowWidth + cfg.Spacing
 
-    local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = cfg.FontBlack; -- Сделал шрифт жирнее
+    local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = cfg.FontBlack; 
     Header.TextColor3 = Color3.fromRGB(255, 255, 255); Header.BackgroundTransparency = 1; Header.TextSize = 14
     
     local Scroll = Instance.new("ScrollingFrame", Main); Scroll.Position = UDim2.new(0, 0, 0, 40); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 0
