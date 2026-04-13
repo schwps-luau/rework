@@ -2,15 +2,15 @@ local Library = {
     Accent = Color3.fromRGB(120, 100, 200),
     ToggleKey = Enum.KeyCode.RightShift,
     _Config = {
-        WindowWidth = 250,
+        WindowWidth = 230,
         StartY = 220,
         Spacing = 10,
-        ModuleHeight = 38, -- Увеличена высота модулей по Y
+        ModuleHeight = 42, -- Сделал еще больше по Y
         Font = Enum.Font.GothamMedium,
         FontBold = Enum.Font.GothamBold
     },
     _Visible = true,
-    _CurrentX = 10,
+    _CurrentX = 5,
     _Initialized = false,
     _Keybinds = {},
     MainGui = nil
@@ -33,9 +33,8 @@ function Library:InitHUD()
     HUD.Name = "NightV2_HUD"
     self.MainGui = HUD
 
-    -- Твоя раскладка ватермарка
     local WatermarkArea = Instance.new("Frame", HUD)
-    WatermarkArea.Size = UDim2.new(0, 450, 0, 100)
+    WatermarkArea.Size = UDim2.new(0, 500, 0, 100)
     WatermarkArea.Position = UDim2.new(0, 20, 0, 20)
     WatermarkArea.BackgroundTransparency = 1
     local WA_Layout = Instance.new("UIListLayout", WatermarkArea)
@@ -43,14 +42,14 @@ function Library:InitHUD()
 
     local function CreatePill(label, text, parent)
         local f = Instance.new("Frame", parent)
-        f.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-        f.BackgroundTransparency = 0.4
+        f.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        f.BackgroundTransparency = 0.3
         f.AutomaticSize = "XY"
-        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
         local p = Instance.new("UIPadding", f)
-        p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
+        p.PaddingLeft = UDim.new(0, 8); p.PaddingRight = UDim.new(0, 8)
         local l = Instance.new("TextLabel", f)
-        l.Size = UDim2.new(0, 0, 0, 24)
+        l.Size = UDim2.new(0, 0, 0, 22)
         l.AutomaticSize = "X"
         l.RichText = true
         l.Text = label == "TITLE" and "<font color='#7864C8'>Night</font> DLC" or string.format("<font color='#7864C8'>%s</font> <font color='#555555'>|</font> %s", label, text)
@@ -58,21 +57,19 @@ function Library:InitHUD()
         return l
     end
 
-    -- Этаж 1: Title, FPS, Time
+    -- РЯД 1: Title, FPS, Time
     local Row1 = Instance.new("Frame", WatermarkArea); Row1.AutomaticSize = "XY"; Row1.BackgroundTransparency = 1
-    Instance.new("UIListLayout", Row1).FillDirection = "Horizontal"; Row1.UIListLayout.Padding = UDim.new(0, 6)
+    local L1 = Instance.new("UIListLayout", Row1); L1.FillDirection = "Horizontal"; L1.Padding = UDim.new(0, 6)
     CreatePill("TITLE", "", Row1)
     local fpsPill = CreatePill("FPS", "0", Row1)
     local timePill = CreatePill("Time", "00:00:00", Row1)
 
-    -- Этаж 2: Ping, Pos
+    -- РЯД 2: Ping, Coordinates
     local Row2 = Instance.new("Frame", WatermarkArea); Row2.AutomaticSize = "XY"; Row2.BackgroundTransparency = 1
-    Instance.new("UIListLayout", Row2).FillDirection = "Horizontal"; Row2.UIListLayout.Padding = UDim.new(0, 6)
+    local L2 = Instance.new("UIListLayout", Row2); L2.FillDirection = "Horizontal"; L2.Padding = UDim.new(0, 6)
     local pingPill = CreatePill("Ms", "0", Row2)
     local posPill = CreatePill("Pos", "0, 0, 0", Row2)
 
-    -- Цикл обновления (Фикс ошибки 201)
-    local lastUpdate = 0
     RS.RenderStepped:Connect(function(dt)
         timePill.Text = string.format("<font color='#7864C8'>Time</font> <font color='#555555'>|</font> %s", os.date("%H:%M:%S"))
         local lp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -80,17 +77,12 @@ function Library:InitHUD()
             local p = lp.Position
             posPill.Text = string.format("<font color='#7864C8'>Pos</font> <font color='#555555'>|</font> %d, %d, %d", p.X, p.Y, p.Z)
         end
-        lastUpdate = lastUpdate + dt
-        if lastUpdate >= 0.5 then
-            lastUpdate = 0
-            fpsPill.Text = string.format("<font color='#7864C8'>FPS</font> <font color='#555555'>|</font> %d", math.floor(1/dt))
-            local ping = 0
-            pcall(function() ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
-            pingPill.Text = string.format("<font color='#7864C8'>Ms</font> <font color='#555555'>|</font> %d", ping)
-        end
+        local ping = 0
+        pcall(function() ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
+        pingPill.Text = string.format("<font color='#7864C8'>Ms</font> <font color='#555555'>|</font> %d", ping)
+        fpsPill.Text = string.format("<font color='#7864C8'>FPS</font> <font color='#555555'>|</font> %d", math.floor(1/dt))
     end)
 
-    -- ToggleKey Фикс
     UIS.InputBegan:Connect(function(input, gpe)
         if not gpe and input.KeyCode == self.ToggleKey then
             self._Visible = not self._Visible
@@ -106,12 +98,12 @@ function Library:CreateWindow(name)
     local Main = Instance.new("Frame", self.MainGui); Main.Name = "NightWindow"
     Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 40)
     Main.Position = UDim2.new(0, self._CurrentX, 0, self._Config.StartY)
-    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Main.BackgroundTransparency = 0.2; Instance.new("UICorner", Main)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20); Main.ClipsDescendants = true; Instance.new("UICorner", Main)
     self._CurrentX = self._CurrentX + self._Config.WindowWidth + self._Config.Spacing
 
     local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = self._Config.FontBold; Header.TextColor3 = Color3.fromRGB(255, 255, 255); Header.TextSize = 14; Header.BackgroundTransparency = 1
-    local Scroll = Instance.new("ScrollingFrame", Main); Scroll.Position = UDim2.new(0, 0, 0, 40); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 0
-    local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 3); Layout.HorizontalAlignment = "Center"
+    local Scroll = Instance.new("ScrollingFrame", Main); Scroll.Position = UDim2.new(0, 0, 0, 40); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 0; Scroll.ClipsDescendants = true
+    local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 4); Layout.HorizontalAlignment = "Center"
 
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         local h = math.min(Layout.AbsoluteContentSize.Y + 10, 500)
@@ -122,9 +114,9 @@ function Library:CreateWindow(name)
     function Win:CreateModule(modName, callback)
         local Enabled, Opened = false, false
         local MFrame = Instance.new("Frame", Scroll)
-        MFrame.Size = UDim2.new(1, -12, 0, self._Config.ModuleHeight) -- Использование новой высоты
-        MFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        MFrame.ClipsDescendants = true -- ФИКС: Скрывает вылезающие подмодули
+        MFrame.Size = UDim2.new(1, -12, 0, self._Config.ModuleHeight)
+        MFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+        MFrame.ClipsDescendants = true -- СТРОГОЕ СКРЫТИЕ ПОДМОДУЛЕЙ
         Instance.new("UICorner", MFrame)
         
         local MBtn = Instance.new("TextButton", MFrame)
@@ -132,27 +124,26 @@ function Library:CreateWindow(name)
         MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.Font = Library._Config.Font; MBtn.TextSize = 13; MBtn.TextColor3 = Color3.fromRGB(200, 200, 200); MBtn.TextXAlignment = "Left"
         
         local Ind = Instance.new("TextLabel", MFrame)
-        Ind.Size = UDim2.new(0, 30, 0, self._Config.ModuleHeight); Ind.Position = UDim2.new(1, -30, 0, 0); Ind.Text = ">>"; Ind.Font = Enum.Font.GothamBold; Ind.TextSize = 10; Ind.TextColor3 = Color3.fromRGB(100, 100, 100); Ind.BackgroundTransparency = 1; Ind.Visible = false
+        Ind.Size = UDim2.new(0, 30, 0, self._Config.ModuleHeight); Ind.Position = UDim2.new(1, -30, 0, 0); Ind.Text = ">>"; Ind.Font = Enum.Font.GothamBold; Ind.TextSize = 10; Ind.TextColor3 = Color3.fromRGB(80, 80, 80); Ind.BackgroundTransparency = 1; Ind.Visible = false
 
         local Nodes = Instance.new("Frame", MFrame)
         Nodes.Position = UDim2.new(0, 0, 0, self._Config.ModuleHeight); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1
         local NL = Instance.new("UIListLayout", Nodes); NL.Padding = UDim.new(0, 8); NL.HorizontalAlignment = "Center"; Instance.new("UIPadding", Nodes).PaddingTop = UDim.new(0, 5); Nodes.UIPadding.PaddingBottom = UDim.new(0, 10)
 
         local function Update()
-            local children = Nodes:GetChildren()
-            local count = 0
-            for _, v in pairs(children) do if not v:IsA("UIListLayout") and not v:IsA("UIPadding") then count = count + 1 end end
+            local childrenCount = 0
+            for _, v in pairs(Nodes:GetChildren()) do if v:IsA("Frame") then childrenCount = childrenCount + 1 end end
+            Ind.Visible = (childrenCount > 0)
             
-            Ind.Visible = (count > 0)
-            local targetH = (Opened and count > 0) and (self._Config.ModuleHeight + NL.AbsoluteContentSize.Y + 15) or self._Config.ModuleHeight
+            local targetH = (Opened and childrenCount > 0) and (self._Config.ModuleHeight + NL.AbsoluteContentSize.Y + 15) or self._Config.ModuleHeight
             SafeTween(MFrame, {Size = UDim2.new(1, -12, 0, targetH)})
-            Ind.Rotation = (Opened and count > 0) and 90 or 0
+            SafeTween(Ind, {Rotation = (Opened and childrenCount > 0) and 90 or 0})
         end
 
         NL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(Update)
         MBtn.MouseButton1Click:Connect(function()
             Enabled = not Enabled
-            SafeTween(MFrame, {BackgroundColor3 = Enabled and Library.Accent or Color3.fromRGB(30, 30, 30)})
+            SafeTween(MFrame, {BackgroundColor3 = Enabled and Library.Accent or Color3.fromRGB(28, 28, 28)})
             MBtn.TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
             Library._Keybinds[modName] = {Enabled = Enabled, Key = "NONE"}; callback(Enabled)
         end)
@@ -160,25 +151,25 @@ function Library:CreateWindow(name)
 
         local Mod = {}
         function Mod:CreateSlider(n, min, max, def, cb)
-            local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 35); f.BackgroundTransparency = 1
+            local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.92, 0, 0, 38); f.BackgroundTransparency = 1
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(0.5, 0, 0, 20); t.Text = n; t.Font = Library._Config.Font; t.TextSize = 11; t.TextColor3 = Color3.fromRGB(200, 200, 200); t.BackgroundTransparency = 1; t.TextXAlignment = "Left"
             local vb = Instance.new("TextLabel", f); vb.Size = UDim2.new(0, 35, 0, 18); vb.Position = UDim2.new(1, -35, 0, 0); vb.BackgroundColor3 = Color3.fromRGB(40, 40, 40); vb.Text = tostring(def); vb.TextColor3 = Library.Accent; vb.Font = Library._Config.Font; vb.TextSize = 10; Instance.new("UICorner", vb)
-            local bar = Instance.new("Frame", f); bar.Size = UDim2.new(1, 0, 0, 4); bar.Position = UDim2.new(0, 0, 0, 26); bar.BackgroundColor3 = Color3.fromRGB(50, 50, 50); Instance.new("UICorner", bar)
+            local bar = Instance.new("Frame", f); bar.Size = UDim2.new(1, 0, 0, 4); bar.Position = UDim2.new(0, 0, 0, 28); bar.BackgroundColor3 = Color3.fromRGB(50, 50, 50); Instance.new("UICorner", bar)
             local fill = Instance.new("Frame", bar); fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0); fill.BackgroundColor3 = Library.Accent; Instance.new("UICorner", fill)
             bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then local move = UIS.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement then local per = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1); local v = math.floor(min + (max - min) * per); fill.Size = UDim2.new(per, 0, 1, 0); vb.Text = tostring(v); cb(v) end end) UIS.InputEnded:Connect(function(i2) if i2.UserInputType == Enum.UserInputType.MouseButton1 then move:Disconnect() end end) end end)
-            Update(); return Mod
+            task.spawn(Update); return Mod
         end
         function Mod:CreateSelector(n, opts, def, cb)
-            local c = Instance.new("Frame", Nodes); c.Size = UDim2.new(0.9, 0, 0, 0); c.AutomaticSize = "Y"; c.BackgroundTransparency = 1
+            local c = Instance.new("Frame", Nodes); c.Size = UDim2.new(0.92, 0, 0, 0); c.AutomaticSize = "Y"; c.BackgroundTransparency = 1
             local cl = Instance.new("UIListLayout", c); cl.SortOrder = "LayoutOrder"; cl.Padding = UDim.new(0, 5)
             local l = Instance.new("TextLabel", c); l.Size = UDim2.new(1, 0, 0, 15); l.Text = n; l.Font = Library._Config.Font; l.TextSize = 11; l.TextColor3 = Color3.fromRGB(150, 150, 150); l.BackgroundTransparency = 1; l.TextXAlignment = "Left"; l.LayoutOrder = 1 
             local grid = Instance.new("Frame", c); grid.Size = UDim2.new(1, 0, 0, 0); grid.AutomaticSize = "Y"; grid.BackgroundTransparency = 1; grid.LayoutOrder = 2
-            local gl = Instance.new("UIGridLayout", grid); gl.CellSize = UDim2.new(0, 58, 0, 26); gl.CellPadding = UDim2.new(0, 5, 0, 5)
+            local gl = Instance.new("UIGridLayout", grid); gl.CellSize = UDim2.new(0, 60, 0, 28); gl.CellPadding = UDim2.new(0, 5, 0, 5)
             for _, opt in pairs(opts) do
-                local b = Instance.new("TextButton", grid); b.BackgroundColor3 = (opt == def) and Library.Accent or Color3.fromRGB(45, 45, 45); b.Text = opt; b.Font = Library._Config.Font; b.TextSize = 10; b.TextColor3 = Color3.fromRGB(200, 200, 200); Instance.new("UICorner", b)
-                b.MouseButton1Click:Connect(function() for _, v in pairs(grid:GetChildren()) do if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(45, 45, 45) end end; b.BackgroundColor3 = Library.Accent; cb(opt) end)
+                local b = Instance.new("TextButton", grid); b.BackgroundColor3 = (opt == def) and Library.Accent or Color3.fromRGB(42, 42, 42); b.Text = opt; b.Font = Library._Config.Font; b.TextSize = 10; b.TextColor3 = Color3.fromRGB(200, 200, 200); Instance.new("UICorner", b)
+                b.MouseButton1Click:Connect(function() for _, v in pairs(grid:GetChildren()) do if v:IsA("TextButton") then v.BackgroundColor3 = Color3.fromRGB(42, 42, 42) end end; b.BackgroundColor3 = Library.Accent; cb(opt) end)
             end
-            Update(); return Mod
+            task.spawn(Update); return Mod
         end
         return Mod
     end
