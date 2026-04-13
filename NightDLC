@@ -184,16 +184,25 @@ function Library:CreateWindow(name)
         MBtn.MouseButton2Click:Connect(function() Opened = not Opened; Update() end)
         
         Library._Keybinds[modName] = {Key = "NONE", Callback = Toggle}
-        MBtn.MouseButton3Click:Connect(function()
-            Binding = true; MBtn.Text = "  [ Нажми клавишу ]"
-            local connection; connection = UIS.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.Keyboard then
-                    Library._Keybinds[modName].Key = input.KeyCode.Name
-                    MBtn.Text = "  " .. modName; Binding = false; Library:UpdateKeybinds(); connection:Disconnect()
-                elseif input.KeyCode == Enum.KeyCode.Backspace then
-                    Library._Keybinds[modName].Key = "NONE"; MBtn.Text = "  " .. modName; Binding = false; Library:UpdateKeybinds(); connection:Disconnect()
-                end
-            end)
+        
+        MBtn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton3 then
+                if Binding then return end
+                Binding = true; MBtn.Text = "  [ Нажми клавишу ]"
+                local connection
+                connection = UIS.InputBegan:Connect(function(keyInput)
+                    if keyInput.UserInputType == Enum.UserInputType.Keyboard then
+                        if keyInput.KeyCode == Enum.KeyCode.Backspace then
+                            Library._Keybinds[modName].Key = "NONE"
+                        else
+                            Library._Keybinds[modName].Key = keyInput.KeyCode.Name
+                        end
+                        MBtn.Text = "  " .. modName; Binding = false; Library:UpdateKeybinds(); connection:Disconnect()
+                    elseif keyInput.UserInputType == Enum.UserInputType.MouseButton1 or keyInput.UserInputType == Enum.UserInputType.MouseButton2 then
+                        MBtn.Text = "  " .. modName; Binding = false; connection:Disconnect()
+                    end
+                end)
+            end
         end)
 
         local Mod = {}
