@@ -50,7 +50,6 @@ local function SafeTween(obj, goal, t)
     return tween
 end
 
--- Функция для перетаскивания (Draggable)
 local function MakeDraggable(frame, handle)
     local dragging, dragInput, dragStart, startPos
     handle.InputBegan:Connect(function(input)
@@ -87,7 +86,7 @@ function Library:ToggleMenu()
         if not self._Visible then
             SafeTween(self.SearchFrame, {Position = UDim2.new(0, self.SearchFrame.Position.X.Offset, 0, -500)})
         else
-            SafeTween(self.SearchFrame, {Position = UDim2.new(0, self.SearchFrame.Position.X.Offset, 0, -50)})
+            SafeTween(self.SearchFrame, {Position = UDim2.new(0, self.SearchFrame.Position.X.Offset, 0, self._Config.StartY - 45)})
         end
     end
 
@@ -99,14 +98,14 @@ function Library:InitHUD()
     if self._Initialized then return end
     self._Initialized = true
 
-    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V18"; self.MainGui = HUD
+    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V19"; self.MainGui = HUD
     local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18
 
-    -- Поиск под 3-м табом (индекс 3)
-    local SearchX = 40 + (self._Config.WindowWidth * 2) + (self._Config.Spacing * 2)
+    -- Поиск под 3-м окном (расчет X)
+    local SearchX = 40 + (2 * (self._Config.WindowWidth + self._Config.Spacing))
     local SearchFrame = Instance.new("Frame", HUD)
     SearchFrame.Size = UDim2.new(0, self._Config.WindowWidth, 0, 35)
-    SearchFrame.Position = UDim2.new(0, SearchX, 0, -50)
+    SearchFrame.Position = UDim2.new(0, SearchX, 0, -100)
     SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20)
     Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding
     self.SearchFrame = SearchFrame
@@ -139,14 +138,14 @@ function Library:InitHUD()
     local m_time, f_time = CreateWMModule(Floor1); local m_pos, f_pos = CreateWMModule(Floor2)
     local m_fps, f_fps = CreateWMModule(Floor2); local m_ping, f_ping = CreateWMModule(Floor2)
 
-    -- Кейбинд лист
     local KBGui = Instance.new("Frame", HUD); KBGui.BackgroundColor3 = Color3.fromRGB(10,10,12); KBGui.Size = UDim2.new(0, 180, 0, 32); KBGui.Position = UDim2.new(1, -200, 0, 20)
     Instance.new("UICorner", KBGui).CornerRadius = self._Config.Rounding
-    local KBTitle = Instance.new("TextButton", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = self._Config.FontBold; KBTitle.TextSize = 13; KBTitle.BackgroundTransparency = 1; KBTitle.TextColor3 = self.Accent
+    local KBTitle = Instance.new("TextButton", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = self._Config.FontBold; KBTitle.TextSize = 13; KBTitle.BackgroundTransparency = 1
     local KBList = Instance.new("Frame", KBGui); KBList.Position = UDim2.new(0, 0, 0, 32); KBList.Size = UDim2.new(1, 0, 0, 0); KBList.BackgroundTransparency = 1
     Instance.new("UIListLayout", KBList).Padding = UDim.new(0, 2); Instance.new("UIPadding", KBList).PaddingLeft = UDim.new(0, 10)
     MakeDraggable(KBGui, KBTitle)
 
+    local lastFps, fpsUpdateTimer = 0, 0
     RunService.RenderStepped:Connect(function(dt)
         if self._Rainbow then self.Accent = Color3.fromHSV(tick() % 4 / 4, 1, 1) end
         
@@ -156,7 +155,12 @@ function Library:InitHUD()
         m_title.Text = "NIGHT <font color='#" .. self.Accent:ToHex() .. "'>DLC</font>"
         m_user.Text = "<font color='#" .. self.Accent:ToHex() .. "'>" .. LocalPlayer.DisplayName .. "</font>"
         
-        m_fps.Text = math.floor(1/dt) .. " <font color='#"..self.Accent:ToHex().."'>fps</font>"
+        fpsUpdateTimer = fpsUpdateTimer + dt
+        if fpsUpdateTimer >= 0.5 then
+            lastFps = math.floor(1/dt)
+            fpsUpdateTimer = 0
+        end
+        m_fps.Text = lastFps .. " <font color='#"..self.Accent:ToHex().."'>fps</font>"
         m_ping.Text = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) .. " <font color='#"..self.Accent:ToHex().."'>ms</font>"
         m_time.Text = os.date("%X")
         local p = LocalPlayer.Character and LocalPlayer.Character.PrimaryPart and LocalPlayer.Character.PrimaryPart.Position or Vector3.new(0,0,0)
@@ -181,21 +185,8 @@ function Library:InitHUD()
         if i.KeyCode == self.ToggleKey then self:ToggleMenu() end
         if not g and i.KeyCode == Enum.KeyCode.F and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
             local isHidden = SearchFrame.Position.Y.Offset < 0
-            SafeTween(SearchFrame, {Position = UDim2.new(0, SearchX, 0, isHidden and (self._Config.StartY - 45) or -50)})
+            SafeTween(SearchFrame, {Position = UDim2.new(0, SearchX, 0, isHidden and (self._Config.StartY - 45) or -100)})
             if isHidden then Box:CaptureFocus() end
-        end
-        if not g then
-            for name, data in pairs(self._Keybinds) do
-                if data.Key and i.KeyCode == data.Key then
-                    data.Enabled = not data.Enabled; data.Callback(data.Enabled)
-                    for _, l in pairs(KBList:GetChildren()) do
-                        if l:IsA("TextLabel") and l.Text:find(name) then
-                            l:SetAttribute("IsActive", data.Enabled)
-                            l.TextColor3 = data.Enabled and self.Accent or Color3.fromRGB(150, 150, 150)
-                        end
-                    end
-                end
-            end
         end
     end)
 
@@ -247,6 +238,26 @@ function Library:CreateWindow(name)
         Nodes.ChildAdded:Connect(function() Dots.Visible = true end)
 
         local Mod = {}
+        -- ВОТ ОН, СЛАЙДЕР!
+        function Mod:CreateSlider(n, min, max, def, dec, cb)
+            local comp = {Type = "Slider"}
+            local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 38); f.BackgroundTransparency = 1
+            local bar = Instance.new("Frame", f); bar.Size = UDim2.new(1, 0, 0, 4); bar.Position = UDim2.new(0, 0, 0, 28); bar.BackgroundColor3 = Color3.fromRGB(40, 40, 45); Instance.new("UICorner", bar)
+            local fill = Instance.new("Frame", bar); fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0); Instance.new("UICorner", fill)
+            comp.Fill = fill; table.insert(modData.Components, comp)
+            local vText = Instance.new("TextLabel", f); vText.Size = UDim2.new(1, 0, 0, 20); vText.Text = n .. ": " .. string.format("%."..dec.."f", def); vText.Font = Library._Config.FontMedium; vText.TextSize = 11; vText.TextColor3 = Color3.new(1,1,1); vText.BackgroundTransparency = 1; vText.TextXAlignment = 0
+            local function update(i)
+                local p = math.clamp((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+                local val = min + (max - min) * p
+                fill.Size = UDim2.new(p, 0, 1, 0); vText.Text = n .. ": " .. string.format("%."..dec.."f", val); cb(val)
+            end
+            local move = false
+            bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then move = true; update(i) end end)
+            UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then move = false end end)
+            UserInputService.InputChanged:Connect(function(i) if move and i.UserInputType == Enum.UserInputType.MouseMovement then update(i) end end)
+            return Mod
+        end
+
         function Mod:CreateToggle(n, cb)
             local comp = {Type = "Toggle", State = false}
             local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.95, 0, 0, 26); b.BackgroundTransparency = 1; b.Text = "  " .. n; b.Font = Library._Config.FontMedium; b.TextColor3 = Color3.new(1,1,1); b.TextSize = 12; b.TextXAlignment = 0
@@ -270,7 +281,7 @@ function Library:CreateWindow(name)
             local ValB, ValP, ValG = createBar(UDim2.new(0,0,0,50), ColorSequence.new(Color3.new(1,1,1)))
             
             local RbBtn = Instance.new("TextButton", f); RbBtn.Size = UDim2.new(1, 0, 0, 10); RbBtn.Position = UDim2.new(0, 0, 0, 65); RbBtn.Text = ""; RbBtn.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", RbBtn); local RbGrad = Instance.new("UIGradient", RbBtn); RbGrad.Color = HueB.UIGradient.Color
-            RbBtn.MouseButton1Click:Connect(function() Library._Rainbow = not Library._Rainbow end)
+             RbBtn.MouseButton1Click:Connect(function() Library._Rainbow = not Library._Rainbow end)
 
             local function upd()
                 local color = Color3.fromHSV(h, s, v); SatG.Color = ColorSequence.new(Color3.new(1,1,1), Color3.fromHSV(h, 1, 1)); ValG.Color = ColorSequence.new(Color3.new(0,0,0), Color3.fromHSV(h, s, 1)); HueP.Position = UDim2.new(h, 0, 0.5, 0); SatP.Position = UDim2.new(s, 0, 0.5, 0); ValP.Position = UDim2.new(v, 0, 0.5, 0); cb(color)
