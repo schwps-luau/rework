@@ -4,9 +4,10 @@ local Library = {
     _Config = {
         WindowWidth = 240,
         ModuleHeight = 38,
-        Spacing = 10,
-        StartY = 220,
-        Transparency = 0.5, 
+        Spacing = 15,
+        StartY = 160,
+        Transparency = 0.5,
+        ModuleTransparency = 0.6,
         FontBold = Enum.Font.GothamBold, 
         FontMedium = Enum.Font.GothamMedium,
         Rounding = UDim.new(0, 8)
@@ -55,10 +56,11 @@ local function MakeDraggable(obj)
     end)
 end
 
-function Library:CreateStyledFrame(parent, size, pos)
+function Library:CreateStyledFrame(parent, size, pos, transparency)
     local f = Instance.new("Frame", parent)
     f.Size = size or UDim2.new(0, 100, 0, 30); f.Position = pos or UDim2.new(0,0,0,0)
-    f.BackgroundColor3 = Color3.fromRGB(10, 10, 12); f.BackgroundTransparency = self._Config.Transparency
+    f.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    f.BackgroundTransparency = transparency or self._Config.Transparency
     Instance.new("UICorner", f).CornerRadius = self._Config.Rounding
     return f
 end
@@ -67,20 +69,22 @@ function Library:InitHUD()
     if self._Initialized then return end
     self._Initialized = true
 
-    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_Final_V4"; self.MainGui = HUD
+    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_Final_V5"; self.MainGui = HUD
     local MenuContainer = Instance.new("CanvasGroup", HUD)
     MenuContainer.Size = UDim2.new(1, 0, 1, 0); MenuContainer.BackgroundTransparency = 1; self.MenuContainer = MenuContainer
 
-    -- ВАТЕРМАРК (ФИКСИРОВАН СЛЕВА СВЕРХУ)
+    -- ВАТЕРМАРК
     local WMMain = Instance.new("Frame", HUD)
-    WMMain.Size = UDim2.new(0, 600, 0, 70); WMMain.Position = UDim2.new(0, 20, 0, 20); WMMain.BackgroundTransparency = 1
+    WMMain.Size = UDim2.new(0, 0, 0, 0); WMMain.Position = UDim2.new(0, 20, 0, 20); WMMain.BackgroundTransparency = 1
+    WMMain.AutomaticSize = Enum.AutomaticSize.XY
     
     local WMList = Instance.new("UIListLayout", WMMain)
     WMList.Padding = UDim.new(0, 6); WMList.SortOrder = Enum.SortOrder.LayoutOrder
 
     local function CreateFloor(order)
         local f = Instance.new("Frame", WMMain)
-        f.Size = UDim2.new(1, 0, 0, 28); f.BackgroundTransparency = 1; f.LayoutOrder = order
+        f.Size = UDim2.new(0, 0, 0, 28); f.BackgroundTransparency = 1; f.LayoutOrder = order
+        f.AutomaticSize = Enum.AutomaticSize.X
         local l = Instance.new("UIListLayout", f)
         l.FillDirection = Enum.FillDirection.Horizontal; l.Padding = UDim.new(0, 6); l.SortOrder = Enum.SortOrder.LayoutOrder
         return f
@@ -94,18 +98,23 @@ function Library:InitHUD()
         f.AutomaticSize = Enum.AutomaticSize.X; f.LayoutOrder = order
         Instance.new("UIPadding", f).PaddingLeft = UDim.new(0, 12); f.UIPadding.PaddingRight = UDim.new(0, 12)
         local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1,0,1,0); l.Font = self._Config.FontBold; l.TextSize = 12; l.TextColor3 = Color3.new(1,1,1); l.BackgroundTransparency = 1; l.RichText = true; l.Text = text
+        -- Фикс обновления размера
+        l:GetPropertyChangedSignal("Text"):Connect(function()
+            f.Size = UDim2.new(0, 0, 1, 0) 
+        end)
         return l
     end
 
-    -- РЯД 1: Заголовок, Ник, FPS, Время
+    -- РАССТАНОВКА ПО ТВОЕМУ ЗАПРОСУ:
+    -- 1. Заголовок, Юзер, Время
     local m_title = CreateWMModule(Floor1, "NIGHT <font color='#" .. self.Accent:ToHex() .. "'>DLC</font>", 1)
     local m_user = CreateWMModule(Floor1, "<font color='#" .. self.Accent:ToHex() .. "'>" .. LocalPlayer.DisplayName .. "</font>", 2)
-    local m_fps = CreateWMModule(Floor1, "0 <font color='#" .. self.Accent:ToHex() .. "'>fps</font>", 3)
-    local m_time = CreateWMModule(Floor1, "00:00:00", 4)
+    local m_time = CreateWMModule(Floor1, "00:00:00", 3)
     
-    -- РЯД 2: Координаты, Пинг
+    -- 2. Координаты, ФПС, Пинг
     local m_pos = CreateWMModule(Floor2, "<font color='#" .. self.Accent:ToHex() .. "'>pos:</font> 0, 0, 0", 1)
-    local m_ping = CreateWMModule(Floor2, "0 <font color='#" .. self.Accent:ToHex() .. "'>ms</font>", 2)
+    local m_fps = CreateWMModule(Floor2, "0 <font color='#" .. self.Accent:ToHex() .. "'>fps</font>", 2)
+    local m_ping = CreateWMModule(Floor2, "0 <font color='#" .. self.Accent:ToHex() .. "'>ms</font>", 3)
 
     local lastFps, fpsTimer = 0, 0
     RunService.RenderStepped:Connect(function(dt)
@@ -123,7 +132,7 @@ function Library:InitHUD()
         m_time.Text = os.date("%X")
     end)
 
-    -- КЕЙБИНД ЛИСТ (СПРАВА СВЕРХУ, ПЕРЕДВИЖНОЙ)
+    -- КЕЙБИНД ЛИСТ
     local KBGui = self:CreateStyledFrame(HUD, UDim2.new(0, 180, 0, 32), UDim2.new(1, -200, 0, 20))
     MakeDraggable(KBGui)
     local KBTitle = Instance.new("TextLabel", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = self._Config.FontBold; KBTitle.TextSize = 13; KBTitle.TextColor3 = self.Accent; KBTitle.BackgroundTransparency = 1
@@ -153,10 +162,6 @@ function Library:InitHUD()
     local SearchFrame = self:CreateStyledFrame(self.MenuContainer, UDim2.new(0, 200, 0, 35), UDim2.new(0.5, -100, 0.9, 0))
     local SearchInput = Instance.new("TextBox", SearchFrame); SearchInput.Size = UDim2.new(1, -10, 1, 0); SearchInput.Position = UDim2.new(0, 5, 0, 0); SearchInput.BackgroundTransparency = 1; SearchInput.PlaceholderText = "Search: Ctrl + F"; SearchInput.Text = ""; SearchInput.Font = self._Config.FontMedium; SearchInput.TextSize = 13; SearchInput.TextColor3 = Color3.new(1,1,1)
     self.SearchBox = SearchInput
-    SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
-        local q = SearchInput.Text:lower()
-        for _, mod in pairs(self._Modules) do mod.Frame.Visible = mod.Name:lower():find(q) ~= nil end
-    end)
 end
 
 function Library:CreateWindow(name)
@@ -178,7 +183,8 @@ function Library:CreateWindow(name)
     local Window = {}
     function Window:CreateModule(modName, callback)
         local Enabled, Opened, Binding, CurrentKey = false, false, false, nil
-        local MFrame = Instance.new("Frame", Scroll); MFrame.Size = UDim2.new(1, -12, 0, cfg.ModuleHeight); MFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25); MFrame.BackgroundTransparency = cfg.Transparency; MFrame.ClipsDescendants = true
+        -- Прозрачность модуля увеличена по запросу
+        local MFrame = Instance.new("Frame", Scroll); MFrame.Size = UDim2.new(1, -12, 0, cfg.ModuleHeight); MFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25); MFrame.BackgroundTransparency = cfg.ModuleTransparency; MFrame.ClipsDescendants = true
         Instance.new("UICorner", MFrame).CornerRadius = cfg.Rounding
         
         local MBtn = Instance.new("TextButton", MFrame); MBtn.Size = UDim2.new(1, 0, 0, cfg.ModuleHeight); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.Font = cfg.FontMedium; MBtn.TextSize = 13; MBtn.TextColor3 = Color3.fromRGB(200, 200, 200); MBtn.TextXAlignment = 0
@@ -199,7 +205,7 @@ function Library:CreateWindow(name)
 
         local function Toggle()
             Enabled = not Enabled
-            SafeTween(MFrame, {BackgroundColor3 = Enabled and Library.Accent or Color3.fromRGB(20, 20, 25)})
+            SafeTween(MFrame, {BackgroundTransparency = Enabled and 0.4 or cfg.ModuleTransparency, BackgroundColor3 = Enabled and Library.Accent or Color3.fromRGB(20, 20, 25)})
             Library._Keybinds[modName].Enabled = Enabled
             callback(Enabled)
         end
@@ -233,13 +239,13 @@ function Library:CreateWindow(name)
         function Mod:CreateToggle(n, cb)
             local s = false
             local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.95, 0, 0, 26); b.BackgroundColor3 = Color3.fromRGB(15, 15, 20); b.BackgroundTransparency = 0.5; b.Text = "  " .. n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.new(1,1,1); b.TextSize = 12; b.TextXAlignment = 0; Instance.new("UICorner", b)
-            local box = Instance.new("Frame", b); box.Size = UDim2.new(0, 16, 0, 16); box.Position = UDim2.new(1, -20, 0.5, 0); box.AnchorPoint = Vector2.new(0, 0.5); box.BackgroundColor3 = Color3.new(0,0,0); Instance.new("UICorner", box)
+            local box = Instance.new("Frame", b); box.Size = UDim2.new(0, 14, 0, 14); box.Position = UDim2.new(1, -20, 0.5, 0); box.AnchorPoint = Vector2.new(0, 0.5); box.BackgroundColor3 = Color3.new(0,0,0); Instance.new("UICorner", box)
             b.MouseButton1Click:Connect(function() s = not s; SafeTween(box, {BackgroundColor3 = s and Library.Accent or Color3.new(0,0,0)}); cb(s) end)
             return Mod
         end
 
         function Mod:CreateButton(n, cb)
-            local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.95, 0, 0, 26); b.BackgroundColor3 = Color3.fromRGB(30, 30, 35); b.BackgroundTransparency = 0.5; b.Text = n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.new(1, 1, 1); b.TextSize = 12; Instance.new("UICorner", b)
+            local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.95, 0, 0, 26); b.BackgroundColor3 = Color3.fromRGB(35, 35, 40); b.BackgroundTransparency = 0.4; b.Text = n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.new(1, 1, 1); b.TextSize = 12; Instance.new("UICorner", b)
             b.MouseButton1Click:Connect(cb); return Mod
         end
 
