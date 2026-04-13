@@ -14,7 +14,7 @@ local Library = {
     _CurrentX = 20,
     _Initialized = false,
     _Objects = { Accents = {}, Transparency = {}, Modules = {} },
-    _Keybinds = {}, -- Хранение биндов
+    _Keybinds = {},
     MainGui = nil,
     _Blur = nil
 }
@@ -42,46 +42,47 @@ function Library:InitHUD()
 
     -- ВАТЕРМАРК
     local WM = Instance.new("Frame", HUD)
-    WM.Size = UDim2.new(0, 300, 0, 70); WM.Position = UDim2.new(0, 15, 0, 15); WM.BackgroundTransparency = 1
-    Instance.new("UIListLayout", WM).Padding = UDim.new(0, 5)
+    WM.Size = UDim2.new(0, 400, 0, 100); WM.Position = UDim2.new(0, 20, 0, 20); WM.BackgroundTransparency = 1
+    Instance.new("UIListLayout", WM).Padding = UDim.new(0, 8)
 
     local function CreatePill(label, text, parent)
         local f = Instance.new("Frame", parent)
-        f.BackgroundColor3 = Color3.fromRGB(15, 15, 15); f.BackgroundTransparency = 0.3
-        f.AutomaticSize = "XY"; Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
-        local p = Instance.new("UIPadding", f); p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
+        f.BackgroundColor3 = Color3.fromRGB(15, 15, 15); f.BackgroundTransparency = self._Config.Transparency
+        f.AutomaticSize = "XY"; Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
+        local p = Instance.new("UIPadding", f); p.PaddingLeft = UDim.new(0, 15); p.PaddingRight = UDim.new(0, 15)
         local l = Instance.new("TextLabel", f)
-        l.Size = UDim2.new(0, 0, 0, 24); l.AutomaticSize = "X"; l.RichText = true
+        l.Size = UDim2.new(0, 0, 0, 32); l.AutomaticSize = "X"; l.RichText = true
         l.Text = label == "TITLE" and "<font color='#7864C8'>Night</font> DLC" or string.format("<font color='#7864C8'>%s</font> <font color='#555555'>|</font> %s", label, text)
-        l.TextColor3 = Color3.fromRGB(230, 230, 230); l.Font = self._Config.Font; l.TextSize = 13; l.BackgroundTransparency = 1
+        l.TextColor3 = Color3.fromRGB(230, 230, 230); l.Font = self._Config.Font; l.TextSize = 14; l.BackgroundTransparency = 1
+        self._Objects.Transparency[f] = true
         return l
     end
 
     local R1 = Instance.new("Frame", WM); R1.AutomaticSize = "XY"; R1.BackgroundTransparency = 1
-    Instance.new("UIListLayout", R1).FillDirection = "Horizontal"; R1.UIListLayout.Padding = UDim.new(0, 6)
+    Instance.new("UIListLayout", R1).FillDirection = "Horizontal"; R1.UIListLayout.Padding = UDim.new(0, 8)
     CreatePill("TITLE", "", R1)
     local fpsPill = CreatePill("FPS", "0", R1)
     local timePill = CreatePill("Time", "00:00:00", R1)
 
     local R2 = Instance.new("Frame", WM); R2.AutomaticSize = "XY"; R2.BackgroundTransparency = 1
-    Instance.new("UIListLayout", R2).FillDirection = "Horizontal"; R2.UIListLayout.Padding = UDim.new(0, 6)
+    Instance.new("UIListLayout", R2).FillDirection = "Horizontal"; R2.UIListLayout.Padding = UDim.new(0, 8)
     local posPill = CreatePill("Pos", "0, 0, 0", R2)
     local pingPill = CreatePill("Ms", "0", R2)
 
-    -- КЕЙБИНД ЛИСТ (ПРАВО ВЕРХ)
+    -- КЕЙБИНД ЛИСТ
     local KBList = Instance.new("Frame", HUD)
     KBList.Name = "KeybindList"
-    KBList.Size = UDim2.new(0, 160, 0, 0); KBList.AutomaticSize = "Y"
-    KBList.Position = UDim2.new(1, -175, 0, 15)
+    KBList.Size = UDim2.new(0, 180, 0, 0); KBList.AutomaticSize = "Y"
+    KBList.Position = UDim2.new(1, -200, 0, 20)
     KBList.BackgroundColor3 = Color3.fromRGB(15, 15, 15); KBList.BackgroundTransparency = self._Config.Transparency
     Instance.new("UICorner", KBList); self._Objects.Transparency[KBList] = true
 
     local KBT = Instance.new("TextLabel", KBList)
-    KBT.Size = UDim2.new(1, 0, 0, 30); KBT.Text = "HotKeys"; KBT.Font = self._Config.FontBold; KBT.TextColor3 = Color3.fromRGB(255, 255, 255); KBT.TextSize = 13; KBT.BackgroundTransparency = 1
+    KBT.Size = UDim2.new(1, 0, 0, 35); KBT.Text = "HotKeys"; KBT.Font = self._Config.FontBold; KBT.TextColor3 = Color3.fromRGB(255, 255, 255); KBT.TextSize = 14; KBT.BackgroundTransparency = 1
     
     local KBContainer = Instance.new("Frame", KBList)
-    KBContainer.Size = UDim2.new(1, 0, 0, 0); KBContainer.Position = UDim2.new(0, 0, 0, 30); KBContainer.AutomaticSize = "Y"; KBContainer.BackgroundTransparency = 1
-    Instance.new("UIListLayout", KBContainer).Padding = UDim.new(0, 2)
+    KBContainer.Size = UDim2.new(1, 0, 0, 0); KBContainer.Position = UDim2.new(0, 0, 0, 35); KBContainer.AutomaticSize = "Y"; KBContainer.BackgroundTransparency = 1
+    Instance.new("UIListLayout", KBContainer).Padding = UDim.new(0, 4)
 
     function Library:UpdateKeybinds()
         for _, v in pairs(KBContainer:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
@@ -98,41 +99,40 @@ function Library:InitHUD()
     -- ПОИСК
     local SearchFrame = Instance.new("Frame", HUD)
     SearchFrame.Name = "SearchBar"
-    SearchFrame.Size = UDim2.new(0, 180, 0, 32); SearchFrame.Position = UDim2.new(0.5, -90, 0.9, 0)
+    SearchFrame.Size = UDim2.new(0, 250, 0, 40); SearchFrame.Position = UDim2.new(0.5, -125, 0.9, 0)
     SearchFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15); SearchFrame.BackgroundTransparency = self._Config.Transparency
     Instance.new("UICorner", SearchFrame); self._Objects.Transparency[SearchFrame] = true
 
     local SearchInput = Instance.new("TextBox", SearchFrame)
-    SearchInput.Size = UDim2.new(1, -10, 1, 0); SearchInput.Position = UDim2.new(0, 5, 0, 0); SearchInput.BackgroundTransparency = 1; SearchInput.Text = ""
-    SearchInput.PlaceholderText = "Поиск: Ctrl + F"; SearchInput.TextColor3 = Color3.fromRGB(200, 200, 200); SearchInput.Font = self._Config.Font; SearchInput.TextSize = 12
+    SearchInput.Size = UDim2.new(1, -20, 1, 0); SearchInput.Position = UDim2.new(0, 10, 0, 0); SearchInput.BackgroundTransparency = 1; SearchInput.Text = ""
+    SearchInput.PlaceholderText = "Поиск: Ctrl + F"; SearchInput.TextColor3 = Color3.fromRGB(255, 255, 255); SearchInput.Font = self._Config.Font; SearchInput.TextSize = 14
+
+    local lastUpdate = 0
+    RS.RenderStepped:Connect(function(dt)
+        lastUpdate = lastUpdate + dt
+        timePill.Text = string.format("<font color='#7864C8'>Time</font> <font color='#555555'>|</font> %s", os.date("%H:%M:%S"))
+        if lastUpdate >= 0.5 then
+            local lp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if lp then local p = lp.Position; posPill.Text = string.format("<font color='#7864C8'>Pos</font> <font color='#555555'>|</font> %d, %d, %d", p.X, p.Y, p.Z) end
+            local ping = 0; pcall(function() ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
+            pingPill.Text = string.format("<font color='#7864C8'>Ms</font> <font color='#555555'>|</font> %d", ping)
+            fpsPill.Text = string.format("<font color='#7864C8'>FPS</font> <font color='#555555'>|</font> %d", math.floor(1/dt))
+            lastUpdate = 0
+        end
+    end)
+
+    UIS.InputBegan:Connect(function(input, gpe)
+        if input.KeyCode == self.ToggleKey then
+            self._Visible = not self._Visible; self._Blur.Enabled = self._Visible
+            for _, v in pairs(HUD:GetChildren()) do if v.Name == "NightWindow" or v.Name == "SearchBar" or v.Name == "KeybindList" then v.Visible = self._Visible end end
+        end
+        if self._Visible and UIS:IsKeyDown(Enum.KeyCode.LeftControl) and input.KeyCode == Enum.KeyCode.F then SearchInput:CaptureFocus() end
+        if not gpe then for name, data in pairs(self._Keybinds) do if input.KeyCode.Name == data.Key then data.Callback() end end end
+    end)
 
     SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
         local query = SearchInput.Text:lower()
         for modName, frame in pairs(self._Objects.Modules) do frame.Visible = modName:lower():find(query) ~= nil end
-    end)
-
-    RS.RenderStepped:Connect(function(dt)
-        timePill.Text = string.format("<font color='#7864C8'>Time</font> <font color='#555555'>|</font> %s", os.date("%H:%M:%S"))
-        local lp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if lp then
-            local p = lp.Position; posPill.Text = string.format("<font color='#7864C8'>Pos</font> <font color='#555555'>|</font> %d, %d, %d", p.X, p.Y, p.Z)
-        end
-        local ping = 0; pcall(function() ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
-        pingPill.Text = string.format("<font color='#7864C8'>Ms</font> <font color='#555555'>|</font> %d", ping)
-        fpsPill.Text = string.format("<font color='#7864C8'>FPS</font> <font color='#555555'>|</font> %d", math.floor(1/dt))
-    end)
-
-    UIS.InputBegan:Connect(function(input, gpe)
-        if not gpe and input.KeyCode == self.ToggleKey then
-            self._Visible = not self._Visible; self._Blur.Enabled = self._Visible
-            for _, v in pairs(HUD:GetChildren()) do if v.Name == "NightWindow" or v.Name == "SearchBar" or v.Name == "KeybindList" then v.Visible = self._Visible end end
-        end
-        -- Обработка биндов модулей
-        if not gpe then
-            for name, data in pairs(self._Keybinds) do
-                if input.KeyCode.Name == data.Key then data.Callback() end
-            end
-        end
     end)
 end
 
@@ -183,7 +183,6 @@ function Library:CreateWindow(name)
         MBtn.MouseButton1Click:Connect(Toggle)
         MBtn.MouseButton2Click:Connect(function() Opened = not Opened; Update() end)
         
-        -- УСТАНОВКА БИНДА ПО КОЛЕСИКУ
         Library._Keybinds[modName] = {Key = "NONE", Callback = Toggle}
         MBtn.MouseButton3Click:Connect(function()
             Binding = true; MBtn.Text = "  [ Нажми клавишу ]"
