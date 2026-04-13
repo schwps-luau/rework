@@ -4,7 +4,6 @@ local Library = {
     Transparency = 0.5,
     ModuleTransparency = 0.85,
     Blur = true,
-    -- Настройки ватермарка
     Watermark = false,
     WatermarkUser = false,
     WatermarkTime = false,
@@ -51,7 +50,6 @@ local function SafeTween(obj, goal, t)
     return tween
 end
 
--- Шахматная анимация закрытия/открытия
 function Library:ToggleMenu()
     self._Visible = not self._Visible
     local screenHeight = 2000 
@@ -65,6 +63,14 @@ function Library:ToggleMenu()
         end
     end
     
+    if self.SearchFrame then
+        if not self._Visible then
+            SafeTween(self.SearchFrame, {Position = UDim2.new(0, self.SearchFrame.Position.X.Offset, 0, -500)})
+        else
+            SafeTween(self.SearchFrame, {Position = UDim2.new(0, self.SearchFrame.Position.X.Offset, 0, -50)}) -- Прячем за экран до вызова Ctrl+F
+        end
+    end
+
     local b = Lighting:FindFirstChild("NightBlur")
     if b then b.Enabled = (self.Blur and self._Visible) end
 end
@@ -73,13 +79,18 @@ function Library:InitHUD()
     if self._Initialized then return end
     self._Initialized = true
 
-    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V15"; self.MainGui = HUD
+    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V16"; self.MainGui = HUD
     local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18
 
-    -- Поиск (Ctrl + F)
+    -- Настройка поиска (Ctrl + F)
+    local SearchX = 40 + (self._Config.WindowWidth * 2) + (self._Config.Spacing * 2)
     local SearchFrame = Instance.new("Frame", HUD)
-    SearchFrame.Size = UDim2.new(0, 220, 0, 35); SearchFrame.Position = UDim2.new(0.5, -110, 0, -50)
-    SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); SearchFrame.BackgroundTransparency = 0.1; Instance.new("UICorner", SearchFrame)
+    SearchFrame.Size = UDim2.new(0, self._Config.WindowWidth, 0, 35)
+    SearchFrame.Position = UDim2.new(0, SearchX, 0, -50) -- Скрыт сверху
+    SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); SearchFrame.BackgroundTransparency = 0.1
+    Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding
+    self.SearchFrame = SearchFrame
+
     local Box = Instance.new("TextBox", SearchFrame); Box.Size = UDim2.new(1,-20,1,0); Box.Position = UDim2.new(0,10,0,0); Box.BackgroundTransparency = 1; Box.PlaceholderText = "Search Modules..."; Box.TextColor3 = Color3.new(1,1,1); Box.Font = self._Config.FontMedium; Box.TextSize = 13
     
     Box:GetPropertyChangedSignal("Text"):Connect(function()
@@ -110,18 +121,15 @@ function Library:InitHUD()
     local m_time, f_time = CreateWMModule(Floor1); local m_pos, f_pos = CreateWMModule(Floor2)
     local m_fps, f_fps = CreateWMModule(Floor2); local m_ping, f_ping = CreateWMModule(Floor2)
 
-    -- Кейбинд лист
     local KBGui = Instance.new("Frame", HUD); KBGui.BackgroundColor3 = Color3.fromRGB(10,10,12); KBGui.Size = UDim2.new(0, 180, 0, 32); KBGui.Position = UDim2.new(1, -200, 0, 20)
     Instance.new("UICorner", KBGui).CornerRadius = self._Config.Rounding
     local KBTitle = Instance.new("TextLabel", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = self._Config.FontBold; KBTitle.TextSize = 13; KBTitle.BackgroundTransparency = 1
     local KBList = Instance.new("Frame", KBGui); KBList.Position = UDim2.new(0, 0, 0, 32); KBList.Size = UDim2.new(1, 0, 0, 0); KBList.BackgroundTransparency = 1
     Instance.new("UIListLayout", KBList).Padding = UDim.new(0, 2); Instance.new("UIPadding", KBList).PaddingLeft = UDim.new(0, 10)
 
-    -- Глобальный цикл (Rainbow, HUD, Reactive Colors)
     local lastFps, fpsTimer = 0, 0
     RunService.RenderStepped:Connect(function(dt)
         if self._Rainbow then self.Accent = Color3.fromHSV(tick() % 4 / 4, 1, 1) end
-        
         local b = Lighting:FindFirstChild("NightBlur")
         if b then b.Enabled = (self.Blur and self._Visible) end
 
@@ -145,7 +153,6 @@ function Library:InitHUD()
         local p = LocalPlayer.Character and LocalPlayer.Character.PrimaryPart and LocalPlayer.Character.PrimaryPart.Position or Vector3.new(0,0,0)
         m_pos.Text = string.format("<font color='#%s'>pos:</font> %.0f, %.0f, %.0f", self.Accent:ToHex(), p.X, p.Y, p.Z)
 
-        -- Реактивные цвета элементов
         for _, win in pairs(self._Windows) do
             win.Frame.BackgroundTransparency = self.Transparency
             win.Title.TextColor3 = self.Accent
@@ -160,7 +167,6 @@ function Library:InitHUD()
             end
         end
 
-        -- Обновление кейбинд листа
         local state = ""
         for n, d in pairs(self._Keybinds) do if d.Key then state = state .. n .. tostring(d.Enabled) end end
         if self._LastKBState ~= state then
@@ -179,12 +185,14 @@ function Library:InitHUD()
         end
     end)
 
-    -- Слушатель глобальных клавиш
     UserInputService.InputBegan:Connect(function(i, g)
         if i.KeyCode == self.ToggleKey then self:ToggleMenu() end
         if not g and i.KeyCode == Enum.KeyCode.F and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-            SafeTween(SearchFrame, {Position = SearchFrame.Position.Y < 0 and UDim2.new(0.5, -110, 0, 20) or UDim2.new(0.5, -110, 0, -50)})
-            if SearchFrame.Position.Y < 0 then Box:CaptureFocus() end
+            -- Fix 186: Сравниваем Offset, а не весь UDim2
+            local isHidden = SearchFrame.Position.Y.Offset < 0
+            local targetY = isHidden and (self._Config.StartY - 45) or -50
+            SafeTween(SearchFrame, {Position = UDim2.new(0, SearchX, 0, targetY)})
+            if isHidden then Box:CaptureFocus() end
         end
         if not g then
             for name, data in pairs(self._Keybinds) do
@@ -257,6 +265,7 @@ function Library:CreateWindow(name)
         Nodes.ChildAdded:Connect(function() Dots.Visible = true end)
 
         local Mod = {}
+        -- Fix 320: Используем локальную ссылку Library
         function Mod:CreateSlider(n, min, max, def, dec, cb)
             local comp = {Type = "Slider"}
             local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 38); f.BackgroundTransparency = 1
@@ -317,7 +326,7 @@ function Library:CreateWindow(name)
             local SatB, SatP, SatG = createBar(UDim2.new(0,0,0,35), ColorSequence.new(Color3.new(1,1,1)))
             local ValB, ValP, ValG = createBar(UDim2.new(0,0,0,50), ColorSequence.new(Color3.new(1,1,1)))
             
-            local RbBtn = Instance.new("TextButton", f); RbBtn.Size = UDim2.new(1, 0, 0, 20); RbBtn.Position = UDim2.new(0, 0, 0, 65); RbBtn.Text = "Rainbow Mode"; RbBtn.BackgroundColor3 = Color3.fromRGB(40,40,45); RbBtn.TextColor3 = Color3.new(1,1,1); RbBtn.Font = self._Config.FontMedium; RbBtn.TextSize = 10; Instance.new("UICorner", RbBtn)
+            local RbBtn = Instance.new("TextButton", f); RbBtn.Size = UDim2.new(1, 0, 0, 20); RbBtn.Position = UDim2.new(0, 0, 0, 65); RbBtn.Text = "Rainbow Mode"; RbBtn.BackgroundColor3 = Color3.fromRGB(40,40,45); RbBtn.TextColor3 = Color3.new(1,1,1); RbBtn.Font = Library._Config.FontMedium; RbBtn.TextSize = 10; Instance.new("UICorner", RbBtn)
             RbBtn.MouseButton1Click:Connect(function() Library._Rainbow = not Library._Rainbow; RbBtn.BackgroundColor3 = Library._Rainbow and Library.Accent or Color3.fromRGB(40,40,45) end)
 
             local function upd()
