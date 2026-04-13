@@ -3,7 +3,7 @@ local Library = {
     ToggleKey = Enum.KeyCode.RightShift,
     Transparency = 0.5,
     ModuleTransparency = 0.85,
-    Blur = false,
+    Blur = true,
     
     Watermark = false,
     WatermarkUser = false,
