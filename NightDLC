@@ -4,7 +4,7 @@ local Library = {
     Transparency = 0.5,
     ModuleTransparency = 0.85,
     Blur = false,
-   
+    
     Watermark = false,
     WatermarkUser = false,
     WatermarkTime = false,
@@ -84,21 +84,22 @@ function Library:ToggleMenu()
     end
 
     local b = Lighting:FindFirstChild("NightBlur")
-    if b then b.Enabled = (self.Blur and self._Visible) end
+    if b then 
+        b.Enabled = (self.Blur and self._Visible)
+    end
 end
 
 function Library:InitHUD()
     if self._Initialized then return end
     self._Initialized = true
 
-    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V22"; self.MainGui = HUD
-    local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18
+    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V23"; self.MainGui = HUD
+    local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18; MenuBlur.Enabled = self.Blur
 
-    -- Поиск строго под 3 табом
     local SearchX = 40 + (2 * (self._Config.WindowWidth + self._Config.Spacing))
     local SearchFrame = Instance.new("Frame", HUD)
     SearchFrame.Size = UDim2.new(0, self._Config.WindowWidth, 0, 35)
-    SearchFrame.Position = UDim2.new(0, SearchX, 0, -100)
+    SearchFrame.Position = UDim2.new(0, SearchX, 0, self._Config.StartY + 45)
     SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20)
     Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding
     self.SearchFrame = SearchFrame
@@ -109,7 +110,6 @@ function Library:InitHUD()
         for _, mod in pairs(self._Modules) do mod.Frame.Visible = mod.Name:lower():find(q) ~= nil end
     end)
 
-    -- Ватермарк система
     local WMMain = Instance.new("Frame", HUD); WMMain.Position = UDim2.new(0, 20, 0, 20); WMMain.BackgroundTransparency = 1; WMMain.Size = UDim2.new(0, 800, 0, 70)
     Instance.new("UIListLayout", WMMain).Padding = UDim.new(0, 6)
     local Floor1 = Instance.new("Frame", WMMain); Floor1.Size = UDim2.new(1, 0, 0, 28); Floor1.BackgroundTransparency = 1; Instance.new("UIListLayout", Floor1).FillDirection = "Horizontal"; Floor1.UIListLayout.Padding = UDim.new(0, 6)
@@ -135,7 +135,6 @@ function Library:InitHUD()
     local m_ping = CreateWMModule(Floor2, "WatermarkPing")
     local m_pos = CreateWMModule(Floor2, "WatermarkCoordinates")
 
-    -- Кейбинд лист
     local KBGui = Instance.new("Frame", HUD); KBGui.BackgroundColor3 = Color3.fromRGB(10,10,12); KBGui.Size = UDim2.new(0, 180, 0, 32); KBGui.Position = UDim2.new(1, -200, 0, 20)
     Instance.new("UICorner", KBGui).CornerRadius = self._Config.Rounding
     local KBTitle = Instance.new("TextButton", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = self._Config.FontBold; KBTitle.TextSize = 13; KBTitle.BackgroundTransparency = 1
@@ -185,7 +184,18 @@ function Library:InitHUD()
 
     UserInputService.InputBegan:Connect(function(i, g)
         if i.KeyCode == self.ToggleKey then self:ToggleMenu() end
-        if not g and i.KeyCode == Enum.KeyCode.F and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        if g then return end
+        
+        -- Кейбинд поиск и активация
+        for name, data in pairs(self._Keybinds) do
+            if data.Key and i.KeyCode == data.Key then
+                data.Enabled = not data.Enabled
+                data.Callback(data.Enabled)
+                self._RebuildKB()
+            end
+        end
+
+        if i.KeyCode == Enum.KeyCode.F and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
             local isHidden = SearchFrame.Position.Y.Offset < 0
             SafeTween(SearchFrame, {Position = UDim2.new(0, SearchX, 0, isHidden and (self._Config.StartY + 45) or -100)})
             if isHidden then Box:CaptureFocus() end
@@ -193,15 +203,17 @@ function Library:InitHUD()
     end)
 
     local function RebuildKBList()
+        local count = 0
         for _, v in pairs(KBList:GetChildren()) do if v:IsA("TextLabel") then v:Destroy() end end
         for name, data in pairs(self._Keybinds) do
             if data.Key then
+                count = count + 1
                 local l = Instance.new("TextLabel", KBList); l.Size = UDim2.new(1, 0, 0, 20); l.BackgroundTransparency = 1
                 l.Text = string.format("[%s] %s", data.Key.Name:gsub("Button3", "MB3"), name); l.Font = self._Config.FontBold; l.TextSize = 11; l.TextXAlignment = 0
                 l:SetAttribute("IsActive", data.Enabled); l.TextColor3 = data.Enabled and self.Accent or Color3.fromRGB(150, 150, 150)
             end
         end
-        SafeTween(KBGui, {Size = UDim2.new(0, 180, 0, 35 + (#KBList:GetChildren() * 22))})
+        SafeTween(KBGui, {Size = UDim2.new(0, 180, 0, 35 + (count * 22))})
     end
     self._RebuildKB = RebuildKBList
 end
@@ -231,10 +243,12 @@ function Library:CreateWindow(name)
         local Nodes = Instance.new("Frame", MFrame); Nodes.Position = UDim2.new(0, 0, 0, Library._Config.ModuleHeight); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1; Instance.new("UIListLayout", Nodes).Padding = UDim.new(0, 6); Nodes.UIListLayout.HorizontalAlignment = "Center"
 
         Library._Keybinds[modName] = {Enabled = false, Key = nil, Callback = function(v) modData.Enabled = v; callback(v) end}
-        MBtn.MouseButton1Click:Connect(function() modData.Enabled = not modData.Enabled; Library._Keybinds[modName].Callback(modData.Enabled) end)
+        MBtn.MouseButton1Click:Connect(function() modData.Enabled = not modData.Enabled; Library._Keybinds[modName].Enabled = modData.Enabled; Library._Keybinds[modName].Callback(modData.Enabled); Library._RebuildKB() end)
         MBtn.MouseButton2Click:Connect(function() if not Dots.Visible then return end modData.Opened = not modData.Opened; local targetH = modData.Opened and (Library._Config.ModuleHeight + Nodes.UIListLayout.AbsoluteContentSize.Y + 10) or Library._Config.ModuleHeight; SafeTween(MFrame, {Size = UDim2.new(1, -12, 0, targetH)}, 0.4) end)
         MBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton3 then MBtn.Text = "  " .. modName .. " [?]" local conn; conn = UserInputService.InputBegan:Connect(function(i, g) if not g then Library._Keybinds[modName].Key = i.KeyCode; MBtn.Text = "  " .. modName; Library._RebuildKB(); conn:Disconnect() end end) end end)
         table.insert(Library._Modules, modData)
+        
+        -- ТЕ САМЫЕ ТОЧКИ
         Nodes.ChildAdded:Connect(function() Dots.Visible = true end)
 
         local Mod = {}
