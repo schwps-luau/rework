@@ -1,9 +1,10 @@
 local Library = {
     Accent = Color3.fromRGB(120, 100, 200),
     ToggleKey = Enum.KeyCode.RightShift,
-    TotalWindows = 5, -- Возвращено
+    TotalWindows = 5,
     _Config = {
-        WindowWidth = 230, -- Возвращено
+        WindowWidth = 230,
+        StartY = 220,
         Spacing = 15,
         Transparency = 0.6,
         Font = Enum.Font.GothamMedium,
@@ -22,6 +23,7 @@ local TS = game:GetService("TweenService")
 local RS = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
+local Players = game:GetService("Players")
 
 local function SafeTween(obj, goal)
     if not obj then return end
@@ -33,21 +35,36 @@ function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "NightV2_HUD"; self.MainGui = HUD
 
     local WatermarkArea = Instance.new("Frame", HUD); WatermarkArea.Size = UDim2.new(1, 0, 0, 100); WatermarkArea.Position = UDim2.new(0, 20, 0, 20); WatermarkArea.BackgroundTransparency = 1
-    Instance.new("UIListLayout", WatermarkArea).FillDirection = "Horizontal"; WatermarkArea.UIListLayout.Padding = UDim.new(0, 8)
+    local WL = Instance.new("UIListLayout", WatermarkArea); WL.FillDirection = "Horizontal"; WL.Padding = UDim.new(0, 8)
 
-    local function CreatePill(label, text)
+    local function CreatePill(label, text, isTitle)
         local f = Instance.new("Frame", WatermarkArea); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); f.BackgroundTransparency = 0.5; f.AutomaticSize = "XY"
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
         local p = Instance.new("UIPadding", f); p.PaddingLeft = UDim.new(0, 10); p.PaddingRight = UDim.new(0, 10)
-        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(0, 0, 0, 24); l.AutomaticSize = "X"; l.RichText = true; l.Text = ""; l.TextColor3 = Color3.fromRGB(220, 220, 220); l.Font = self._Config.Font; l.TextSize = 12; l.BackgroundTransparency = 1
+        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(0, 0, 0, 24); l.AutomaticSize = "X"; l.RichText = true
+        l.Text = isTitle and ("<font color='#7864C8'>Night</font> DLC") or string.format("<font color='#7864C8'>%s</font> <font color='#555555'>|</font> %s", label, text)
+        l.TextColor3 = Color3.fromRGB(220, 220, 220); l.Font = self._Config.Font; l.TextSize = 12; l.BackgroundTransparency = 1
         return l
     end
 
-    local fpsPill = CreatePill("FPS", "0"); local pingPill = CreatePill("Ms", "0")
+    local titlePill = CreatePill("", "", true)
+    local fpsPill = CreatePill("FPS", "0")
+    local pingPill = CreatePill("Ms", "0")
+    local posPill = CreatePill("Pos", "0, 0, 0")
 
+    local lastUpdate = 0
     RS.RenderStepped:Connect(function(dt)
-        fpsPill.Text = string.format("<font color='#7864C8'>FPS</font> <font color='#555555'>|</font> %d", math.floor(1/dt))
-        pingPill.Text = string.format("<font color='#7864C8'>Ms</font> <font color='#555555'>|</font> %d", math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()))
+        lastUpdate = lastUpdate + dt
+        if lastUpdate >= 0.5 then
+            lastUpdate = 0
+            fpsPill.Text = string.format("<font color='#7864C8'>FPS</font> <font color='#555555'>|</font> %d", math.floor(1/dt))
+            pingPill.Text = string.format("<font color='#7864C8'>Ms</font> <font color='#555555'>|</font> %d", math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()))
+            local lp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if lp then
+                local pos = lp.Position
+                posPill.Text = string.format("<font color='#7864C8'>Pos</font> <font color='#555555'>|</font> %d, %d, %d", pos.X, pos.Y, pos.Z)
+            end
+        end
     end)
 
     local KBGui = Instance.new("Frame", HUD); KBGui.Name = "KeybindList"; KBGui.Size = UDim2.new(0, 140, 0, 28); KBGui.Position = UDim2.new(1, -160, 0, 20); KBGui.BackgroundColor3 = Color3.fromRGB(25, 25, 25); KBGui.BackgroundTransparency = 0.5; Instance.new("UICorner", KBGui)
@@ -56,15 +73,13 @@ function Library:InitHUD()
 
     RS.RenderStepped:Connect(function()
         for _, v in pairs(KBList:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
-        local count = 0
         for name, data in pairs(self._Keybinds) do
             if data.Enabled then
-                count = count + 1
                 local f = Instance.new("Frame", KBList); f.Size = UDim2.new(1, 0, 0, 24); f.BackgroundColor3 = Color3.fromRGB(25, 25, 25); f.BackgroundTransparency = 0.5; Instance.new("UICorner", f)
                 local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1, -10, 1, 0); l.Position = UDim2.new(0, 5, 0, 0); l.RichText = true; l.Text = string.format("<font color='#7864C8'>%s</font> <font color='#555555'>|</font> %s", name, data.Key); l.Font = self._Config.Font; l.TextSize = 11; l.TextColor3 = Color3.fromRGB(255, 255, 255); l.BackgroundTransparency = 1; l.TextXAlignment = "Left"
             end
         end
-        KBGui.Visible = count > 0
+        KBGui.Visible = #KBList:GetChildren() > 1
     end)
 end
 
@@ -74,7 +89,10 @@ function Library:CreateWindow(name)
     
     self.TotalWindows = self.TotalWindows + 1
     local Main = Instance.new("Frame", self.MainGui)
-    Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 40); Main.Position = UDim2.new(0, self._CurrentX, 0, 100); Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Main.BackgroundTransparency = 0.2; Instance.new("UICorner", Main)
+    Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 40)
+    -- Используем StartY из конфига
+    Main.Position = UDim2.new(0, self._CurrentX, 0, self._Config.StartY) 
+    Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25); Main.BackgroundTransparency = 0.2; Instance.new("UICorner", Main)
     
     self._CurrentX = self._CurrentX + self._Config.WindowWidth + self._Config.Spacing
 
@@ -114,7 +132,6 @@ function Library:CreateWindow(name)
 
         local Mod = {}
         
-        -- ВСЕ МЕТОДЫ ТЕПЕРЬ ВНУТРИ Mod --
         function Mod:CreateButton(n, cb)
             local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.9, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(45, 45, 45); b.Text = n; b.Font = Library._Config.Font; b.TextColor3 = Color3.fromRGB(220, 220, 220); b.TextSize = 11; Instance.new("UICorner", b)
             b.MouseButton1Click:Connect(function() b.BackgroundColor3 = Library.Accent; task.wait(0.1); SafeTween(b, {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}); cb() end); return Mod
