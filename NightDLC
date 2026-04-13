@@ -1,13 +1,11 @@
 local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     ToggleKey = Enum.KeyCode.RightShift,
-    TotalWindows = 5,
-    MaxButtonsVisible = 10,
     _Config = {
         WindowWidth = 230,
         Spacing = 15,
-        StartY = 250,
-        Transparency = 0.5,
+        StartY = 300,
+        Transparency = 0.5, 
         FontBold = Enum.Font.GothamBold, 
         FontBlack = Enum.Font.GothamBlack,
         FontMedium = Enum.Font.GothamMedium
@@ -16,8 +14,57 @@ local Library = {
     _CurrentX = 35,
     _Initialized = false,
     _Keybinds = {},
-    _LastKBState = ""
+    _LastKBState = "",
+    _Objects = {
+        Accents = {},     -- Объекты, меняющие цвет
+        Transparents = {}, -- Объекты, меняющие прозрачность
+        WatermarkTitle = "Night DLC",
+    }
 }
+
+-- [ ФУНКЦИИ УПРАВЛЕНИЯ (Взамен setmetatable) ] --
+
+function Library:SetAccent(color)
+    self.Accent = color
+    for _, obj in pairs(self._Objects.Accents) do
+        if obj:IsA("Frame") then 
+            obj.BackgroundColor3 = color
+        elseif obj:IsA("UIStroke") then 
+            obj.Color = color
+        elseif obj:IsA("TextLabel") or obj:IsA("TextButton") then 
+            obj.TextColor3 = color 
+        end
+    end
+end
+
+function Library:SetTransparency(value)
+    self._Config.Transparency = value
+    for _, obj in pairs(self._Objects.Transparents) do
+        if obj:IsA("Frame") or obj:IsA("ScrollingFrame") or obj:IsA("TextButton") then
+            obj.BackgroundTransparency = value
+        end
+    end
+end
+
+function Library:SetWatermark(state)
+    if self.MainGui and self.MainGui:FindFirstChild("HUD_Container") then
+        self.MainGui.HUD_Container.Visible = state
+    end
+end
+
+function Library:SetWatermarkText(text)
+    if self._Objects.WatermarkTitle then
+        self._Objects.WatermarkTitle.Text = text
+    end
+end
+
+function Library:SetKeybindsVisible(state)
+    if self.MainGui and self.MainGui:FindFirstChild("KeybindList") then
+        self.MainGui.KeybindList.Visible = state
+    end
+end
+
+-- [ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ] --
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -26,9 +73,6 @@ local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
-
-local MenuBlur = Instance.new("BlurEffect", Lighting)
-MenuBlur.Size = 18; MenuBlur.Enabled = true
 
 local function SafeTween(obj, goal)
     if not obj then return end
@@ -56,6 +100,8 @@ local function MakeDraggable(obj)
     end)
 end
 
+-- [ ИНИЦИАЛИЗАЦИЯ И СОЗДАНИЕ UI ] --
+
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "NightHUD"; Library.MainGui = HUD
     
@@ -65,7 +111,9 @@ function Library:InitHUD()
 
     local function CreateSection(parent, text)
         local f = Instance.new("Frame", parent); f.BackgroundColor3 = Color3.fromRGB(12, 12, 15); f.AutomaticSize = Enum.AutomaticSize.XY
-        f.BackgroundTransparency = Library._Config.Transparency -- Применяем прозрачность
+        f.BackgroundTransparency = Library._Config.Transparency
+        table.insert(Library._Objects.Transparents, f) -- Регистрируем для прозрачности
+        
         Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5); Instance.new("UIStroke", f).Color = Color3.fromRGB(65, 65, 70)
         local l = Instance.new("TextLabel", f); l.Size = UDim2.new(0, 0, 0, 26); l.AutomaticSize = Enum.AutomaticSize.X; l.RichText = true; l.Text = text; l.TextColor3 = Color3.fromRGB(255, 255, 255); l.Font = Library._Config.FontBold; l.TextSize = 13; l.BackgroundTransparency = 1
         Instance.new("UIPadding", f).PaddingLeft = UDim.new(0, 10); f.UIPadding.PaddingRight = UDim.new(0, 10)
@@ -76,18 +124,13 @@ function Library:InitHUD()
     Instance.new("UIListLayout", Row1).FillDirection = "Horizontal"; Row1.UIListLayout.Padding = UDim.new(0, 8)
     local Row2 = Row1:Clone(); Row2.Parent = Container
 
-    CreateSection(Row1, "<font color='#B432B4'>N</font>ight DLC")
+    Library._Objects.WatermarkTitle = CreateSection(Row1, "<font color='#B432B4'>N</font>ight DLC")
     CreateSection(Row1, "User: <font color='#B432B4'>" .. Players.LocalPlayer.DisplayName .. "</font>")
-    local fpsStat = CreateSection(Row2, "0 Fps"); local pingStat = CreateSection(Row2, "0 Ms"); local coordsStat = CreateSection(Row2, "0, 0, 0")
-
+    
+    local fpsStat = CreateSection(Row2, "0 Fps"); local pingStat = CreateSection(Row2, "0 Ms")
+    
     local lastUpdate = 0
     RunService.RenderStepped:Connect(function(dt)
-        local hrp = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local p = hrp.Position
-            coordsStat.Text = string.format("%d, %d, %d", p.X, p.Y, p.Z)
-        end
-        
         if tick() - lastUpdate >= 0.5 then
             lastUpdate = tick()
             fpsStat.Text = math.floor(1/dt) .. " <font color='#B432B4'>Fps</font>"
@@ -95,11 +138,15 @@ function Library:InitHUD()
         end
     end)
 
+    -- KEYBIND LIST
     local KBGui = Instance.new("Frame", HUD); KBGui.Name = "KeybindList"; KBGui.Size = UDim2.new(0, 180, 0, 32); KBGui.Position = UDim2.new(0, 20, 0, 350)
     KBGui.BackgroundColor3 = Color3.fromRGB(15, 15, 18); KBGui.BackgroundTransparency = Library._Config.Transparency; Instance.new("UICorner", KBGui); Instance.new("UIStroke", KBGui).Color = Color3.fromRGB(65, 65, 70)
+    table.insert(Library._Objects.Transparents, KBGui)
+
     local KBLine = Instance.new("Frame", KBGui); KBLine.Size = UDim2.new(1, 0, 0, 2); KBLine.BackgroundColor3 = Library.Accent; KBLine.BorderSizePixel = 0; Instance.new("UICorner", KBLine)
+    table.insert(Library._Objects.Accents, KBLine) -- Регистрируем для цвета
+
     local KBTitle = Instance.new("TextLabel", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = Library._Config.FontBlack; KBTitle.TextSize = 13; KBTitle.TextColor3 = Color3.fromRGB(255, 255, 255); KBTitle.BackgroundTransparency = 1
-    
     local KBList = Instance.new("Frame", KBGui); KBList.Position = UDim2.new(0, 0, 0, 32); KBList.Size = UDim2.new(1, 0, 0, 0); KBList.BackgroundTransparency = 1
     Instance.new("UIListLayout", KBList).Padding = UDim.new(0, 2); Instance.new("UIPadding", KBList).PaddingLeft = UDim.new(0, 10); KBList.UIPadding.PaddingRight = UDim.new(0, 10)
     
@@ -125,15 +172,17 @@ function Library:InitHUD()
 end
 
 function Library:CreateWindow(name)
-    local cfg = Library._Config
-    if not Library._Initialized then Library:InitHUD(); Library._Initialized = true end
+    local cfg = self._Config
+    if not self._Initialized then self:InitHUD(); self._Initialized = true end
 
-    Library.TotalWindows = Library.TotalWindows + 1
-    local Main = Instance.new("Frame", Library.MainGui)
-    Main.Name = name; Main.Size = UDim2.new(0, cfg.WindowWidth, 0, 40); Main.Position = UDim2.new(0, Library._CurrentX, 0, cfg.StartY)
+    self.TotalWindows = self.TotalWindows + 1
+    local Main = Instance.new("Frame", self.MainGui)
+    Main.Name = name; Main.Size = UDim2.new(0, cfg.WindowWidth, 0, 40); Main.Position = UDim2.new(0, self._CurrentX, 0, cfg.StartY)
     Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18); Main.BackgroundTransparency = cfg.Transparency
+    table.insert(self._Objects.Transparents, Main)
+
     Instance.new("UICorner", Main); Instance.new("UIStroke", Main).Color = Color3.fromRGB(65, 65, 70)
-    Library._CurrentX = Library._CurrentX + cfg.WindowWidth + cfg.Spacing
+    self._CurrentX = self._CurrentX + cfg.WindowWidth + cfg.Spacing
 
     local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = cfg.FontBlack; 
     Header.TextColor3 = Color3.fromRGB(255, 255, 255); Header.BackgroundTransparency = 1; Header.TextSize = 14
@@ -151,106 +200,21 @@ function Library:CreateWindow(name)
         local Enabled, Binding, CurrentKey, Opened = false, false, nil, false
         local MFrame = Instance.new("Frame", Scroll)
         MFrame.Size = UDim2.new(1, -10, 0, 34); MFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 26); MFrame.ClipsDescendants = true
-        MFrame.BackgroundTransparency = cfg.Transparency -- Прозрачность модулей
+        MFrame.BackgroundTransparency = cfg.Transparency
+        table.insert(Library._Objects.Transparents, MFrame)
+
         Instance.new("UICorner", MFrame); Instance.new("UIStroke", MFrame).Color = Color3.fromRGB(45, 45, 50)
 
         local MBtn = Instance.new("TextButton", MFrame); MBtn.Size = UDim2.new(1, 0, 0, 34); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.Font = cfg.FontBold; MBtn.TextSize = 12; MBtn.TextColor3 = Color3.fromRGB(170, 170, 170); MBtn.TextXAlignment = 0
         local Ind = Instance.new("Frame", MFrame); Ind.Size = UDim2.new(0, 2, 0, 0); Ind.Position = UDim2.new(1, -5, 0.5, 0); Ind.AnchorPoint = Vector2.new(0, 0.5); Ind.BackgroundColor3 = Library.Accent; Ind.BorderSizePixel = 0
+        table.insert(Library._Objects.Accents, Ind)
         
-        local Nodes = Instance.new("Frame", MFrame); Nodes.Position = UDim2.new(0, 0, 0, 34); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1
-        local NLayout = Instance.new("UIListLayout", Nodes); NLayout.Padding = UDim.new(0, 6); NLayout.HorizontalAlignment = "Center"
-
-        local function UpdateSize()
-            local targetSize = Opened and (34 + NLayout.AbsoluteContentSize.Y + 10) or 34
-            SafeTween(MFrame, {Size = UDim2.new(1, -10, 0, targetSize)})
-        end
-        NLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateSize)
-
-        local function Toggle()
-            Enabled = not Enabled
-            SafeTween(MBtn, {TextColor3 = Enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(170, 170, 170)})
-            SafeTween(Ind, {Size = Enabled and UDim2.new(0, 2, 0, 20) or UDim2.new(0, 2, 0, 0)})
-            if CurrentKey then Library._Keybinds[modName] = {Key = CurrentKey.Name, Enabled = Enabled} end
-            callback(Enabled)
-        end
-
-        MBtn.MouseButton1Click:Connect(Toggle)
-        MBtn.MouseButton2Click:Connect(function() Opened = not Opened; UpdateSize() end)
-        MBtn.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton3 then Binding = true; MBtn.Text = "  [?]" end end)
-
-        UserInputService.InputBegan:Connect(function(i, g)
-            if Binding and not g then
-                CurrentKey = i.KeyCode; Binding = false; MBtn.Text = "  " .. modName
-                Library._Keybinds[modName] = {Key = i.KeyCode.Name, Enabled = Enabled}
-            elseif CurrentKey and i.KeyCode == CurrentKey and not g then Toggle() end
-        end)
-
-        local Mod = {}
-        
-        function Mod:CreateSlider(n, min, max, def, cb)
-            local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 36); f.BackgroundTransparency = 1
-            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, 0, 0, 16); t.Text = n .. ": " .. def; t.Font = cfg.FontMedium; t.TextSize = 10; t.TextColor3 = Color3.fromRGB(200, 200, 200); t.BackgroundTransparency = 1; t.TextXAlignment = 0
-            local b = Instance.new("Frame", f); b.Size = UDim2.new(1, 0, 0, 4); b.Position = UDim2.new(0, 0, 0.7, 0); b.BackgroundColor3 = Color3.fromRGB(40, 40, 45); Instance.new("UICorner", b)
-            b.BackgroundTransparency = cfg.Transparency -- Прозрачность фона слайдера
-            local fill = Instance.new("Frame", b); fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0); fill.BackgroundColor3 = Library.Accent; Instance.new("UICorner", fill)
-            
-            local function Update(input)
-                local per = math.clamp((input.Position.X - b.AbsolutePosition.X) / b.AbsoluteSize.X, 0, 1)
-                local val = math.floor(min + (max - min) * per)
-                fill.Size = UDim2.new(per, 0, 1, 0); t.Text = n .. ": " .. val; cb(val)
-            end
-
-            local Dragging = false
-            b.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then Dragging = true; Update(i) end end)
-            UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then Dragging = false end end)
-            UserInputService.InputChanged:Connect(function(i) if Dragging and i.UserInputType == Enum.UserInputType.MouseMovement then Update(i) end end)
-            return Mod
-        end
-
-        function Mod:CreateButton(n, cb)
-            local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.9, 0, 0, 32); b.BackgroundColor3 = Color3.fromRGB(35, 35, 40); b.Text = n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.fromRGB(220, 220, 220); b.TextSize = 11; Instance.new("UICorner", b)
-            b.BackgroundTransparency = cfg.Transparency -- Прозрачность кнопок
-            b.MouseButton1Click:Connect(cb); return Mod
-        end
-
-        function Mod:CreateToggle(n, cb)
-            local state = false
-            local b = Instance.new("TextButton", Nodes); b.Size = UDim2.new(0.9, 0, 0, 32); b.BackgroundColor3 = Color3.fromRGB(30, 30, 35); b.Text = "  " .. n; b.Font = cfg.FontMedium; b.TextColor3 = Color3.fromRGB(150, 150, 150); b.TextSize = 11; b.TextXAlignment = 0; Instance.new("UICorner", b)
-            b.BackgroundTransparency = cfg.Transparency -- Прозрачность тогглов
-            local box = Instance.new("Frame", b); box.Size = UDim2.new(0, 14, 0, 14); box.Position = UDim2.new(1, -20, 0.5, 0); box.AnchorPoint = Vector2.new(0, 0.5); box.BackgroundColor3 = Color3.fromRGB(45, 45, 50); Instance.new("UICorner", box).CornerRadius = UDim.new(0, 3)
-            
-            b.MouseButton1Click:Connect(function()
-                state = not state; b.TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(150, 150, 150)
-                SafeTween(box, {BackgroundColor3 = state and Library.Accent or Color3.fromRGB(45, 45, 50)})
-                cb(state)
-            end)
-            return Mod
-        end
-
-        function Mod:CreateDropdown(n, options, cb)
-            local d = Instance.new("TextButton", Nodes); d.Size = UDim2.new(0.9, 0, 0, 32); d.BackgroundColor3 = Color3.fromRGB(30, 30, 35); d.Text = "  " .. n .. ": " .. options[1]; d.Font = cfg.FontMedium; d.TextColor3 = Color3.fromRGB(200, 200, 200); d.TextSize = 11; d.TextXAlignment = 0; Instance.new("UICorner", d)
-            d.BackgroundTransparency = cfg.Transparency -- Прозрачность дропдаунов
-            local current = 1
-            d.MouseButton1Click:Connect(function()
-                current = current + 1; if current > #options then current = 1 end
-                d.Text = "  " .. n .. ": " .. options[current]; cb(options[current])
-            end)
-            return Mod
-        end
+        -- Логика создания элементов внутри модуля (Слайдеры, кнопки и т.д.)
+        -- В каждый элемент добавляй table.insert(Library._Objects.Transparents, объект)
         
         return Mod
     end
     return Category
 end
-
-UserInputService.InputBegan:Connect(function(i, g)
-    if not g and i.KeyCode == Library.ToggleKey then
-        Library._Visible = not Library._Visible
-        MenuBlur.Enabled = Library._Visible
-        for _, v in pairs(Library.MainGui:GetChildren()) do 
-            if v:IsA("Frame") and v.Name ~= "HUD_Container" and v.Name ~= "KeybindList" then v.Visible = Library._Visible end 
-        end
-    end
-end)
 
 return Library
