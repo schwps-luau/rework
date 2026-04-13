@@ -6,7 +6,7 @@ local Library = {
         StartY = 220,
         Spacing = 10,
         ModuleHeight = 38,
-        Transparency = 0.5,
+        Transparency = 0.25,
         Font = Enum.Font.GothamMedium,
         FontBold = Enum.Font.GothamBold
     },
@@ -30,7 +30,7 @@ end
 
 function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui)
-    HUD.Name = "NightDLC_Monolith"
+    HUD.Name = "NightDLC_Legacy_Final"
     HUD.IgnoreGuiInset = true
     HUD.ResetOnSpawn = false
     self.MainGui = HUD
@@ -38,10 +38,10 @@ function Library:InitHUD()
     local Blur = Instance.new("BlurEffect", Lighting)
     Blur.Size = 18; Blur.Enabled = self._Visible
 
-    -- ВАТЕРМАРК (ДВУХЭТАЖНЫЙ)
+    -- ВАТЕРМАРК (СТАРЫЙ ДВУХЭТАЖНЫЙ СТИЛЬ)
     local WM = Instance.new("Frame", HUD)
     WM.Size = UDim2.new(0, 200, 0, 80); WM.Position = UDim2.new(0, 25, 0, 35); WM.BackgroundTransparency = 1
-    Instance.new("UIListLayout", WM).Padding = UDim.new(0, 8)
+    local WL = Instance.new("UIListLayout", WM); WL.Padding = UDim.new(0, 10)
 
     local function CreatePill(label, text, parent)
         local f = Instance.new("Frame", parent)
@@ -49,7 +49,7 @@ function Library:InitHUD()
         f.AutomaticSize = "XY"; Instance.new("UICorner", f).CornerRadius = UDim.new(0, 5)
         local p = Instance.new("UIPadding", f); p.PaddingLeft = UDim.new(0, 12); p.PaddingRight = UDim.new(0, 12)
         local l = Instance.new("TextLabel", f)
-        l.Size = UDim2.new(0, 0, 0, 28); l.AutomaticSize = "X"; l.RichText = true
+        l.Size = UDim2.new(0, 0, 0, 30); l.AutomaticSize = "X"; l.RichText = true
         l.Text = label == "TITLE" and "<font color='#7864C8'>Night</font> DLC" or string.format("<font color='#7864C8'>%s</font> <font color='#555555'>|</font> %s", label, text)
         l.TextColor3 = Color3.fromRGB(230, 230, 230); l.Font = self._Config.Font; l.TextSize = 14; l.BackgroundTransparency = 1
         return l
@@ -59,11 +59,11 @@ function Library:InitHUD()
     CreatePill("TITLE", "", R1)
 
     local R2 = Instance.new("Frame", WM); R2.AutomaticSize = "XY"; R2.BackgroundTransparency = 1
-    Instance.new("UIListLayout", R2).FillDirection = "Horizontal"; R2.UIListLayout.Padding = UDim.new(0, 8)
+    local RL2 = Instance.new("UIListLayout", R2); RL2.FillDirection = "Horizontal"; RL2.Padding = UDim.new(0, 8)
     local fpsPill = CreatePill("FPS", "0", R2)
     local timePill = CreatePill("Time", "00:00:00", R2)
 
-    -- КЕЙБИНД ЛИСТ
+    -- КЕЙБИНД ЛИСТ (АКЦЕНТ-ЦВЕТ)
     local KBList = Instance.new("Frame", HUD)
     KBList.Size = UDim2.new(0, 170, 0, 0); KBList.AutomaticSize = "Y"
     KBList.Position = UDim2.new(1, -190, 0, 40); KBList.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
@@ -87,11 +87,11 @@ function Library:InitHUD()
         end
     end
 
-    local lastFpsUpdate = 0
+    local lastUpdate = 0
     RS.RenderStepped:Connect(function(dt)
-        if tick() - lastFpsUpdate >= 0.5 then
+        if tick() - lastUpdate >= 0.5 then
             fpsPill.Text = string.format("<font color='#7864C8'>FPS</font> <font color='#555555'>|</font> %d", math.floor(1/dt))
-            lastFpsUpdate = tick()
+            lastUpdate = tick()
         end
         timePill.Text = string.format("<font color='#7864C8'>Time</font> <font color='#555555'>|</font> %s", os.date("%H:%M:%S"))
     end)
@@ -143,7 +143,7 @@ function Library:CreateWindow(name)
         local ConfigContainer = Instance.new("Frame", MFrame)
         ConfigContainer.Position = UDim2.new(0, 0, 0, Library._Config.ModuleHeight)
         ConfigContainer.Size = UDim2.new(1, 0, 0, 0); ConfigContainer.AutomaticSize = "Y"; ConfigContainer.BackgroundTransparency = 1
-        Instance.new("UIListLayout", ConfigContainer).Padding = UDim.new(0, 5)
+        local CL = Instance.new("UIListLayout", ConfigContainer); CL.Padding = UDim.new(0, 5); CL.HorizontalAlignment = "Center"
 
         local function UpdateSize()
             local targetHeight = Opened and (Library._Config.ModuleHeight + ConfigContainer.AbsoluteSize.Y + 10) or Library._Config.ModuleHeight
