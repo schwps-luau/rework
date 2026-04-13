@@ -11,7 +11,7 @@ local Library = {
         FontBold = Enum.Font.GothamBold
     },
     _Visible = true,
-    _CurrentX = 5,
+    _CurrentX = 10,
     _Initialized = false,
     _Keybinds = {},
     _Objects = { Accents = {}, Windows = {} }, -- Для динамического изменения
