@@ -2,19 +2,19 @@ local Library = {
     Accent = Color3.fromRGB(180, 50, 180),
     ToggleKey = Enum.KeyCode.RightShift,
     _Config = {
-        WindowWidth = 230,
-        ModuleHeight = 32,
-        Spacing = 15,
-        StartY = 160,
+        WindowWidth = 240,
+        ModuleHeight = 38,
+        Spacing = 10,
+        StartY = 220,
         Transparency = 0.5, 
         FontBold = Enum.Font.GothamBold, 
         FontMedium = Enum.Font.GothamMedium,
         Rounding = UDim.new(0, 10)
     },
     _Visible = true,
-    _CurrentX = 40,
+    _CurrentX = 20,
     _Initialized = false,
-    _Keybinds = {}, -- { [Name] = {Key, Enabled} }
+    _Keybinds = {},
     _Modules = {},
 }
 
