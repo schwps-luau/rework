@@ -4,7 +4,7 @@ local Library = {
     Transparency = 0.5,
     ModuleTransparency = 0.85,
     Blur = true,
-    -- Настройки видимости
+    -- Настройки ватермарка
     Watermark = false,
     WatermarkUser = false,
     WatermarkTime = false,
@@ -28,6 +28,7 @@ local Library = {
     _Windows = {},
     _Visible = true,
     _CurrentX = 20,
+    _Rainbow = false,
     _LastKBState = ""
 }
 
@@ -44,47 +45,48 @@ local LocalPlayer = Players.LocalPlayer
 
 local function SafeTween(obj, goal, t)
     if not obj then return end
-    TweenService:Create(obj, TweenInfo.new(t or 0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal):Play()
+    local info = TweenInfo.new(t or 0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(obj, info, goal)
+    tween:Play()
+    return tween
 end
 
-function Library:CreateStyledFrame(parent, size, pos)
-    local f = Instance.new("Frame", parent)
-    f.Size = size or UDim2.new(0, 100, 0, 30); f.Position = pos or UDim2.new(0,0,0,0)
-    f.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
-    Instance.new("UICorner", f).CornerRadius = self._Config.Rounding
-    return f
-end
+-- Шахматная анимация закрытия/открытия
+function Library:ToggleMenu()
+    self._Visible = not self._Visible
+    local screenHeight = 2000 
 
-local function MakeDraggable(obj)
-    local dragging, dragStart, startPos
-    obj.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true; dragStart = input.Position; startPos = obj.Position
+    for i, win in pairs(self._Windows) do
+        if not self._Visible then
+            local targetY = (i % 2 == 0) and screenHeight or -screenHeight
+            SafeTween(win.Frame, {Position = UDim2.new(0, win.Frame.Position.X.Offset, 0, targetY)})
+        else
+            SafeTween(win.Frame, {Position = UDim2.new(0, win.Frame.Position.X.Offset, 0, self._Config.StartY)})
         end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+    end
+    
+    local b = Lighting:FindFirstChild("NightBlur")
+    if b then b.Enabled = (self.Blur and self._Visible) end
 end
 
 function Library:InitHUD()
     if self._Initialized then return end
     self._Initialized = true
 
-    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V12"; self.MainGui = HUD
-    local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Size = 0; MenuBlur.Enabled = self.Blur
-    
-    local MenuContainer = Instance.new("CanvasGroup", HUD)
-    MenuContainer.Size = UDim2.new(1, 0, 1, 0); MenuContainer.BackgroundTransparency = 1; MenuContainer.GroupTransparency = 1
-    self.MenuContainer = MenuContainer
+    local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V15"; self.MainGui = HUD
+    local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18
 
-    task.spawn(function()
-        SafeTween(MenuContainer, {GroupTransparency = 0}, 0.6)
-        if self.Blur then SafeTween(MenuBlur, {Size = 18}, 0.6) end
+    -- Поиск (Ctrl + F)
+    local SearchFrame = Instance.new("Frame", HUD)
+    SearchFrame.Size = UDim2.new(0, 220, 0, 35); SearchFrame.Position = UDim2.new(0.5, -110, 0, -50)
+    SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); SearchFrame.BackgroundTransparency = 0.1; Instance.new("UICorner", SearchFrame)
+    local Box = Instance.new("TextBox", SearchFrame); Box.Size = UDim2.new(1,-20,1,0); Box.Position = UDim2.new(0,10,0,0); Box.BackgroundTransparency = 1; Box.PlaceholderText = "Search Modules..."; Box.TextColor3 = Color3.new(1,1,1); Box.Font = self._Config.FontMedium; Box.TextSize = 13
+    
+    Box:GetPropertyChangedSignal("Text"):Connect(function()
+        local q = Box.Text:lower()
+        for _, mod in pairs(self._Modules) do 
+            mod.Frame.Visible = mod.Name:lower():find(q) ~= nil 
+        end
     end)
 
     -- ВАТЕРМАРК
@@ -108,16 +110,21 @@ function Library:InitHUD()
     local m_time, f_time = CreateWMModule(Floor1); local m_pos, f_pos = CreateWMModule(Floor2)
     local m_fps, f_fps = CreateWMModule(Floor2); local m_ping, f_ping = CreateWMModule(Floor2)
 
-    -- КЕЙБИНД ЛИСТ
-    local KBGui = self:CreateStyledFrame(HUD, UDim2.new(0, 180, 0, 32), UDim2.new(1, -200, 0, 20))
-    MakeDraggable(KBGui)
+    -- Кейбинд лист
+    local KBGui = Instance.new("Frame", HUD); KBGui.BackgroundColor3 = Color3.fromRGB(10,10,12); KBGui.Size = UDim2.new(0, 180, 0, 32); KBGui.Position = UDim2.new(1, -200, 0, 20)
+    Instance.new("UICorner", KBGui).CornerRadius = self._Config.Rounding
     local KBTitle = Instance.new("TextLabel", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = self._Config.FontBold; KBTitle.TextSize = 13; KBTitle.BackgroundTransparency = 1
     local KBList = Instance.new("Frame", KBGui); KBList.Position = UDim2.new(0, 0, 0, 32); KBList.Size = UDim2.new(1, 0, 0, 0); KBList.BackgroundTransparency = 1
     Instance.new("UIListLayout", KBList).Padding = UDim.new(0, 2); Instance.new("UIPadding", KBList).PaddingLeft = UDim.new(0, 10)
 
+    -- Глобальный цикл (Rainbow, HUD, Reactive Colors)
     local lastFps, fpsTimer = 0, 0
     RunService.RenderStepped:Connect(function(dt)
-        -- Реактивность настроек (Visibility & Transparency)
+        if self._Rainbow then self.Accent = Color3.fromHSV(tick() % 4 / 4, 1, 1) end
+        
+        local b = Lighting:FindFirstChild("NightBlur")
+        if b then b.Enabled = (self.Blur and self._Visible) end
+
         WMMain.Visible = self.Watermark; KBGui.Visible = self.KeybindList
         f_user.Visible = self.WatermarkUser; f_time.Visible = self.WatermarkTime
         f_fps.Visible = self.WatermarkFps; f_ping.Visible = self.WatermarkPing; f_pos.Visible = self.WatermarkCoordinates
@@ -138,14 +145,14 @@ function Library:InitHUD()
         local p = LocalPlayer.Character and LocalPlayer.Character.PrimaryPart and LocalPlayer.Character.PrimaryPart.Position or Vector3.new(0,0,0)
         m_pos.Text = string.format("<font color='#%s'>pos:</font> %.0f, %.0f, %.0f", self.Accent:ToHex(), p.X, p.Y, p.Z)
 
-        -- Обновление окон и модулей
+        -- Реактивные цвета элементов
         for _, win in pairs(self._Windows) do
             win.Frame.BackgroundTransparency = self.Transparency
             win.Title.TextColor3 = self.Accent
         end
         for _, mod in pairs(self._Modules) do
             mod.Frame.BackgroundTransparency = self.ModuleTransparency
-            if mod.Enabled then mod.Frame.BackgroundColor3 = self.Accent else mod.Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30) end
+            mod.Frame.BackgroundColor3 = mod.Enabled and self.Accent or Color3.fromRGB(25, 25, 30)
             for _, comp in pairs(mod.Components) do
                 if comp.Type == "Slider" then comp.Fill.BackgroundColor3 = self.Accent
                 elseif comp.Type == "Toggle" and comp.State then comp.Box.BackgroundColor3 = self.Accent
@@ -153,7 +160,7 @@ function Library:InitHUD()
             end
         end
 
-        -- Кейбинды
+        -- Обновление кейбинд листа
         local state = ""
         for n, d in pairs(self._Keybinds) do if d.Key then state = state .. n .. tostring(d.Enabled) end end
         if self._LastKBState ~= state then
@@ -164,51 +171,70 @@ function Library:InitHUD()
                 if data.Key then
                     count = count + 1
                     local l = Instance.new("TextLabel", KBList); l.Size = UDim2.new(1, 0, 0, 20); l.BackgroundTransparency = 1
-                    l.Text = string.format("[%s] %s", data.Key.Name, name); l.Font = self._Config.FontBold; l.TextSize = 11; l.TextXAlignment = 0
+                    l.Text = string.format("[%s] %s", data.Key.Name:gsub("Button3", "MB3"), name); l.Font = self._Config.FontBold; l.TextSize = 11; l.TextXAlignment = 0
                     l.TextColor3 = data.Enabled and self.Accent or Color3.fromRGB(150, 150, 150)
                 end
             end
             SafeTween(KBGui, {Size = UDim2.new(0, 180, 0, 35 + (count * 22))})
         end
     end)
+
+    -- Слушатель глобальных клавиш
+    UserInputService.InputBegan:Connect(function(i, g)
+        if i.KeyCode == self.ToggleKey then self:ToggleMenu() end
+        if not g and i.KeyCode == Enum.KeyCode.F and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            SafeTween(SearchFrame, {Position = SearchFrame.Position.Y < 0 and UDim2.new(0.5, -110, 0, 20) or UDim2.new(0.5, -110, 0, -50)})
+            if SearchFrame.Position.Y < 0 then Box:CaptureFocus() end
+        end
+        if not g then
+            for name, data in pairs(self._Keybinds) do
+                if data.Key and i.KeyCode == data.Key then
+                    data.Enabled = not data.Enabled
+                    data.Callback(data.Enabled)
+                end
+            end
+        end
+    end)
 end
 
 function Library:CreateWindow(name)
     self:InitHUD()
-    local Main = self:CreateStyledFrame(self.MenuContainer, UDim2.new(0, self._Config.WindowWidth, 0, 40), UDim2.new(0, self._CurrentX, 0, self._Config.StartY))
+    local Main = Instance.new("Frame", self.MainGui)
+    Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 40)
+    Main.Position = UDim2.new(0, self._CurrentX, 0, self._Config.StartY)
+    Main.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    Instance.new("UICorner", Main).CornerRadius = self._Config.Rounding
+    
     local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = self._Config.FontBold; Header.TextColor3 = self.Accent; Header.BackgroundTransparency = 1; Header.TextSize = 14
     local Scroll = Instance.new("ScrollingFrame", Main); Scroll.Position = UDim2.new(0, 0, 0, 40); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 0
-    Instance.new("UIListLayout", Scroll).Padding = UDim.new(0, 4); Scroll.UIListLayout.HorizontalAlignment = "Center"
+    local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 4); Layout.HorizontalAlignment = "Center"
 
     table.insert(self._Windows, {Frame = Main, Title = Header})
     self._CurrentX = self._CurrentX + self._Config.WindowWidth + self._Config.Spacing
 
-    Scroll.UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        local h = math.min(Scroll.UIListLayout.AbsoluteContentSize.Y + 10, 500)
+    Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        local h = math.min(Layout.AbsoluteContentSize.Y + 10, 500)
         Scroll.Size = UDim2.new(1, 0, 0, h); Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, h + 45)
     end)
 
     local Window = {}
     function Window:CreateModule(modName, callback)
         local modData = {Name = modName, Enabled = false, Opened = false, Components = {}, Frame = nil}
-        local MFrame = Instance.new("Frame", Scroll); MFrame.Size = UDim2.new(1, -12, 0, Library._Config.ModuleHeight); MFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30); MFrame.ClipsDescendants = true
-        Instance.new("UICorner", MFrame).CornerRadius = Library._Config.Rounding
+        local MFrame = Instance.new("Frame", Scroll); MFrame.Size = UDim2.new(1, -12, 0, Library._Config.ModuleHeight); MFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30); MFrame.ClipsDescendants = true; Instance.new("UICorner", MFrame)
         modData.Frame = MFrame
 
         local MBtn = Instance.new("TextButton", MFrame); MBtn.Size = UDim2.new(1, 0, 0, Library._Config.ModuleHeight); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.Font = Library._Config.FontMedium; MBtn.TextSize = 13; MBtn.TextColor3 = Color3.fromRGB(200, 200, 200); MBtn.TextXAlignment = 0
-        local Dots = Instance.new("TextLabel", MFrame); Dots.Size = UDim2.new(0, 20, 0, Library._Config.ModuleHeight); Dots.Position = UDim2.new(1, -25, 0, 0); Dots.BackgroundTransparency = 1; Dots.Text = "..."; Dots.Font = Library._Config.FontBold; Dots.TextSize = 14; Dots.TextColor3 = Color3.new(1,1,1); Dots.Visible = false
-        local Nodes = Instance.new("Frame", MFrame); Nodes.Position = UDim2.new(0, 0, 0, Library._Config.ModuleHeight); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1
-        Instance.new("UIListLayout", Nodes).Padding = UDim.new(0, 6); Nodes.UIListLayout.HorizontalAlignment = "Center"
+        local Dots = Instance.new("TextLabel", MFrame); Dots.Size = UDim2.new(0, 20, 0, Library._Config.ModuleHeight); Dots.Position = UDim2.new(1, -25, 0, 0); Dots.BackgroundTransparency = 1; Dots.Text = "..."; Dots.Font = Library._Config.FontBold; Dots.Visible = false
+        local Nodes = Instance.new("Frame", MFrame); Nodes.Position = UDim2.new(0, 0, 0, Library._Config.ModuleHeight); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1; Instance.new("UIListLayout", Nodes).Padding = UDim.new(0, 6); Nodes.UIListLayout.HorizontalAlignment = "Center"
 
-        Library._Keybinds[modName] = {Enabled = false, Key = nil}
-        table.insert(Library._Modules, modData)
-
-        Nodes.ChildAdded:Connect(function() Dots.Visible = true end)
+        Library._Keybinds[modName] = {Enabled = false, Key = nil, Callback = function(v)
+            modData.Enabled = v
+            callback(v)
+        end}
 
         MBtn.MouseButton1Click:Connect(function()
             modData.Enabled = not modData.Enabled
-            Library._Keybinds[modName].Enabled = modData.Enabled
-            callback(modData.Enabled)
+            Library._Keybinds[modName].Callback(modData.Enabled)
         end)
         
         MBtn.MouseButton2Click:Connect(function()
@@ -222,12 +248,13 @@ function Library:CreateWindow(name)
             if input.UserInputType == Enum.UserInputType.MouseButton3 then
                 MBtn.Text = "  " .. modName .. " [?]"
                 local conn; conn = UserInputService.InputBegan:Connect(function(i, g)
-                    if not g then
-                        Library._Keybinds[modName].Key = i.KeyCode; MBtn.Text = "  " .. modName; conn:Disconnect()
-                    end
+                    if not g then Library._Keybinds[modName].Key = i.KeyCode; MBtn.Text = "  " .. modName; conn:Disconnect() end
                 end)
             end
         end)
+
+        table.insert(Library._Modules, modData)
+        Nodes.ChildAdded:Connect(function() Dots.Visible = true end)
 
         local Mod = {}
         function Mod:CreateSlider(n, min, max, def, dec, cb)
@@ -237,12 +264,12 @@ function Library:CreateWindow(name)
             local fill = Instance.new("Frame", bar); fill.Size = UDim2.new((def-min)/(max-min), 0, 1, 0); Instance.new("UICorner", fill)
             comp.Fill = fill; table.insert(modData.Components, comp)
             local vText = Instance.new("TextLabel", f); vText.Size = UDim2.new(1, 0, 0, 20); vText.Text = n .. ": " .. string.format("%."..dec.."f", def); vText.Font = Library._Config.FontMedium; vText.TextSize = 11; vText.TextColor3 = Color3.new(1,1,1); vText.BackgroundTransparency = 1; vText.TextXAlignment = 0
-            local move = false
             local function update(i)
                 local p = math.clamp((i.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
                 local val = min + (max - min) * p
                 fill.Size = UDim2.new(p, 0, 1, 0); vText.Text = n .. ": " .. string.format("%."..dec.."f", val); cb(val)
             end
+            local move = false
             bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then move = true; update(i) end end)
             UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then move = false end end)
             UserInputService.InputChanged:Connect(function(i) if move and i.UserInputType == Enum.UserInputType.MouseMovement then update(i) end end)
@@ -265,11 +292,9 @@ function Library:CreateWindow(name)
         function Mod:CreateSelector(n, list, cb)
             local comp = {Type = "Selector", ActiveBtn = nil}
             local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.95, 0, 0, 40); f.BackgroundTransparency = 1
-            local c = Instance.new("Frame", f); c.Size = UDim2.new(1, 0, 0, 24); c.Position = UDim2.new(0, 0, 0, 16); c.BackgroundTransparency = 1
-            Instance.new("UIListLayout", c).FillDirection = "Horizontal"; c.UIListLayout.Padding = UDim.new(0, 5)
+            local c = Instance.new("Frame", f); c.Size = UDim2.new(1, 0, 0, 24); c.Position = UDim2.new(0, 0, 0, 16); c.BackgroundTransparency = 1; Instance.new("UIListLayout", c).FillDirection = "Horizontal"; c.UIListLayout.Padding = UDim.new(0, 5)
             for i, v in pairs(list) do
-                local p = Instance.new("TextButton", c); p.Size = UDim2.new(0, 0, 1, 0); p.AutomaticSize = "X"; p.Text = v; p.Font = Library._Config.FontMedium; p.TextSize = 10; p.BackgroundColor3 = Color3.fromRGB(40, 40, 45); p.TextColor3 = Color3.new(1,1,1)
-                Instance.new("UICorner", p); Instance.new("UIPadding", p).PaddingLeft = UDim.new(0, 8); p.UIPadding.PaddingRight = UDim.new(0, 8)
+                local p = Instance.new("TextButton", c); p.Size = UDim2.new(0, 0, 1, 0); p.AutomaticSize = "X"; p.Text = v; p.Font = Library._Config.FontMedium; p.TextSize = 10; p.BackgroundColor3 = Color3.fromRGB(40, 40, 45); p.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", p); Instance.new("UIPadding", p).PaddingLeft = UDim.new(0, 8); p.UIPadding.PaddingRight = UDim.new(0, 8)
                 if i == 1 then comp.ActiveBtn = p end
                 p.MouseButton1Click:Connect(function()
                     if comp.ActiveBtn then comp.ActiveBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45) end
@@ -281,7 +306,7 @@ function Library:CreateWindow(name)
 
         function Mod:CreateColorPicker(n, def, cb)
             local h, s, v = Color3.toHSV(def)
-            local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 65); f.BackgroundTransparency = 1
+            local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.9, 0, 0, 95); f.BackgroundTransparency = 1
             local function createBar(pos, grad)
                 local b = Instance.new("Frame", f); b.Size = UDim2.new(1, 0, 0, 8); b.Position = pos; b.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", b)
                 local g = Instance.new("UIGradient", b); g.Color = grad
@@ -291,6 +316,10 @@ function Library:CreateWindow(name)
             local HueB, HueP = createBar(UDim2.new(0,0,0,20), ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromHSV(0,1,1)), ColorSequenceKeypoint.new(0.2, Color3.fromHSV(0.2,1,1)), ColorSequenceKeypoint.new(0.4, Color3.fromHSV(0.4,1,1)), ColorSequenceKeypoint.new(0.6, Color3.fromHSV(0.6,1,1)), ColorSequenceKeypoint.new(0.8, Color3.fromHSV(0.8,1,1)), ColorSequenceKeypoint.new(1, Color3.fromHSV(1,1,1))}))
             local SatB, SatP, SatG = createBar(UDim2.new(0,0,0,35), ColorSequence.new(Color3.new(1,1,1)))
             local ValB, ValP, ValG = createBar(UDim2.new(0,0,0,50), ColorSequence.new(Color3.new(1,1,1)))
+            
+            local RbBtn = Instance.new("TextButton", f); RbBtn.Size = UDim2.new(1, 0, 0, 20); RbBtn.Position = UDim2.new(0, 0, 0, 65); RbBtn.Text = "Rainbow Mode"; RbBtn.BackgroundColor3 = Color3.fromRGB(40,40,45); RbBtn.TextColor3 = Color3.new(1,1,1); RbBtn.Font = self._Config.FontMedium; RbBtn.TextSize = 10; Instance.new("UICorner", RbBtn)
+            RbBtn.MouseButton1Click:Connect(function() Library._Rainbow = not Library._Rainbow; RbBtn.BackgroundColor3 = Library._Rainbow and Library.Accent or Color3.fromRGB(40,40,45) end)
+
             local function upd()
                 local color = Color3.fromHSV(h, s, v)
                 SatG.Color = ColorSequence.new(Color3.new(1,1,1), Color3.fromHSV(h, 1, 1))
