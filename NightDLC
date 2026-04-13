@@ -11,7 +11,7 @@ local Library = {
         FontBold = Enum.Font.GothamBold
     },
     _Visible = true,
-    _CurrentX = 35,
+    _CurrentX = 20,
     _Initialized = false,
     _Keybinds = {},
     _Objects = { Accents = {}, Transparents = {} }
