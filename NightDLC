@@ -281,3 +281,4 @@ function Library:CreateWindow(name)
     return Window
 end
 
+return Library
