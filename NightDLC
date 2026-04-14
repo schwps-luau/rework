@@ -79,8 +79,9 @@ function Library:ToggleMenu()
     end
     
     if self.SearchFrame then
-        local targetSearchY = self._Visible and (self._Config.StartY + 45) or -500
-        SafeTween(self.SearchFrame, {Position = UDim2.new(0, self.SearchFrame.Position.X.Offset, 0, targetSearchY)})
+        -- Анимация поиска снизу вверх
+        local targetSearchY = self._Visible and -30 or 150
+        SafeTween(self.SearchFrame, {Position = UDim2.new(0.5, 0, 1, targetSearchY)})
     end
 
     local b = Lighting:FindFirstChild("NightBlur")
@@ -96,15 +97,16 @@ function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V23"; self.MainGui = HUD
     local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18; MenuBlur.Enabled = self.Blur
 
-    local SearchX = 40 + (2 * (self._Config.WindowWidth + self._Config.Spacing))
+    -- Настройка фрейма поиска: центр низ
     local SearchFrame = Instance.new("Frame", HUD)
-    SearchFrame.Size = UDim2.new(0, self._Config.WindowWidth, 0, 35)
-    SearchFrame.Position = UDim2.new(0, SearchX, 0, self._Config.StartY + 45)
+    SearchFrame.Size = UDim2.new(0, 200, 0, 35)
+    SearchFrame.AnchorPoint = Vector2.new(0.5, 1)
+    SearchFrame.Position = UDim2.new(0.5, 0, 1, -30)
     SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20)
     Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding
     self.SearchFrame = SearchFrame
 
-    local Box = Instance.new("TextBox", SearchFrame); Box.Size = UDim2.new(1,-20,1,0); Box.Position = UDim2.new(0,10,0,0); Box.BackgroundTransparency = 1; Box.PlaceholderText = "Search Modules..."; Box.TextColor3 = Color3.new(1,1,1); Box.Font = self._Config.FontMedium; Box.TextSize = 13
+    local Box = Instance.new("TextBox", SearchFrame); Box.Size = UDim2.new(1,-20,1,0); Box.Position = UDim2.new(0,10,0,0); Box.BackgroundTransparency = 1; Box.PlaceholderText = "Search: Ctrl+F"; Box.TextColor3 = Color3.new(1,1,1); Box.Font = self._Config.FontMedium; Box.TextSize = 13
     Box:GetPropertyChangedSignal("Text"):Connect(function()
         local q = Box.Text:lower()
         for _, mod in pairs(self._Modules) do mod.Frame.Visible = mod.Name:lower():find(q) ~= nil end
@@ -195,10 +197,11 @@ function Library:InitHUD()
             end
         end
 
+        -- Фокус на поиск по Ctrl + F
         if i.KeyCode == Enum.KeyCode.F and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-            local isHidden = SearchFrame.Position.Y.Offset < 0
-            SafeTween(SearchFrame, {Position = UDim2.new(0, SearchX, 0, isHidden and (self._Config.StartY + 45) or -100)})
-            if isHidden then Box:CaptureFocus() end
+            if self._Visible then
+                Box:CaptureFocus()
+            end
         end
     end)
 
