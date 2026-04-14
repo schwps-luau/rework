@@ -281,16 +281,3 @@ function Library:CreateWindow(name)
     return Window
 end
 
--- // ПРИМЕР //
-local Combat = Library:CreateWindow("Combat")
-Combat:CreateModule("AttackAura", "Автоматически атакует врагов в радиусе", function(s) end)
-    :CreateSlider("Range", 3, 6, 4.5, 1, function(v) end)
-Combat:CreateModule("Velocity", "Настройка отдачи", function(s) end)
-    :CreateSlider("Horizontal", 0, 100, 0, 0, function(v) end)
-    :CreateSlider("Vertical", 0, 100, 0, 0, function(v) end)
-
-local Settings = Library:CreateWindow("Settings")
-Settings:CreateModule("Target HUD", "Показывает инфо о цели под курсором", function(s) Library.TargetHUD = s end)
-Settings:CreateModule("Rainbow", "Радужный акцент меню", function(s) Library._Rainbow = s end)
-Settings:CreateModule("Menu Color", "Выбор основного цвета", function(s) end)
-    :CreateColorPicker("Accent", Library.Accent, function(c) Library.Accent = c end)
