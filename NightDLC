@@ -5,13 +5,13 @@ local Library = {
     ModuleTransparency = 0.85,
     Blur = true,
     
-    Watermark = true,
-    WatermarkUser = true,
-    WatermarkTime = true,
+    Watermark = false,
+    WatermarkUser = false,
+    WatermarkTime = false,
     WatermarkCoordinates = false,
-    WatermarkFps = true,
-    WatermarkPing = true,
-    KeybindList = true,
+    WatermarkFps = false,
+    WatermarkPing = false,
+    KeybindList = false,
     
     _Config = {
         WindowWidth = 240,
@@ -153,7 +153,7 @@ function Library:InitHUD()
     -- [SEARCH]
     local SearchFrame = Instance.new("Frame", HUD); SearchFrame.Size = UDim2.new(0, 200, 0, 35); SearchFrame.AnchorPoint = Vector2.new(0.5, 1); SearchFrame.Position = UDim2.new(0.5, 0, 1, -30); SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding
     self.SearchFrame = SearchFrame
-    local Box = Instance.new("TextBox", SearchFrame); Box.Size = UDim2.new(1,-20,1,0); Box.Position = UDim2.new(0,10,0,0); Box.BackgroundTransparency = 1; Box.PlaceholderText = "Search: Ctrl+F"; Box.TextColor3 = Color3.new(1,1,1); Box.Font = self._Config.FontMedium; Box.TextSize = 13
+    local Box = Instance.new("TextBox", SearchFrame); Box.Size = UDim2.new(1,-20,1,0); Box.Position = UDim2.new(0,10,0,0); Box.BackgroundTransparency = 1; Box.Text = "Search: Ctrl+F"; Box.PlaceholderText = "Search: Ctrl+F"; Box.TextColor3 = Color3.new(1,1,1); Box.Font = self._Config.FontMedium; Box.TextSize = 13
     Box:GetPropertyChangedSignal("Text"):Connect(function() local q = Box.Text:lower() for _, mod in pairs(self._Modules) do mod.Frame.Visible = mod.Name:lower():find(q) ~= nil end end)
 
     -- [WATERMARKS]
