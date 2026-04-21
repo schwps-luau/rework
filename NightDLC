@@ -254,61 +254,26 @@ function Library:CreateWindow(name)
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() local h = math.min(Layout.AbsoluteContentSize.Y + 10, 500) Scroll.Size = UDim2.new(1, 0, 0, h); Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, h + 45) end)
 
     local Window = {}
-    function Window:CreateModule(modName, tooltipText, fixedStatus, callback)
-    local isEnabled = (fixedStatus == true)
-    
-    local modData = {
-        Name = modName, 
-        Enabled = isEnabled, 
-        Opened = false, 
-        Components = {}, 
-        Frame = nil,
-        Fixed = fixedStatus
-    }
-    
-    local MFrame = Instance.new("Frame", Scroll); MFrame.Size = UDim2.new(1, -12, 0, Library._Config.ModuleHeight); MFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30); MFrame.ClipsDescendants = true; Instance.new("UICorner", MFrame)
-    modData.Frame = MFrame
-    
-    local MBtn = Instance.new("TextButton", MFrame); MBtn.Size = UDim2.new(1, 0, 0, Library._Config.ModuleHeight); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.Font = Library._Config.FontMedium; MBtn.TextSize = 13; MBtn.TextColor3 = Color3.fromRGB(200, 200, 200); MBtn.TextXAlignment = 0
-    local Dots = Instance.new("TextLabel", MFrame); Dots.Size = UDim2.new(0, 20, 0, Library._Config.ModuleHeight); Dots.Position = UDim2.new(1, -25, 0, 0); Dots.BackgroundTransparency = 1; Dots.Text = "..."; Dots.TextColor3 = Color3.new(1, 1, 1); Dots.Font = Library._Config.FontBold; Dots.Visible = false
-    local Nodes = Instance.new("Frame", MFrame); Nodes.Position = UDim2.new(0, 0, 0, Library._Config.ModuleHeight); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1; Instance.new("UIListLayout", Nodes).Padding = UDim.new(0, 6); Nodes.UIListLayout.HorizontalAlignment = "Center"
+    function Window:CreateModule(modName, tooltipText, callback)
+        local modData = {Name = modName, Enabled = false, Opened = false, Components = {}, Frame = nil}
+        local MFrame = Instance.new("Frame", Scroll); MFrame.Size = UDim2.new(1, -12, 0, Library._Config.ModuleHeight); MFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30); MFrame.ClipsDescendants = true; Instance.new("UICorner", MFrame)
+        modData.Frame = MFrame
+        local MBtn = Instance.new("TextButton", MFrame); MBtn.Size = UDim2.new(1, 0, 0, Library._Config.ModuleHeight); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.Font = Library._Config.FontMedium; MBtn.TextSize = 13; MBtn.TextColor3 = Color3.fromRGB(200, 200, 200); MBtn.TextXAlignment = 0
+        local Dots = Instance.new("TextLabel", MFrame); Dots.Size = UDim2.new(0, 20, 0, Library._Config.ModuleHeight); Dots.Position = UDim2.new(1, -25, 0, 0); Dots.BackgroundTransparency = 1; Dots.Text = "..."; Dots.TextColor3 = Color3.new(1, 1, 1); Dots.Font = Library._Config.FontBold; Dots.Visible = false
+        local Nodes = Instance.new("Frame", MFrame); Nodes.Position = UDim2.new(0, 0, 0, Library._Config.ModuleHeight); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1; Instance.new("UIListLayout", Nodes).Padding = UDim.new(0, 6); Nodes.UIListLayout.HorizontalAlignment = "Center"
 
-    if tooltipText and tooltipText ~= "" and type(tooltipText) == "string" then
-        MBtn.MouseEnter:Connect(function() Library._CurrentHoveredModule = {Name = modName, Tooltip = tooltipText}; Library.Tooltip.Frame.Visible = true end)
-        MBtn.MouseLeave:Connect(function() Library._CurrentHoveredModule = nil; Library.Tooltip.Frame.Visible = false end)
-    end
-
-    Library._Keybinds[modName] = {
-        Enabled = isEnabled, 
-        Key = nil, 
-        Callback = function(v) 
-            local targetState = (fixedStatus ~= nil) and fixedStatus or v
-            modData.Enabled = targetState 
-            if callback then callback(targetState) end 
+        if tooltipText and tooltipText ~= "" and type(tooltipText) == "string" then
+            MBtn.MouseEnter:Connect(function() Library._CurrentHoveredModule = {Name = modName, Tooltip = tooltipText}; Library.Tooltip.Frame.Visible = true end)
+            MBtn.MouseLeave:Connect(function() Library._CurrentHoveredModule = nil; Library.Tooltip.Frame.Visible = false end)
         end
-    }
 
-    MBtn.MouseButton1Click:Connect(function()
-        if fixedStatus ~= nil then return end 
-        modData.Enabled = not modData.Enabled
-        Library._Keybinds[modName].Enabled = modData.Enabled
-        Library._Keybinds[modName].Callback(modData.Enabled)
-        Library._RebuildKB()
-    end)
+        Library._Keybinds[modName] = {Enabled = false, Key = nil, Callback = function(v) modData.Enabled = v if callback then callback(v) end end} -- [FIX] Проверка на nil
+        MBtn.MouseButton1Click:Connect(function() modData.Enabled = not modData.Enabled; Library._Keybinds[modName].Enabled = modData.Enabled; Library._Keybinds[modName].Callback(modData.Enabled); Library._RebuildKB() end)
+        MBtn.MouseButton2Click:Connect(function() if not Dots.Visible then return end modData.Opened = not modData.Opened; local targetH = modData.Opened and (Library._Config.ModuleHeight + Nodes.UIListLayout.AbsoluteContentSize.Y + 10) or Library._Config.ModuleHeight; SafeTween(MFrame, {Size = UDim2.new(1, -12, 0, targetH)}, 0.4) end)
+        MBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton3 then MBtn.Text = "  " .. modName .. " [?]"; local conn; conn = UserInputService.InputBegan:Connect(function(i, g) if not g then Library._Keybinds[modName].Key = i.KeyCode; MBtn.Text = "  " .. modName; Library._RebuildKB(); conn:Disconnect() end end) end end)
+        table.insert(Library._Modules, modData); Nodes.ChildAdded:Connect(function() Dots.Visible = true end)
 
-    MBtn.MouseButton2Click:Connect(function() 
-        if not Dots.Visible then return end 
-        modData.Opened = not modData.Opened
-        local targetH = modData.Opened and (Library._Config.ModuleHeight + Nodes.UIListLayout.AbsoluteContentSize.Y + 10) or Library._Config.ModuleHeight
-        SafeTween(MFrame, {Size = UDim2.new(1, -12, 0, targetH)}, 0.4) 
-    end)
-
-    table.insert(Library._Modules, modData)
-    Nodes.ChildAdded:Connect(function() Dots.Visible = true end)
-    
-    if isEnabled and callback then task.spawn(callback, true) end
-
-    local Mod = {}
+        local Mod = {}
         function Mod:CreateSlider(n, min, max, def, dec, cb)
             local comp = {Type = "Slider"}
             local f = Instance.new("Frame", Nodes); f.Size = UDim2.new(0.92, 0, 0, 42); f.BackgroundTransparency = 1
