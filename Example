@@ -1,0 +1,60 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/schwps-luau/rework/refs/heads/main/NightDLC"))()
+
+local Combat = Library:CreateWindow("Combat")
+local Movement = Library:CreateWindow("Movement")
+local Render = Library:CreateWindow("Render")
+local Player = Library:CreateWindow("Player")
+local Misc = Library:CreateWindow("Misc")
+
+interfacemodule = Render:CreateModule("interface","custom interface", function(v) print(v) end)
+
+interfacemodule:CreateColorPicker("accent", Color3.fromRGB(255, 255, 255), function(v)
+Library.Accent = v
+end)
+
+interfacemodule:CreateSlider("window trans", 0, 1, 0.5, 2, function(v)
+Library.Transparency = v
+end)
+
+interfacemodule:CreateSlider("module trans", 0, 1, 0.5, 2, function(v)
+Library.ModuleTransparency = v
+end)
+
+interfacemodule:CreateSelector("Notify", {"1", "2", "3"}, function(selected)
+Library:Notify(selected)
+end)
+
+interfacemodule:CreateToggle("target hud", function(v)
+Library.TargetHUD:SetTarget(game.Players.LocalPlayer.DisplayName, game.Players.LocalPlayer.Character.Humanoid.Health, 100, game.Players:GetUserThumbnailAsync(game.Players.LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420))
+--target hud is not updating, so you need to call function everytime
+--kill target hud:
+--Library.TargetHUD:SetTarget(nil)
+end)
+
+interfacemodule:CreateToggle("keybindlist", function(v)
+Library.KeybindList = v
+end)
+
+interfacemodule:CreateToggle("title", function(v)
+Library.Watermark = v
+end)
+
+interfacemodule:CreateToggle("user", function(v)
+Library.WatermarkUser = v
+end)
+
+interfacemodule:CreateToggle("time", function(v)
+Library.WatermarkTime = v
+end)
+
+interfacemodule:CreateToggle("fps", function(v)
+Library.WatermarkFps = v
+end)
+
+interfacemodule:CreateToggle("coordinates", function(v)
+Library.WatermarkCoordinates = v
+end)
+
+interfacemodule:CreateToggle("ping", function(v)
+Library.WatermarkPing = v
+end)
