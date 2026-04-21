@@ -171,7 +171,7 @@ function initLibrary()
 
     gui.Parent = coreGui
 
-    local flags = {toggles = {}, boxes = {}, sliders = {}, dropdowns = {}, multidropdowns = {}, keybinds = {}, colorpickers = {}}
+    local flags = {toggles = {}, boxes = {}, sliders = {}, dropdowns = {}, multidropdowns = {}, keybinds = {}, colorpickers = {}, rainbows = {}}
 
     function library:LoadConfig(file)
         local str = readfile(gameConfigFolder .. "/" .. file .. ".cfg")
@@ -179,6 +179,11 @@ function initLibrary()
         for flag, value in next, tbl.colorpickers do
             if flags.colorpickers[flag] then
                 flags.colorpickers[flag](value)
+            end
+        end
+        for flag, value in next, tbl.rainbows do
+            if flags.rainbows[flag] then
+                flags.rainbows[flag](value)
             end
         end
         for flag, value in next, tbl.toggles do
@@ -255,6 +260,12 @@ function initLibrary()
         for flag, _ in next, flags.colorpickers do
             count = count + 1
             configstr = configstr .. "['" .. flag .. "']=Color3.new(" .. tostring(library.flags[flag]) .. "),"
+        end
+        configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "},rainbows={"
+        count = 0
+        for flag, _ in next, flags.rainbows do
+            count = count + 1
+            configstr = configstr .. "['" .. flag .. "']=" .. tostring(library.flags[flag]) .. ","
         end
         configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "}}"
         writefile(gameConfigFolder .. "/" .. name .. ".cfg", "return " .. configstr)
@@ -375,6 +386,7 @@ function initLibrary()
     end
 
     function library:Notify(opts)
+        -- (оставлен без изменений, слишком длинный, но рабочий)
         local options = utility.table(opts)
         local mode = options.mode or "default"
         local text = options.text or ""
@@ -3080,6 +3092,7 @@ function initLibrary()
                     return toggleKeybindTypes
                 end
 
+                -- НОВАЯ ВЕРСИЯ COLORPICKER С ПОДДЕРЖКОЙ RAINBOW ФЛАГА
                 function sectionTypes:ColorPicker(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Color Picker"
@@ -3087,6 +3100,7 @@ function initLibrary()
                     local flag = options.flag
                     local callback = options.callback or function() end
                     local rainbow = options.rainbow or false
+                    local rainbowFlag = options.rainbowFlag  -- новый параметр
 
                     local open = false
                     local hue, sat, val = default:ToHSV()
@@ -3101,6 +3115,14 @@ function initLibrary()
                         library.flags[flag] = default
                     end
                     callback(default)
+
+                    -- Загружаем состояние rainbow из флага, если он передан
+                    if rainbowFlag and library.flags[rainbowFlag] ~= nil then
+                        rainbowEnabled = library.flags[rainbowFlag]
+                    end
+                    if rainbowFlag then
+                        library.flags[rainbowFlag] = rainbowEnabled
+                    end
 
                     local colorPickerHolder = utility.create("Frame", {
                         Size = UDim2.new(1, 0, 0, 16),
@@ -3157,7 +3179,7 @@ function initLibrary()
                         Size = UDim2.new(0, 22, 0, 14),
                         BorderColor3 = selectedTheme.background,
                         Position = UDim2.new(1, -48, 0, 1),
-                        BackgroundColor3 = rainbow and library.color or selectedTheme.tertiary,
+                        BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary,
                         Text = "🌈",
                         TextSize = 12,
                         TextColor3 = selectedTheme.text,
@@ -3333,6 +3355,9 @@ function initLibrary()
                             rainbowEnabled = true
                             rainbowButton.BackgroundColor3 = library.color
                             startRainbow()
+                        end
+                        if rainbowFlag then
+                            library.flags[rainbowFlag] = rainbowEnabled
                         end
                     end
 
@@ -3512,10 +3537,16 @@ function initLibrary()
                             colorPickerTypes:SetRGB(color)
                         end
                     end
+                    if rainbowFlag then
+                        flags.rainbows[rainbowFlag] = function(bool)
+                            colorPickerTypes:SetRainbow(bool)
+                        end
+                    end
 
                     return colorPickerTypes
                 end
 
+                -- НОВАЯ ВЕРСИЯ TOGGLECOLORPICKER С РАДУГОЙ
                 function sectionTypes:ToggleColorPicker(opts)
                     local options = utility.table(opts)
                     local name = options.name or "Toggle Color Picker"
@@ -3524,6 +3555,8 @@ function initLibrary()
                     local colorPickerFlag = options.colorPickerFlag
                     local toggleCallback = options.toggleCallback or function() end
                     local colorPickerCallback = options.colorPickerCallback or function() end
+                    local rainbow = options.rainbow or false
+                    local rainbowFlag = options.rainbowFlag
 
                     local open = false
                     local toggled = false
@@ -3531,6 +3564,9 @@ function initLibrary()
                     local slidingHue = false
                     local slidingSaturation = false
                     local hsv = Color3.fromHSV(hue, sat, val)
+                    local rainbowEnabled = rainbow
+                    local rainbowConnection = nil
+                    local savedColor = default
 
                     if colorPickerFlag then
                         library.flags[colorPickerFlag] = default
@@ -3541,6 +3577,13 @@ function initLibrary()
                         library.flags[toggleFlag] = toggled
                     end
                     toggleCallback(false)
+
+                    if rainbowFlag and library.flags[rainbowFlag] ~= nil then
+                        rainbowEnabled = library.flags[rainbowFlag]
+                    end
+                    if rainbowFlag then
+                        library.flags[rainbowFlag] = rainbowEnabled
+                    end
 
                     local toggleColorPickerHolder = utility.create("Frame", {
                         Size = UDim2.new(1, 0, 0, 16),
@@ -3607,6 +3650,19 @@ function initLibrary()
                         Font = Enum.Font.Gotham,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         Parent = icon
+                    })
+
+                    local rainbowButton = utility.create("TextButton", {
+                        ZIndex = 3,
+                        Size = UDim2.new(0, 22, 0, 14),
+                        BorderColor3 = selectedTheme.background,
+                        Position = UDim2.new(1, -48, 0, 1),
+                        BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary,
+                        Text = "🌈",
+                        TextSize = 12,
+                        TextColor3 = selectedTheme.text,
+                        Font = Enum.Font.Gotham,
+                        Parent = colorPicker
                     })
 
                     local picker = utility.create("Frame", {
@@ -3725,6 +3781,66 @@ function initLibrary()
                         Parent = bg2
                     })
 
+                    local function stopRainbow()
+                        if rainbowConnection then
+                            rainbowConnection:Disconnect()
+                            rainbowConnection = nil
+                        end
+                    end
+
+                    local function startRainbow()
+                        stopRainbow()
+                        rainbowConnection = runService.RenderStepped:Connect(function()
+                            local time = tick() % 6 / 6
+                            local newColor = Color3.fromHSV(time, 1, 1)
+                            hue = time
+                            hsv = newColor
+                            colorPickerIcon.BackgroundColor3 = newColor
+                            saturationFrame.BackgroundColor3 = newColor
+                            rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
+                            hex.Text = utility.rgb_to_hex(newColor)
+                            if colorPickerFlag then
+                                library.flags[colorPickerFlag] = newColor
+                            end
+                            colorPickerCallback(newColor)
+                        end)
+                    end
+
+                    local function toggleRainbow()
+                        if rainbowEnabled then
+                            stopRainbow()
+                            rainbowEnabled = false
+                            rainbowButton.BackgroundColor3 = selectedTheme.tertiary
+                            local restoreColor = savedColor or Color3.fromHSV(hue, sat, val)
+                            hue, sat, val = restoreColor:ToHSV()
+                            hsv = restoreColor
+                            colorPickerIcon.BackgroundColor3 = restoreColor
+                            saturationFrame.BackgroundColor3 = restoreColor
+                            rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
+                            hex.Text = utility.rgb_to_hex(restoreColor)
+                            if colorPickerFlag then
+                                library.flags[colorPickerFlag] = restoreColor
+                            end
+                            colorPickerCallback(restoreColor)
+                            if saturationFrame.AbsoluteSize.X > 0 then
+                                saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
+                            end
+                            if hueFrame.AbsoluteSize.Y > 0 then
+                                huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
+                            end
+                        else
+                            savedColor = Color3.fromHSV(hue, sat, val)
+                            rainbowEnabled = true
+                            rainbowButton.BackgroundColor3 = library.color
+                            startRainbow()
+                        end
+                        if rainbowFlag then
+                            library.flags[rainbowFlag] = rainbowEnabled
+                        end
+                    end
+
+                    rainbowButton.MouseButton1Click:Connect(toggleRainbow)
+
                     local function toggleToggle()
                         toggled = not toggled
                         if toggled then
@@ -3761,6 +3877,9 @@ function initLibrary()
                     colorPickerIcon.MouseButton1Click:connect(openPicker)
 
                     local function updateHue(input)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         local sizeY = 1 - math.clamp((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y, 0, 1)
                         local posY = math.clamp(((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 2)
                         huePicker.Position = UDim2.new(0, 0, 0, posY)
@@ -3798,6 +3917,9 @@ function initLibrary()
                     end)
 
                     local function updateSatVal(input)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         local sizeX = math.clamp((input.Position.X - saturationFrame.AbsolutePosition.X) / saturationFrame.AbsoluteSize.X, 0, 1)
                         local sizeY = 1 - math.clamp((input.Position.Y - saturationFrame.AbsolutePosition.Y) / saturationFrame.AbsoluteSize.Y, 0, 1)
                         local posY = math.clamp(((input.Position.Y - saturationFrame.AbsolutePosition.Y) / saturationFrame.AbsoluteSize.Y) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)
@@ -3858,6 +3980,9 @@ function initLibrary()
                     end
 
                     function toggleColorPickerTypes:SetRGB(color)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         hue, sat, val = color:ToHSV()
                         hsv = Color3.fromHSV(hue, sat, val)
                         saturationFrame.BackgroundColor3 = hsv
@@ -3879,6 +4004,14 @@ function initLibrary()
                     function toggleColorPickerTypes:SetHex(hexValue)
                         local color = utility.hex_to_rgb(hexValue)
                         toggleColorPickerTypes:SetRGB(color)
+                    end
+
+                    function toggleColorPickerTypes:SetRainbow(bool)
+                        if bool and not rainbowEnabled then
+                            toggleRainbow()
+                        elseif not bool and rainbowEnabled then
+                            toggleRainbow()
+                        end
                     end
 
                     rgb.FocusLost:Connect(function()
@@ -3906,6 +4039,10 @@ function initLibrary()
                         end
                     end)
 
+                    if rainbowEnabled then
+                        startRainbow()
+                    end
+
                     if colorPickerFlag then
                         flags.colorpickers[colorPickerFlag] = function(color)
                             toggleColorPickerTypes:SetRGB(color)
@@ -3915,6 +4052,12 @@ function initLibrary()
                     if toggleFlag then
                         flags.toggles[toggleFlag] = function(bool)
                             toggleColorPickerTypes:Toggle(bool)
+                        end
+                    end
+
+                    if rainbowFlag then
+                        flags.rainbows[rainbowFlag] = function(bool)
+                            toggleColorPickerTypes:SetRainbow(bool)
                         end
                     end
 
