@@ -168,33 +168,37 @@ local function updateBox(player)
     if not esp then return end
     
     local character = player.Character
-    local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso"))
+    local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
     
-    if not ESP.Enabled or not ESP.ShowBox or not shouldShowPlayer(player) or not rootPart then
+    -- Функция для быстрой очистки всех элементов бокса
+    local function hideBox()
         esp.boxTop.Visible = false
         esp.boxBottom.Visible = false
         esp.boxLeft.Visible = false
         esp.boxRight.Visible = false
         esp.boxFill.Visible = false
+    end
+
+    -- 1. Проверка общих условий
+    if not ESP.Enabled or not ESP.ShowBox or not shouldShowPlayer(player) or not rootPart then
+        hideBox()
         return
     end
     
+    -- 2. Проверка нахождения на экране
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-    
     if not onScreen then 
-        esp.boxTop.Visible = false
-        esp.boxBottom.Visible = false
-        esp.boxLeft.Visible = false
-        esp.boxRight.Visible = false
-        esp.boxFill.Visible = false
+        hideBox()
         return 
     end
     
+    -- 3. Если проверки пройдены — рисуем
     local charSize = (camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 2.6, 0)).Y) / 2
     local boxSize = Vector2.new(math.floor(charSize * 1.8), math.floor(charSize * 1.9))
     local boxPos = Vector2.new(math.floor(hrp2D.X - boxSize.X / 2), math.floor(hrp2D.Y - boxSize.Y / 2))
     local color = getColorByVisibility(ESP.BoxColor, player)
     
+    -- Обновляем линии
     esp.boxTop.From = boxPos
     esp.boxTop.To = boxPos + Vector2.new(boxSize.X, 0)
     esp.boxTop.Color = color
@@ -215,6 +219,7 @@ local function updateBox(player)
     esp.boxRight.Color = color
     esp.boxRight.Visible = true
     
+    -- Обновляем заливку
     if ESP.ShowBoxFill then
         esp.boxFill.Position = boxPos
         esp.boxFill.Size = boxSize
