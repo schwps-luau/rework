@@ -168,7 +168,7 @@ local function createEsp(player)
 end
 
 local function isTeammate(player)
-    return ESP.TeamCheck and player.Team and localPlayer.Team and player.Team == localPlayer.Team
+    return ESP.TeamCheck and player.Team and localPlayer.Team and player.Team == localPlayer.Team and player.TeamColor == localPlayer.TeamColor
 end
 
 local function getColorByVisibility(colorIfVisible, colorIfInvisible, player)
