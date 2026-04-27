@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
----
+
 local highlights = {}
 local connections = {}
 local cache = {}
@@ -175,16 +175,13 @@ end
 
 local function getColorByVisibility(colorIfVisible, colorIfInvisible, player)
     if ESP.VisibleCheck then
-        return isPlayerVisible(player) and colorIfVisible or colorIfInvisible
+        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
     end
     return colorIfVisible
 end
 
 local function getHighlightColor(player)
-    if ESP.VisibleCheck then
-        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
-    end
-    return ESP.HighlightColor
+    return getColorByVisibility(ESP.HighlightColor, ESP.InvisibleColor, player)
 end
 
 local function getBoxColor(player)
