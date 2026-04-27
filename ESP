@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
-
+--
 local highlights = {}
 local connections = {}
 local cache = {}
@@ -422,41 +422,14 @@ local function updateTracer(player)
         return 
     end
     
-    if not ESP.Enabled then
-        esp.tracer.Visible = false
-        return
-    end
-    
-    if not ESP.ShowTracer then
+    if not ESP.Enabled or not ESP.ShowTracer or not shouldShowPlayer(player) then
         esp.tracer.Visible = false
         return
     end
     
     local character = player.Character
-    if not character then
-        esp.tracer.Visible = false
-        return
-    end
+    local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
     
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then
-        esp.tracer.Visible = false
-        return
-    end
-    
-    if isTeammate(player) then
-        esp.tracer.Visible = false
-        return
-    end
-    
-    if ESP.WallCheck then
-        if not isPlayerVisible(player) or not isPlayerOnScreen(player) then
-            esp.tracer.Visible = false
-            return
-        end
-    end
-    
-    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
     if not rootPart then
         esp.tracer.Visible = false
         return
@@ -469,13 +442,11 @@ local function updateTracer(player)
         return
     end
     
-    local screenCenter = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
-    
-    esp.tracer.From = screenCenter
+    esp.tracer.Visible = true
+    esp.tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
     esp.tracer.To = Vector2.new(hrp2D.X, hrp2D.Y)
     esp.tracer.Color = getTracerColor(player)
     esp.tracer.Thickness = ESP.TracerThickness
-    esp.tracer.Visible = true
 end
 
 local function setupPlayer(player)
