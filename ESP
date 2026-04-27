@@ -15,6 +15,7 @@ local ESP = {
     ShowName = false,
     ShowHealth = false,
     ShowBox = false,
+    ShowBoxFill = false,
     ShowTracer = false,
     UseDisplayName = false,
     VisibleColor = Color3.fromRGB(255, 0, 0),
@@ -27,7 +28,8 @@ local ESP = {
     HighlightColor = Color3.fromRGB(255, 0, 0),
     TracerColor = Color3.fromRGB(255, 0, 0),
     TracerThickness = 1,
-    BoxThickness = 1
+    BoxThickness = 1,
+    BoxFillTransparency = 0.3
 }
 
 local raycastParams = RaycastParams.new()
@@ -45,125 +47,26 @@ end
 
 local function isPartVisible(part)
     if not part or not part:IsA("BasePart") then return false end
-    
     local cameraPosition = camera.CFrame.Position
-    local direction = (part.Position - cameraPosition).Unit * 1000
+    local direction = (part.Position - cameraPosition)
     local rayResult = workspace:Raycast(cameraPosition, direction, raycastParams)
     
     if rayResult then
-        local hitDistance = (rayResult.Position - cameraPosition).Magnitude
-        local targetDistance = (part.Position - cameraPosition).Magnitude
-        if hitDistance < targetDistance - 0.5 then
-            return false
-        end
+        return rayResult.Instance:IsDescendantOf(part.Parent)
     end
-    
     return true
-end
-
-local function getCharacterType(character)
-    if character:FindFirstChild("UpperTorso") and character:FindFirstChild("LowerTorso") then
-        return "R15"
-    end
-    return "R6"
-end
-
-local function isPlayerOnScreen(player)
-    local character = player.Character
-    if not character then return false end
-    
-    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-    if not rootPart then return false end
-    
-    local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-    return onScreen
 end
 
 local function isPlayerVisible(player)
     local character = player.Character
     if not character then return false end
+    local head = character:FindFirstChild("Head")
+    if not head then return false end
     
-    local characterType = getCharacterType(character)
-    local partsToCheck = {}
+    local _, onScreen = camera:WorldToViewportPoint(head.Position)
+    if not onScreen then return false end
     
-    if characterType == "R15" then
-        partsToCheck = {
-            "Head", "HumanoidRootPart", "UpperTorso", "LowerTorso",
-            "LeftUpperArm", "LeftLowerArm", "LeftHand",
-            "RightUpperArm", "RightLowerArm", "RightHand",
-            "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
-            "RightUpperLeg", "RightLowerLeg", "RightFoot"
-        }
-    else
-        partsToCheck = {
-            "Head", "HumanoidRootPart", "Torso",
-            "Left Arm", "Right Arm", "Left Leg", "Right Leg"
-        }
-    end
-    
-    for _, partName in ipairs(partsToCheck) do
-        local part = character:FindFirstChild(partName)
-        if part and part:IsA("BasePart") then
-            local screenPos, onScreen = camera:WorldToViewportPoint(part.Position)
-            if onScreen and isPartVisible(part) then
-                return true
-            end
-        end
-    end
-    
-    return false
-end
-
-local function createDrawing(class, properties)
-    local drawing = Drawing.new(class)
-    for property, value in pairs(properties) do
-        drawing[property] = value
-    end
-    return drawing
-end
-
-local function createEsp(player)
-    local esp = {
-        name = createDrawing("Text", {
-            Color = ESP.NameColor,
-            Outline = true,
-            OutlineColor = Color3.fromRGB(0, 0, 0),
-            Center = true,
-            Size = 13,
-            Visible = false
-        }),
-        healthOutline = createDrawing("Line", {
-            Thickness = 2,
-            Color = ESP.HealthOutlineColor,
-            Visible = false
-        }),
-        health = createDrawing("Line", {
-            Thickness = 2,
-            Visible = false
-        }),
-        boxTop = createDrawing("Line", {
-            Thickness = ESP.BoxThickness,
-            Visible = false
-        }),
-        boxBottom = createDrawing("Line", {
-            Thickness = ESP.BoxThickness,
-            Visible = false
-        }),
-        boxLeft = createDrawing("Line", {
-            Thickness = ESP.BoxThickness,
-            Visible = false
-        }),
-        boxRight = createDrawing("Line", {
-            Thickness = ESP.BoxThickness,
-            Visible = false
-        }),
-        tracer = createDrawing("Line", {
-            Thickness = ESP.TracerThickness,
-            Color = ESP.TracerColor,
-            Visible = false
-        })
-    }
-    cache[player] = esp
+    return isPartVisible(head)
 end
 
 local function isTeammate(player)
@@ -171,36 +74,6 @@ local function isTeammate(player)
         return player.Team == localPlayer.Team
     end
     return player.TeamColor == localPlayer.TeamColor
-end
-
-local function getColorByVisibility(colorIfVisible, colorIfInvisible, player)
-    if ESP.VisibleCheck then
-        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
-    end
-    return colorIfVisible
-end
-
-local function getHighlightColor(player)
-    return getColorByVisibility(ESP.HighlightColor, ESP.InvisibleColor, player)
-end
-
-local function getBoxColor(player)
-    return getColorByVisibility(ESP.BoxColor, ESP.InvisibleColor, player)
-end
-
-local function getTracerColor(player)
-    return getColorByVisibility(ESP.TracerColor, ESP.InvisibleColor, player)
-end
-
-local function getNameColor(player)
-    return getColorByVisibility(ESP.NameColor, ESP.InvisibleColor, player)
-end
-
-local function getHealthColor(player, healthPercent)
-    if ESP.VisibleCheck then
-        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
-    end
-    return ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPercent)
 end
 
 local function shouldShowPlayer(player)
@@ -221,6 +94,36 @@ local function shouldShowPlayer(player)
     return true
 end
 
+local function getColorByVisibility(defaultColor, player)
+    if ESP.VisibleCheck then
+        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
+    end
+    return defaultColor
+end
+
+local function createDrawing(class, properties)
+    local drawing = Drawing.new(class)
+    for property, value in pairs(properties) do
+        drawing[property] = value
+    end
+    return drawing
+end
+
+local function createEsp(player)
+    local esp = {
+        name = createDrawing("Text", {Center = true, Size = 13, Outline = true, Visible = false}),
+        healthOutline = createDrawing("Line", {Thickness = 2, Color = ESP.HealthOutlineColor, Visible = false}),
+        health = createDrawing("Line", {Thickness = 2, Visible = false}),
+        boxFill = createDrawing("Square", {Filled = true, Thickness = 0, Transparency = ESP.BoxFillTransparency, Visible = false}),
+        boxTop = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
+        boxBottom = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
+        boxLeft = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
+        boxRight = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
+        tracer = createDrawing("Line", {Thickness = ESP.TracerThickness, Visible = false, Transparency = 0.6})
+    }
+    cache[player] = esp
+end
+
 local function updateHighlight(player)
     local highlight = highlights[player]
     if not highlight then return end
@@ -231,14 +134,14 @@ local function updateHighlight(player)
     end
     
     highlight.Enabled = true
-    local color = getHighlightColor(player)
+    local color = getColorByVisibility(ESP.HighlightColor, player)
     highlight.FillColor = color
     highlight.OutlineColor = color
 end
 
 local function updateName(player)
     local esp = cache[player]
-    if not esp or not esp.name then return end
+    if not esp then return end
     
     if not ESP.Enabled or not ESP.ShowName or not shouldShowPlayer(player) then
         esp.name.Visible = false
@@ -246,290 +149,154 @@ local function updateName(player)
     end
     
     local character = player.Character
-    if not character then
-        esp.name.Visible = false
-        return
-    end
-    
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then
-        esp.name.Visible = false
-        return
-    end
-    
-    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-    if not rootPart then
-        esp.name.Visible = false
-        return
-    end
+    local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Head"))
+    if not rootPart then esp.name.Visible = false return end
     
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-    if not onScreen then
-        esp.name.Visible = false
-        return
-    end
+    if not onScreen then esp.name.Visible = false return end
     
     esp.name.Visible = true
-    esp.name.Color = getNameColor(player)
-    esp.name.OutlineColor = Color3.fromRGB(0, 0, 0)
-    
-    if ESP.UseDisplayName then
-        esp.name.Text = player.DisplayName or player.Name
-    else
-        esp.name.Text = player.Name
-    end
+    esp.name.Text = ESP.UseDisplayName and player.DisplayName or player.Name
+    esp.name.Color = getColorByVisibility(ESP.NameColor, player)
     
     local charSize = (camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 2.6, 0)).Y) / 2
-    local boxPosition = Vector2.new(math.floor(hrp2D.X - charSize * 1.8 / 2), math.floor(hrp2D.Y - charSize * 1.6 / 2))
-    esp.name.Position = Vector2.new(boxPosition.X + (charSize * 1.8 / 2), boxPosition.Y - 16)
-end
-
-local function updateHealth(player)
-    local esp = cache[player]
-    if not esp or not esp.health or not esp.healthOutline then return end
-    
-    if not ESP.Enabled or not ESP.ShowHealth or not shouldShowPlayer(player) then
-        esp.health.Visible = false
-        esp.healthOutline.Visible = false
-        return
-    end
-    
-    local character = player.Character
-    if not character then
-        esp.health.Visible = false
-        esp.healthOutline.Visible = false
-        return
-    end
-    
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then
-        esp.health.Visible = false
-        esp.healthOutline.Visible = false
-        return
-    end
-    
-    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-    if not rootPart then
-        esp.health.Visible = false
-        esp.healthOutline.Visible = false
-        return
-    end
-    
-    local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-    if not onScreen then
-        esp.health.Visible = false
-        esp.healthOutline.Visible = false
-        return
-    end
-    
-    local charSize = (camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 2.6, 0)).Y) / 2
-    local boxSize = Vector2.new(math.floor(charSize * 1.8), math.floor(charSize * 1.9))
-    local boxPosition = Vector2.new(math.floor(hrp2D.X - charSize * 1.8 / 2), math.floor(hrp2D.Y - charSize * 1.6 / 2))
-    
-    local healthPercent = humanoid.Health / humanoid.MaxHealth
-    
-    esp.healthOutline.From = Vector2.new(boxPosition.X - 7, boxPosition.Y + boxSize.Y)
-    esp.healthOutline.To = Vector2.new(esp.healthOutline.From.X, esp.healthOutline.From.Y - boxSize.Y)
-    esp.healthOutline.Visible = true
-    
-    esp.health.From = Vector2.new(boxPosition.X - 6, boxPosition.Y + boxSize.Y)
-    esp.health.To = Vector2.new(esp.health.From.X, esp.health.From.Y - healthPercent * boxSize.Y)
-    esp.health.Color = getHealthColor(player, healthPercent)
-    esp.health.Visible = true
+    esp.name.Position = Vector2.new(hrp2D.X, hrp2D.Y - charSize - 15)
 end
 
 local function updateBox(player)
     local esp = cache[player]
-    if not esp or not esp.boxTop then return end
+    if not esp then return end
     
     if not ESP.Enabled or not ESP.ShowBox or not shouldShowPlayer(player) then
-        esp.boxTop.Visible = false
-        esp.boxBottom.Visible = false
-        esp.boxLeft.Visible = false
-        esp.boxRight.Visible = false
+        esp.boxTop.Visible = false; esp.boxBottom.Visible = false
+        esp.boxLeft.Visible = false; esp.boxRight.Visible = false
+        esp.boxFill.Visible = false
         return
     end
     
     local character = player.Character
-    if not character then
-        esp.boxTop.Visible = false
-        esp.boxBottom.Visible = false
-        esp.boxLeft.Visible = false
-        esp.boxRight.Visible = false
-        return
-    end
-    
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then
-        esp.boxTop.Visible = false
-        esp.boxBottom.Visible = false
-        esp.boxLeft.Visible = false
-        esp.boxRight.Visible = false
-        return
-    end
-    
-    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
-    if not rootPart then
-        esp.boxTop.Visible = false
-        esp.boxBottom.Visible = false
-        esp.boxLeft.Visible = false
-        esp.boxRight.Visible = false
-        return
-    end
+    local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso"))
+    if not rootPart then return end
     
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-    if not onScreen then
-        esp.boxTop.Visible = false
-        esp.boxBottom.Visible = false
-        esp.boxLeft.Visible = false
-        esp.boxRight.Visible = false
-        return
+    if not onScreen then 
+        esp.boxTop.Visible = false; esp.boxFill.Visible = false
+        return 
     end
     
     local charSize = (camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 2.6, 0)).Y) / 2
     local boxSize = Vector2.new(math.floor(charSize * 1.8), math.floor(charSize * 1.9))
-    local boxPosition = Vector2.new(math.floor(hrp2D.X - charSize * 1.8 / 2), math.floor(hrp2D.Y - charSize * 1.6 / 2))
+    local boxPos = Vector2.new(math.floor(hrp2D.X - boxSize.X / 2), math.floor(hrp2D.Y - boxSize.Y / 2))
+    local color = getColorByVisibility(ESP.BoxColor, player)
     
-    local boxColor = getBoxColor(player)
+    esp.boxTop.From = boxPos; esp.boxTop.To = boxPos + Vector2.new(boxSize.X, 0); esp.boxTop.Color = color; esp.boxTop.Visible = true
+    esp.boxBottom.From = boxPos + Vector2.new(0, boxSize.Y); esp.boxBottom.To = boxPos + boxSize; esp.boxBottom.Color = color; esp.boxBottom.Visible = true
+    esp.boxLeft.From = boxPos; esp.boxLeft.To = boxPos + Vector2.new(0, boxSize.Y); esp.boxLeft.Color = color; esp.boxLeft.Visible = true
+    esp.boxRight.From = boxPos + Vector2.new(boxSize.X, 0); esp.boxRight.To = boxPos + boxSize; esp.boxRight.Color = color; esp.boxRight.Visible = true
     
-    esp.boxTop.From = boxPosition
-    esp.boxTop.To = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y)
-    esp.boxTop.Color = boxColor
-    esp.boxTop.Visible = true
-    
-    esp.boxBottom.From = Vector2.new(boxPosition.X, boxPosition.Y + boxSize.Y)
-    esp.boxBottom.To = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y + boxSize.Y)
-    esp.boxBottom.Color = boxColor
-    esp.boxBottom.Visible = true
-    
-    esp.boxLeft.From = boxPosition
-    esp.boxLeft.To = Vector2.new(boxPosition.X, boxPosition.Y + boxSize.Y)
-    esp.boxLeft.Color = boxColor
-    esp.boxLeft.Visible = true
-    
-    esp.boxRight.From = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y)
-    esp.boxRight.To = Vector2.new(boxPosition.X + boxSize.X, boxPosition.Y + boxSize.Y)
-    esp.boxRight.Color = boxColor
-    esp.boxRight.Visible = true
+    if ESP.ShowBoxFill then
+        esp.boxFill.Position = boxPos
+        esp.boxFill.Size = boxSize
+        esp.boxFill.Color = color
+        esp.boxFill.Visible = true
+    else
+        esp.boxFill.Visible = false
+    end
 end
 
 local function updateTracer(player)
     local esp = cache[player]
-    if not esp or not esp.tracer then 
-        return 
-    end
+    if not esp then return end
     
     if not ESP.Enabled or not ESP.ShowTracer or not shouldShowPlayer(player) then
         esp.tracer.Visible = false
         return
     end
     
-    local character = player.Character
-    local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
-    
-    if not rootPart then
-        esp.tracer.Visible = false
-        return
-    end
+    local rootPart = player.Character and (player.Character:FindFirstChild("HumanoidRootPart") or player.Character:FindFirstChild("Torso"))
+    if not rootPart then esp.tracer.Visible = false return end
     
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-    
-    if not onScreen then
-        esp.tracer.Visible = false
-        return
-    end
+    if not onScreen then esp.tracer.Visible = false return end
     
     esp.tracer.Visible = true
     esp.tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
     esp.tracer.To = Vector2.new(hrp2D.X, hrp2D.Y)
-    esp.tracer.Color = getTracerColor(player)
-    esp.tracer.Thickness = ESP.TracerThickness
+    esp.tracer.Color = getColorByVisibility(ESP.TracerColor, player)
+end
+
+local function updateHealth(player)
+    local esp = cache[player]
+    if not esp then return end
+    local character = player.Character
+    local humanoid = character and character:FindFirstChild("Humanoid")
+    
+    if not ESP.Enabled or not ESP.ShowHealth or not shouldShowPlayer(player) or not humanoid then
+        esp.health.Visible = false; esp.healthOutline.Visible = false
+        return
+    end
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+    local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+    if not onScreen then esp.health.Visible = false return end
+    
+    local charSize = (camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 2.6, 0)).Y) / 2
+    local boxSize = Vector2.new(math.floor(charSize * 1.8), math.floor(charSize * 1.9))
+    local boxPos = Vector2.new(math.floor(hrp2D.X - boxSize.X / 2), math.floor(hrp2D.Y - boxSize.Y / 2))
+    
+    local healthPct = humanoid.Health / humanoid.MaxHealth
+    local color = ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPct)
+    if ESP.VisibleCheck then color = getColorByVisibility(color, player) end
+    
+    esp.healthOutline.From = Vector2.new(boxPos.X - 5, boxPos.Y + boxSize.Y)
+    esp.healthOutline.To = Vector2.new(boxPos.X - 5, boxPos.Y)
+    esp.healthOutline.Visible = true
+    
+    esp.health.From = Vector2.new(boxPos.X - 5, boxPos.Y + boxSize.Y)
+    esp.health.To = Vector2.new(boxPos.X - 5, boxPos.Y + boxSize.Y - (healthPct * boxSize.Y))
+    esp.health.Color = color
+    esp.health.Visible = true
 end
 
 local function setupPlayer(player)
     if player == localPlayer then return end
-    
     createEsp(player)
     
-    local function onCharacterAdded(character)
+    local function onChar(char)
         task.wait(0.1)
-        
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "ESP_Highlight"
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0.5
-        highlight.FillColor = ESP.HighlightColor
-        highlight.Parent = character
-        highlight.Enabled = false
-        highlights[player] = highlight
+        local h = Instance.new("Highlight")
+        h.FillTransparency = 0.5
+        h.OutlineTransparency = 0.2
+        h.Parent = char
+        highlights[player] = h
     end
     
-    if player.Character then
-        onCharacterAdded(player.Character)
-    end
-    
-    player.CharacterAdded:Connect(onCharacterAdded)
-    
-    player.CharacterRemoving:Connect(function()
-        if highlights[player] then
-            highlights[player].Enabled = false
-        end
-    end)
+    player.CharacterAdded:Connect(onChar)
+    if player.Character then onChar(player.Character) end
 end
 
 local function cleanupPlayer(player)
-    if highlights[player] then
-        highlights[player]:Destroy()
-        highlights[player] = nil
-    end
-    
+    if highlights[player] then highlights[player]:Destroy(); highlights[player] = nil end
     if cache[player] then
-        for _, drawing in pairs(cache[player]) do
-            if drawing and drawing.Remove then
-                drawing:Remove()
-            end
-        end
+        for _, v in pairs(cache[player]) do v:Remove() end
         cache[player] = nil
     end
 end
 
 function ESP:Init()
     updateRaycastIgnore()
+    Players.PlayerAdded:Connect(setupPlayer)
+    Players.PlayerRemoving:Connect(cleanupPlayer)
+    for _, p in ipairs(Players:GetPlayers()) do setupPlayer(p) end
     
-    Players.PlayerAdded:Connect(function()
-        task.wait(0.5)
+    RunService.RenderStepped:Connect(function()
         updateRaycastIgnore()
-    end)
-    
-    Players.PlayerRemoving:Connect(function()
-        task.wait(0.1)
-        updateRaycastIgnore()
-    end)
-    
-    localPlayer.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        updateRaycastIgnore()
-    end)
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        task.spawn(setupPlayer, player)
-    end
-    
-    connections.PlayerAdded = Players.PlayerAdded:Connect(function(player)
-        task.spawn(setupPlayer, player)
-    end)
-    
-    connections.PlayerRemoving = Players.PlayerRemoving:Connect(function(player)
-        cleanupPlayer(player)
-    end)
-    
-    connections.RenderStepped = RunService.RenderStepped:Connect(function()
-        for player, _ in pairs(cache) do
-            updateHighlight(player)
-            updateName(player)
-            updateHealth(player)
-            updateBox(player)
-            updateTracer(player)
+        for p, _ in pairs(cache) do
+            updateHighlight(p)
+            updateName(p)
+            updateHealth(p)
+            updateBox(p)
+            updateTracer(p)
         end
     end)
 end
