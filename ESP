@@ -167,20 +167,26 @@ local function updateBox(player)
     local esp = cache[player]
     if not esp then return end
     
-    if not ESP.Enabled or not ESP.ShowBox or not shouldShowPlayer(player) then
-        esp.boxTop.Visible = false; esp.boxBottom.Visible = false
-        esp.boxLeft.Visible = false; esp.boxRight.Visible = false
+    local character = player.Character
+    local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso"))
+    
+    if not ESP.Enabled or not ESP.ShowBox or not shouldShowPlayer(player) or not rootPart then
+        esp.boxTop.Visible = false
+        esp.boxBottom.Visible = false
+        esp.boxLeft.Visible = false
+        esp.boxRight.Visible = false
         esp.boxFill.Visible = false
         return
     end
     
-    local character = player.Character
-    local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso"))
-    if not rootPart then return end
-    
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+    
     if not onScreen then 
-        esp.boxTop.Visible = false; esp.boxFill.Visible = false
+        esp.boxTop.Visible = false
+        esp.boxBottom.Visible = false
+        esp.boxLeft.Visible = false
+        esp.boxRight.Visible = false
+        esp.boxFill.Visible = false
         return 
     end
     
@@ -189,10 +195,25 @@ local function updateBox(player)
     local boxPos = Vector2.new(math.floor(hrp2D.X - boxSize.X / 2), math.floor(hrp2D.Y - boxSize.Y / 2))
     local color = getColorByVisibility(ESP.BoxColor, player)
     
-    esp.boxTop.From = boxPos; esp.boxTop.To = boxPos + Vector2.new(boxSize.X, 0); esp.boxTop.Color = color; esp.boxTop.Visible = true
-    esp.boxBottom.From = boxPos + Vector2.new(0, boxSize.Y); esp.boxBottom.To = boxPos + boxSize; esp.boxBottom.Color = color; esp.boxBottom.Visible = true
-    esp.boxLeft.From = boxPos; esp.boxLeft.To = boxPos + Vector2.new(0, boxSize.Y); esp.boxLeft.Color = color; esp.boxLeft.Visible = true
-    esp.boxRight.From = boxPos + Vector2.new(boxSize.X, 0); esp.boxRight.To = boxPos + boxSize; esp.boxRight.Color = color; esp.boxRight.Visible = true
+    esp.boxTop.From = boxPos
+    esp.boxTop.To = boxPos + Vector2.new(boxSize.X, 0)
+    esp.boxTop.Color = color
+    esp.boxTop.Visible = true
+    
+    esp.boxBottom.From = boxPos + Vector2.new(0, boxSize.Y)
+    esp.boxBottom.To = boxPos + boxSize
+    esp.boxBottom.Color = color
+    esp.boxBottom.Visible = true
+    
+    esp.boxLeft.From = boxPos
+    esp.boxLeft.To = boxPos + Vector2.new(0, boxSize.Y)
+    esp.boxLeft.Color = color
+    esp.boxLeft.Visible = true
+    
+    esp.boxRight.From = boxPos + Vector2.new(boxSize.X, 0)
+    esp.boxRight.To = boxPos + boxSize
+    esp.boxRight.Color = color
+    esp.boxRight.Visible = true
     
     if ESP.ShowBoxFill then
         esp.boxFill.Position = boxPos
