@@ -19,7 +19,6 @@ local ESP = {
     UseDisplayName = false,
     VisibleColor = Color3.fromRGB(255, 0, 0),
     InvisibleColor = Color3.fromRGB(128, 128, 128),
-    TeammateColor = Color3.fromRGB(0, 255, 0),
     HealthLowColor = Color3.fromRGB(255, 0, 0),
     HealthHighColor = Color3.fromRGB(0, 255, 0),
     HealthOutlineColor = Color3.fromRGB(0, 0, 0),
@@ -175,26 +174,16 @@ local function isTeammate(player)
 end
 
 local function getColorByVisibility(colorIfVisible, colorIfInvisible, player)
-    if isTeammate(player) then
-        return ESP.TeammateColor
-    end
-    
     if ESP.VisibleCheck then
         return isPlayerVisible(player) and colorIfVisible or colorIfInvisible
     end
-    
-    return colorIfVisible 
+    return colorIfVisible
 end
 
 local function getHighlightColor(player)
-    if isTeammate(player) then 
-        return ESP.TeammateColor 
-    end
-    
     if ESP.VisibleCheck then
         return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
     end
-    
     return ESP.HighlightColor
 end
 
@@ -211,14 +200,9 @@ local function getNameColor(player)
 end
 
 local function getHealthColor(player, healthPercent)
-    if isTeammate(player) then
-        return ESP.TeammateColor
-    end
-    
     if ESP.VisibleCheck then
         return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
     end
-    
     return ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPercent)
 end
 
@@ -233,10 +217,8 @@ local function shouldShowPlayer(player)
         return false
     end
     
-    if ESP.WallCheck then
-        if not isPlayerVisible(player) or not isPlayerOnScreen(player) then
-            return false
-        end
+    if ESP.WallCheck and not isPlayerVisible(player) then
+        return false
     end
     
     return true
