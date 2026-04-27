@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
---
+
 local highlights = {}
 local connections = {}
 local cache = {}
@@ -168,7 +168,10 @@ local function createEsp(player)
 end
 
 local function isTeammate(player)
-    return ESP.TeamCheck and player.Team and localPlayer.Team and player.Team == localPlayer.Team and player.TeamColor == localPlayer.TeamColor
+    if not ESP.TeamCheck then return false end
+    if player.Team == localPlayer.Team then return true end
+    if player.TeamColor == localPlayer.TeamColor then return true end
+    return false
 end
 
 local function getColorByVisibility(colorIfVisible, colorIfInvisible, player)
@@ -232,11 +235,8 @@ local function shouldShowPlayer(player)
         return false
     end
     
-    if ESP.WallCheck then
-        if not isPlayerVisible(player) or not isPlayerOnScreen(player) then
-            return false
-        end
-        return true
+    if ESP.WallCheck and not isPlayerVisible(player) then
+        return false
     end
     
     return true
@@ -246,13 +246,21 @@ local function updateHighlight(player)
     local highlight = highlights[player]
     if not highlight then return end
     
-    if not ESP.Enabled or not shouldShowPlayer(player) or ESP.ShowBox then
+    if not ESP.Enabled or ESP.ShowBox or not shouldShowPlayer(player) then
         highlight.Enabled = false
         return
     end
     
     highlight.Enabled = true
-    highlight.FillColor = getHighlightColor(player)
+    
+    if ESP.VisibleCheck then
+        local visible = isPlayerVisible(player)
+        highlight.FillColor = visible and ESP.VisibleColor or ESP.InvisibleColor
+        highlight.OutlineColor = visible and ESP.VisibleColor or ESP.InvisibleColor
+    else
+        highlight.FillColor = ESP.HighlightColor
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    end
 end
 
 local function updateName(player)
