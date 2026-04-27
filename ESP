@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
-
+--
 local highlights = {}
 local connections = {}
 local cache = {}
@@ -168,10 +168,10 @@ local function createEsp(player)
 end
 
 local function isTeammate(player)
-    if not ESP.TeamCheck then return false end
-    if player.Team == localPlayer.Team then return true end
-    if player.TeamColor == localPlayer.TeamColor then return true end
-    return false
+    if player.Team and localPlayer.Team then
+        return player.Team == localPlayer.Team
+    end
+    return player.TeamColor == localPlayer.TeamColor
 end
 
 local function getColorByVisibility(colorIfVisible, colorIfInvisible, player)
@@ -183,29 +183,31 @@ local function getColorByVisibility(colorIfVisible, colorIfInvisible, player)
         return isPlayerVisible(player) and colorIfVisible or colorIfInvisible
     end
     
-    return nil
+    return colorIfVisible 
 end
 
 local function getHighlightColor(player)
-    if isTeammate(player) then
-        return ESP.TeammateColor
+    if isTeammate(player) then 
+        return ESP.TeammateColor 
     end
+    
+    if ESP.VisibleCheck then
+        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
+    end
+    
     return ESP.HighlightColor
 end
 
 local function getBoxColor(player)
-    local color = getColorByVisibility(ESP.VisibleColor, ESP.InvisibleColor, player)
-    return color or ESP.BoxColor
+    return getColorByVisibility(ESP.BoxColor, ESP.InvisibleColor, player)
 end
 
 local function getTracerColor(player)
-    local color = getColorByVisibility(ESP.VisibleColor, ESP.InvisibleColor, player)
-    return color or ESP.TracerColor
+    return getColorByVisibility(ESP.TracerColor, ESP.InvisibleColor, player)
 end
 
 local function getNameColor(player)
-    local color = getColorByVisibility(ESP.VisibleColor, ESP.InvisibleColor, player)
-    return color or ESP.NameColor
+    return getColorByVisibility(ESP.NameColor, ESP.InvisibleColor, player)
 end
 
 local function getHealthColor(player, healthPercent)
@@ -213,15 +215,11 @@ local function getHealthColor(player, healthPercent)
         return ESP.TeammateColor
     end
     
-    local baseColor
     if ESP.VisibleCheck then
-        baseColor = isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
-    else
-        baseColor = ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPercent)
-        return baseColor
+        return isPlayerVisible(player) and ESP.VisibleColor or ESP.InvisibleColor
     end
     
-    return baseColor
+    return ESP.HealthLowColor:Lerp(ESP.HealthHighColor, healthPercent)
 end
 
 local function shouldShowPlayer(player)
@@ -231,12 +229,14 @@ local function shouldShowPlayer(player)
     local humanoid = character:FindFirstChild("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return false end
     
-    if isTeammate(player) then
+    if ESP.TeamCheck and isTeammate(player) then
         return false
     end
     
-    if ESP.WallCheck and not isPlayerVisible(player) then
-        return false
+    if ESP.WallCheck then
+        if not isPlayerVisible(player) or not isPlayerOnScreen(player) then
+            return false
+        end
     end
     
     return true
@@ -246,21 +246,15 @@ local function updateHighlight(player)
     local highlight = highlights[player]
     if not highlight then return end
     
-    if not ESP.Enabled or ESP.ShowBox or not shouldShowPlayer(player) then
+    if not ESP.Enabled or not shouldShowPlayer(player) or ESP.ShowBox then
         highlight.Enabled = false
         return
     end
     
     highlight.Enabled = true
-    
-    if ESP.VisibleCheck then
-        local visible = isPlayerVisible(player)
-        highlight.FillColor = visible and ESP.VisibleColor or ESP.InvisibleColor
-        highlight.OutlineColor = visible and ESP.VisibleColor or ESP.InvisibleColor
-    else
-        highlight.FillColor = ESP.HighlightColor
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-    end
+    local color = getHighlightColor(player)
+    highlight.FillColor = color
+    highlight.OutlineColor = color
 end
 
 local function updateName(player)
