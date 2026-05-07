@@ -5,7 +5,14 @@ local Library = {
     ModuleTransparency = 0.85,
     Blur = true,
     
-    Watermark = false,
+    Watermark = {
+        Title = false,
+        User = false,
+        Time = false,
+        Coordinates = false,
+        Fps = false,
+        Ping = false,
+    }
     WatermarkUser = false,
     WatermarkTime = false,
     WatermarkCoordinates = false,
@@ -15,12 +22,12 @@ local Library = {
     
     _Config = {
         WindowWidth = 250,
-        ModuleHeight = 40,
+        ModuleHeight = 45,
         Spacing = 5,
         StartY = 220,
         FontBold = Enum.Font.GothamBold, 
         FontMedium = Enum.Font.GothamMedium,
-        Rounding = UDim.new(0, 8)
+        Rounding = UDim.new(0, 12.5)
     },
     _Initialized = false,
     _Keybinds = {},
@@ -151,7 +158,7 @@ function Library:InitHUD()
     self.Tooltip = {Frame = Tooltip, Label = TTxt}
 
     -- [SEARCH]
-    local SearchFrame = Instance.new("Frame", HUD); SearchFrame.Size = UDim2.new(0, 200, 0, 35); SearchFrame.AnchorPoint = Vector2.new(0.5, 1); SearchFrame.Position = UDim2.new(0.5, 0, 1, -30); SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding
+    local SearchFrame = Instance.new("Frame", HUD); SearchFrame.Size = UDim2.new(0, 150, 0, 38.5); SearchFrame.AnchorPoint = Vector2.new(0.5, 1); SearchFrame.Position = UDim2.new(0.5, 0, 1, -30); SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding
     self.SearchFrame = SearchFrame
     local Box = Instance.new("TextBox", SearchFrame); Box.Size = UDim2.new(1,-20,1,0); Box.Position = UDim2.new(0,10,0,0); Box.BackgroundTransparency = 1; Box.Text = "Search: Ctrl+F"; Box.PlaceholderText = "Search: Ctrl+F"; Box.TextColor3 = Color3.new(1,1,1); Box.Font = self._Config.FontMedium; Box.TextSize = 13
     Box:GetPropertyChangedSignal("Text"):Connect(function() local q = Box.Text:lower() for _, mod in pairs(self._Modules) do mod.Frame.Visible = mod.Name:lower():find(q) ~= nil end end)
@@ -259,7 +266,7 @@ function Library:CreateWindow(name)
         local MFrame = Instance.new("Frame", Scroll); MFrame.Size = UDim2.new(1, -12, 0, Library._Config.ModuleHeight); MFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30); MFrame.ClipsDescendants = true; Instance.new("UICorner", MFrame)
         modData.Frame = MFrame
         local MBtn = Instance.new("TextButton", MFrame); MBtn.Size = UDim2.new(1, 0, 0, Library._Config.ModuleHeight); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.Font = Library._Config.FontMedium; MBtn.TextSize = 13; MBtn.TextColor3 = Color3.fromRGB(200, 200, 200); MBtn.TextXAlignment = 0
-        local Dots = Instance.new("TextLabel", MFrame); Dots.Size = UDim2.new(0, 20, 0, Library._Config.ModuleHeight); Dots.Position = UDim2.new(1, -25, 0, 0); Dots.BackgroundTransparency = 1; Dots.Text = "..."; Dots.TextColor3 = Color3.new(1, 1, 1); Dots.Font = Library._Config.FontBold; Dots.Visible = false
+        local Dots = Instance.new("TextLabel", MFrame); Dots.Size = UDim2.new(0, 20, 0, Library._Config.ModuleHeight); Dots.Position = UDim2.new(1, -25, 0, -2.5); Dots.BackgroundTransparency = 1; Dots.Text = ". . ."; Dots.TextColor3 = Color3.new(1, 1, 1); Dots.Font = Library._Config.FontBold; Dots.Visible = false
         local Nodes = Instance.new("Frame", MFrame); Nodes.Position = UDim2.new(0, 0, 0, Library._Config.ModuleHeight); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1; Instance.new("UIListLayout", Nodes).Padding = UDim.new(0, 6); Nodes.UIListLayout.HorizontalAlignment = "Center"
 
         if tooltipText and tooltipText ~= "" and type(tooltipText) == "string" then
@@ -339,5 +346,4 @@ function Library:CreateWindow(name)
     end
     return Window
 end
-
 return Library
