@@ -12,22 +12,19 @@ local Library = {
         Coordinates = false,
         Fps = false,
         Ping = false,
-    }
-    WatermarkUser = false,
-    WatermarkTime = false,
-    WatermarkCoordinates = false,
-    WatermarkFps = false,
-    WatermarkPing = false,
-    KeybindList = false,
+    },
     
     _Config = {
         WindowWidth = 250,
-        ModuleHeight = 45,
+        ModuleHeight = 40,
         Spacing = 5,
         StartY = 220,
         FontBold = Enum.Font.GothamBold, 
         FontMedium = Enum.Font.GothamMedium,
-        Rounding = UDim.new(0, 12.5)
+        Rounding = {
+            Menu = UDim.new(0, 12.5),
+            Hover = UDim.new(0, 7.5)
+        }
     },
     _Initialized = false,
     _Keybinds = {},
@@ -108,15 +105,56 @@ end
 
 function Library:ToggleMenu()
     self._Visible = not self._Visible
-    local screenHeight = 2000
+    
+    local offset = 40 
+    local duration = 0.2
+    
     for i, win in pairs(self._Windows) do
-        local targetY = self._Visible and self._Config.StartY or ((i % 2 == 0) and screenHeight or -screenHeight)
-        SafeTween(win.Frame, {Position = UDim2.new(0, win.Frame.Position.X.Offset, 0, targetY)})
+        local move = (i % 2 == 0) and offset or -offset
+        local targetY = self._Visible and self._Config.StartY or (self._Config.StartY + move)
+        local targetAlpha = self._Visible and 0 or 1
+
+        if self._Visible then
+            win.Frame.GroupTransparency = 1
+            win.Frame.Position = UDim2.new(0, win.Frame.Position.X.Offset, 0, self._Config.StartY + move)
+            win.Frame.Visible = true
+        end
+
+        SafeTween(win.Frame, {
+            Position = UDim2.new(0, win.Frame.Position.X.Offset, 0, targetY),
+            GroupTransparency = targetAlpha
+        }, duration)
+
+        if not self._Visible then
+            task.delay(duration, function()
+                if not self._Visible then
+                    win.Frame.Visible = false
+                end
+            end)
+        end
     end
+
     if self.SearchFrame then
-        local targetSearchY = self._Visible and -30 or 150
-        SafeTween(self.SearchFrame, {Position = UDim2.new(0.5, 0, 1, targetSearchY)})
+        local targetSearchY = self._Visible and -30 or 10
+        local targetAlpha = self._Visible and 0 or 1
+
+        if self._Visible then
+            self.SearchFrame.GroupTransparency = 1
+            self.SearchFrame.Visible = true
+        end
+
+        SafeTween(self.SearchFrame, {
+            Position = UDim2.new(0.5, 0, 1, targetSearchY),
+            GroupTransparency = targetAlpha
+        }, duration)
+
+        if not self._Visible then
+            task.delay(duration, function()
+                if not self._Visible then self.SearchFrame.Visible = false end
+            end)
+        end
     end
+
     if self.Tooltip then self.Tooltip.Frame.Visible = false end
     local b = Lighting:FindFirstChild("NightBlur")
     if b then b.Enabled = (self.Blur and self._Visible) end
@@ -129,7 +167,6 @@ function Library:InitHUD()
     local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V23"; self.MainGui = HUD
     local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18; MenuBlur.Enabled = self.Blur
 
-    -- [TARGET HUD]
     local TH = Instance.new("Frame", HUD); TH.Size = UDim2.new(0, 210, 0, 65); TH.Position = UDim2.new(0.5, 100, 0.5, 100); TH.BackgroundColor3 = Color3.fromRGB(15,15,20); TH.Visible = false
     Instance.new("UICorner", TH).CornerRadius = UDim.new(0, 10)
     local TImgC = Instance.new("Frame", TH); TImgC.Size = UDim2.new(0, 45, 0, 45); TImgC.Position = UDim2.new(0, 10, 0.5, -22); TImgC.BackgroundColor3 = Color3.fromRGB(25,25,30); Instance.new("UICorner", TImgC)
@@ -150,40 +187,59 @@ function Library:InitHUD()
         SafeTween(self.Fill, {Size = UDim2.new(math.clamp(hp/maxhp, 0, 1), 0, 1, 0)}, 0.3)
     end
 
-    -- [TOOLTIP]
     local Tooltip = Instance.new("Frame", HUD); Tooltip.BackgroundColor3 = Color3.fromRGB(10,10,12); Tooltip.Size = UDim2.new(0, 0, 0, 30); Tooltip.Position = UDim2.new(0.5, 0, 0, 45); Tooltip.AnchorPoint = Vector2.new(0.5, 0); Tooltip.Visible = false; Tooltip.AutomaticSize = "X"
     Instance.new("UICorner", Tooltip).CornerRadius = UDim.new(0, 6)
     local TTxt = Instance.new("TextLabel", Tooltip); TTxt.Size = UDim2.new(0, 0, 1, 0); TTxt.AutomaticSize = "X"; TTxt.Font = self._Config.FontMedium; TTxt.TextSize = 13; TTxt.TextColor3 = Color3.new(1,1,1); TTxt.BackgroundTransparency = 1; TTxt.RichText = true
     Instance.new("UIPadding", TTxt).PaddingLeft = UDim.new(0, 15); TTxt.UIPadding.PaddingRight = UDim.new(0, 15)
     self.Tooltip = {Frame = Tooltip, Label = TTxt}
 
-    -- [SEARCH]
-    local SearchFrame = Instance.new("Frame", HUD); SearchFrame.Size = UDim2.new(0, 150, 0, 38.5); SearchFrame.AnchorPoint = Vector2.new(0.5, 1); SearchFrame.Position = UDim2.new(0.5, 0, 1, -30); SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding
+    local SearchFrame = Instance.new("CanvasGroup", HUD); SearchFrame.Size = UDim2.new(0, 150, 0, 40); SearchFrame.AnchorPoint = Vector2.new(0.5, 1); SearchFrame.Position = UDim2.new(0.5, 0, 1, -30); SearchFrame.BackgroundColor3 = Color3.fromRGB(15,15,20); Instance.new("UICorner", SearchFrame).CornerRadius = self._Config.Rounding.Hover
     self.SearchFrame = SearchFrame
     local Box = Instance.new("TextBox", SearchFrame); Box.Size = UDim2.new(1,-20,1,0); Box.Position = UDim2.new(0,10,0,0); Box.BackgroundTransparency = 1; Box.Text = "Search: Ctrl+F"; Box.PlaceholderText = "Search: Ctrl+F"; Box.TextColor3 = Color3.new(1,1,1); Box.Font = self._Config.FontMedium; Box.TextSize = 13
     Box:GetPropertyChangedSignal("Text"):Connect(function() local q = Box.Text:lower() for _, mod in pairs(self._Modules) do mod.Frame.Visible = mod.Name:lower():find(q) ~= nil end end)
 
-    -- [WATERMARKS]
+
     local WMMain = Instance.new("Frame", HUD); WMMain.Position = UDim2.new(0, 20, 0, 20); WMMain.BackgroundTransparency = 1; WMMain.Size = UDim2.new(0, 800, 0, 70)
     Instance.new("UIListLayout", WMMain).Padding = UDim.new(0, 6)
     local Floor1 = Instance.new("Frame", WMMain); Floor1.Size = UDim2.new(1, 0, 0, 28); Floor1.BackgroundTransparency = 1; Instance.new("UIListLayout", Floor1).FillDirection = "Horizontal"; Floor1.UIListLayout.Padding = UDim.new(0, 6)
     local Floor2 = Instance.new("Frame", WMMain); Floor2.Size = UDim2.new(1, 0, 0, 28); Floor2.BackgroundTransparency = 1; Instance.new("UIListLayout", Floor2).FillDirection = "Horizontal"; Floor2.UIListLayout.Padding = UDim.new(0, 6)
     self._WMModules = {}
     local function CreateWMModule(parent, checkKey)
-        local f = Instance.new("Frame", parent); f.BackgroundColor3 = Color3.fromRGB(10,10,12); Instance.new("UICorner", f).CornerRadius = self._Config.Rounding
-        local l = Instance.new("TextLabel", f); l.Size = UDim2.new(1,0,1,0); l.Font = self._Config.FontBold; l.TextSize = 12; l.TextColor3 = Color3.new(1,1,1); l.BackgroundTransparency = 1; l.RichText = true
-        l:GetPropertyChangedSignal("Text"):Connect(function() local s = TextService:GetTextSize(l.Text:gsub("<[^>]+>", ""), l.TextSize, l.Font, Vector2.new(1000, 1000)) f.Size = UDim2.new(0, s.X + 24, 1, 0) end)
-        table.insert(self._WMModules, {Frame = f, Key = checkKey}); return l
-    end
-    local m_title = CreateWMModule(Floor1, "Watermark"); local m_user = CreateWMModule(Floor1, "WatermarkUser"); local m_time = CreateWMModule(Floor1, "WatermarkTime"); local m_fps = CreateWMModule(Floor2, "WatermarkFps"); local m_ping = CreateWMModule(Floor2, "WatermarkPing"); local m_pos = CreateWMModule(Floor2, "WatermarkCoordinates")
+        local f = Instance.new("Frame", parent)
+        f.BackgroundColor3 = Color3.fromRGB(10,10,12)
+        f.Visible = false
+    
+        Instance.new("UICorner", f).CornerRadius = self._Config.Rounding.Hover
 
-    -- [KEYBINDS]
-    local KBGui = Instance.new("Frame", HUD); KBGui.BackgroundColor3 = Color3.fromRGB(10,10,12); KBGui.Size = UDim2.new(0, 180, 0, 32); KBGui.Position = UDim2.new(1, -200, 0, 20); Instance.new("UICorner", KBGui).CornerRadius = self._Config.Rounding
+        local l = Instance.new("TextLabel", f)
+        l.Size = UDim2.new(1,0,1,0)
+        l.Font = self._Config.FontBold
+        l.TextSize = 12
+        l.TextColor3 = Color3.new(1,1,1)
+        l.BackgroundTransparency = 1
+        l.RichText = true
+
+        l:GetPropertyChangedSignal("Text"):Connect(function() 
+            local s = TextService:GetTextSize(l.Text:gsub("<[^>]+>", ""), l.TextSize, l.Font, Vector2.new(1000, 1000)) 
+            f.Size = UDim2.new(0, s.X + 24, 1, 0) 
+        end)
+
+        table.insert(self._WMModules, {Frame = f, Key = checkKey})
+        
+        return l
+    end
+    local m_title = CreateWMModule(Floor1, "Title") 
+    local m_user  = CreateWMModule(Floor1, "User") 
+    local m_time  = CreateWMModule(Floor1, "Time") 
+    local m_fps   = CreateWMModule(Floor2, "Fps") 
+    local m_ping  = CreateWMModule(Floor2, "Ping") 
+    local m_pos   = CreateWMModule(Floor2, "Coordinates")
+    local KBGui = Instance.new("Frame", HUD); KBGui.BackgroundColor3 = Color3.fromRGB(10,10,12); KBGui.Size = UDim2.new(0, 180, 0, 32); KBGui.Position = UDim2.new(1, -200, 0, 20); Instance.new("UICorner", KBGui).CornerRadius = self._Config.Rounding.Hover
     local KBTitle = Instance.new("TextButton", KBGui); KBTitle.Size = UDim2.new(1, 0, 0, 32); KBTitle.Text = "Keybinds"; KBTitle.Font = self._Config.FontBold; KBTitle.TextSize = 13; KBTitle.BackgroundTransparency = 1
     local KBList = Instance.new("Frame", KBGui); KBList.Position = UDim2.new(0, 0, 0, 32); KBList.Size = UDim2.new(1, 0, 0, 0); KBList.BackgroundTransparency = 1; Instance.new("UIListLayout", KBList).Padding = UDim.new(0, 2); Instance.new("UIPadding", KBList).PaddingLeft = UDim.new(0, 10)
     MakeDraggable(KBGui, KBTitle)
 
-    -- [RENDER CYCLE]
+    local lastFps, fpsTimer = 0, 0
     local lastFps, fpsTimer = 0, 0
     RunService.RenderStepped:Connect(function(dt)
         local accentHex = self.Accent:ToHex()
@@ -203,7 +259,11 @@ function Library:InitHUD()
             TTxt.Text = "<font color='#" .. accentHex .. "'>" .. self._CurrentHoveredModule.Name .. "</font> - " .. self._CurrentHoveredModule.Tooltip
         end
 
-        for _, item in pairs(self._WMModules) do item.Frame.Visible = self[item.Key] item.Frame.BackgroundTransparency = self.Transparency end
+        for _, item in pairs(self._WMModules) do 
+            item.Frame.Visible = self.Watermark[item.Key] 
+            item.Frame.BackgroundTransparency = self.Transparency 
+        end
+
         m_title.Text = "NIGHT <font color='#" .. accentHex .. "'>DLC</font>"
         m_user.Text = "<font color='#" .. accentHex .. "'>" .. LocalPlayer.DisplayName .. "</font>"
         fpsTimer = fpsTimer + dt if fpsTimer >= 0.5 then lastFps = math.floor(1/dt) fpsTimer = 0 end
@@ -243,7 +303,7 @@ function Library:InitHUD()
         for name, data in pairs(self._Keybinds) do 
             if data.Key and i.KeyCode == data.Key then 
                 data.Enabled = not data.Enabled 
-                if data.Callback then data.Callback(data.Enabled) end -- [FIX] Проверка на nil
+                if data.Callback then data.Callback(data.Enabled) end
                 self._RebuildKB() 
             end 
         end
@@ -253,7 +313,7 @@ end
 
 function Library:CreateWindow(name)
     self:InitHUD()
-    local Main = Instance.new("Frame", self.MainGui); Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 40); Main.Position = UDim2.new(0, self._CurrentX, 0, self._Config.StartY); Main.BackgroundColor3 = Color3.fromRGB(10, 10, 12); Instance.new("UICorner", Main).CornerRadius = self._Config.Rounding
+    local Main = Instance.new("CanvasGroup", self.MainGui); Main.Size = UDim2.new(0, self._Config.WindowWidth, 0, 40); Main.Position = UDim2.new(0, self._CurrentX, 0, self._Config.StartY); Main.BackgroundColor3 = Color3.fromRGB(10, 10, 12); Instance.new("UICorner", Main).CornerRadius = self._Config.Rounding.Menu
     local Header = Instance.new("TextLabel", Main); Header.Size = UDim2.new(1, 0, 0, 40); Header.Text = name; Header.Font = self._Config.FontBold; Header.TextColor3 = self.Accent; Header.BackgroundTransparency = 1; Header.TextSize = 14
     local Scroll = Instance.new("ScrollingFrame", Main); Scroll.Position = UDim2.new(0, 0, 0, 40); Scroll.Size = UDim2.new(1, 0, 0, 0); Scroll.BackgroundTransparency = 1; Scroll.ScrollBarThickness = 0
     local Layout = Instance.new("UIListLayout", Scroll); Layout.Padding = UDim.new(0, 4); Layout.HorizontalAlignment = "Center"
@@ -266,7 +326,7 @@ function Library:CreateWindow(name)
         local MFrame = Instance.new("Frame", Scroll); MFrame.Size = UDim2.new(1, -12, 0, Library._Config.ModuleHeight); MFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30); MFrame.ClipsDescendants = true; Instance.new("UICorner", MFrame)
         modData.Frame = MFrame
         local MBtn = Instance.new("TextButton", MFrame); MBtn.Size = UDim2.new(1, 0, 0, Library._Config.ModuleHeight); MBtn.BackgroundTransparency = 1; MBtn.Text = "  " .. modName; MBtn.Font = Library._Config.FontMedium; MBtn.TextSize = 13; MBtn.TextColor3 = Color3.fromRGB(200, 200, 200); MBtn.TextXAlignment = 0
-        local Dots = Instance.new("TextLabel", MFrame); Dots.Size = UDim2.new(0, 20, 0, Library._Config.ModuleHeight); Dots.Position = UDim2.new(1, -25, 0, -2.5); Dots.BackgroundTransparency = 1; Dots.Text = ". . ."; Dots.TextColor3 = Color3.new(1, 1, 1); Dots.Font = Library._Config.FontBold; Dots.Visible = false
+        local Dots = Instance.new("TextLabel", MFrame); Dots.Size = UDim2.new(0, 20, 0, Library._Config.ModuleHeight); Dots.Position = UDim2.new(1, -30, 0, -2.5); Dots.BackgroundTransparency = 1; Dots.Text = ". . ."; Dots.TextColor3 = Color3.new(1, 1, 1); Dots.Font = Library._Config.FontBold; Dots.Visible = false
         local Nodes = Instance.new("Frame", MFrame); Nodes.Position = UDim2.new(0, 0, 0, Library._Config.ModuleHeight); Nodes.Size = UDim2.new(1, 0, 0, 0); Nodes.BackgroundTransparency = 1; Instance.new("UIListLayout", Nodes).Padding = UDim.new(0, 6); Nodes.UIListLayout.HorizontalAlignment = "Center"
 
         if tooltipText and tooltipText ~= "" and type(tooltipText) == "string" then
@@ -274,7 +334,7 @@ function Library:CreateWindow(name)
             MBtn.MouseLeave:Connect(function() Library._CurrentHoveredModule = nil; Library.Tooltip.Frame.Visible = false end)
         end
 
-        Library._Keybinds[modName] = {Enabled = false, Key = nil, Callback = function(v) modData.Enabled = v if callback then callback(v) end end} -- [FIX] Проверка на nil
+        Library._Keybinds[modName] = {Enabled = false, Key = nil, Callback = function(v) modData.Enabled = v if callback then callback(v) end end}
         MBtn.MouseButton1Click:Connect(function() modData.Enabled = not modData.Enabled; Library._Keybinds[modName].Enabled = modData.Enabled; Library._Keybinds[modName].Callback(modData.Enabled); Library._RebuildKB() end)
         MBtn.MouseButton2Click:Connect(function() if not Dots.Visible then return end modData.Opened = not modData.Opened; local targetH = modData.Opened and (Library._Config.ModuleHeight + Nodes.UIListLayout.AbsoluteContentSize.Y + 10) or Library._Config.ModuleHeight; SafeTween(MFrame, {Size = UDim2.new(1, -12, 0, targetH)}, 0.4) end)
         MBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton3 then MBtn.Text = "  " .. modName .. " [?]"; local conn; conn = UserInputService.InputBegan:Connect(function(i, g) if not g then Library._Keybinds[modName].Key = i.KeyCode; MBtn.Text = "  " .. modName; Library._RebuildKB(); conn:Disconnect() end end) end end)
@@ -346,4 +406,5 @@ function Library:CreateWindow(name)
     end
     return Window
 end
+
 return Library
