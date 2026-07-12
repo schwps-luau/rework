@@ -1,8 +1,3 @@
---[[
-Yun Founders: flash#9999, loris#9547, worldwide#0001 , Saul Goodman#2345
-Yun Devs: zomb#7741, nives#0001, loot#1337
-Special Thanks To: Qw#1549
---]]
 function initLibrary()
     local folderName = "config holder"
     local gameConfigFolder = "cfgs"
@@ -10,7 +5,7 @@ function initLibrary()
     if not isfolder(gameConfigFolder) then
         makefolder(gameConfigFolder)
     end
-
+    
     local inputService = game:GetService("UserInputService")
     local tweenService = game:GetService("TweenService")
     local runService = game:GetService("RunService")
@@ -122,7 +117,9 @@ function initLibrary()
         dragSpeed = 0.25,
         watermarks = {},
         selectedTheme = nil,
-        _currentMenuName = nil
+        _currentMenuName = nil,
+        _rainbowConnections = {},
+        _savedColors = {}
     }
 
     local coloredGradients = {}
@@ -174,7 +171,7 @@ function initLibrary()
 
     gui.Parent = coreGui
 
-    local flags = {toggles = {}, boxes = {}, sliders = {}, dropdowns = {}, multidropdowns = {}, keybinds = {}, colorpickers = {}}
+    local flags = {toggles = {}, boxes = {}, sliders = {}, dropdowns = {}, multidropdowns = {}, keybinds = {}, colorpickers = {}, rainbows = {}}
 
     function library:LoadConfig(file)
         local str = readfile(gameConfigFolder .. "/" .. file .. ".cfg")
@@ -182,6 +179,11 @@ function initLibrary()
         for flag, value in next, tbl.colorpickers do
             if flags.colorpickers[flag] then
                 flags.colorpickers[flag](value)
+            end
+        end
+        for flag, value in next, tbl.rainbows do
+            if flags.rainbows[flag] then
+                flags.rainbows[flag](value)
             end
         end
         for flag, value in next, tbl.toggles do
@@ -258,6 +260,12 @@ function initLibrary()
         for flag, _ in next, flags.colorpickers do
             count = count + 1
             configstr = configstr .. "['" .. flag .. "']=Color3.new(" .. tostring(library.flags[flag]) .. "),"
+        end
+        configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "},rainbows={"
+        count = 0
+        for flag, _ in next, flags.rainbows do
+            count = count + 1
+            configstr = configstr .. "['" .. flag .. "']=" .. tostring(library.flags[flag]) .. ","
         end
         configstr = (count > 0 and configstr:sub(1, -2) or configstr) .. "}}"
         writefile(gameConfigFolder .. "/" .. name .. ".cfg", "return " .. configstr)
@@ -886,7 +894,7 @@ function initLibrary()
                 BackgroundTransparency = 1,
                 Parent = columnsContainer
             })
-
+            local function updateLayout() end
             local column1 = utility.create("ScrollingFrame", {
                 Size = UDim2.new(0.5, -2, 1, 0),
                 Position = UDim2.new(0, 0, 0, 0),
@@ -964,8 +972,7 @@ function initLibrary()
             end)
 
             local tabColumnSizes = {}
-
-            local function updateLayout()
+            updateLayout = function()
                 local totalWidth = columnsContainer.AbsoluteSize.X
                 if totalWidth < 100 then totalWidth = sizeX end
                 
@@ -981,6 +988,7 @@ function initLibrary()
                     topRow.Visible = false
                     bottomRow.Position = UDim2.new(0, 0, 0, 0)
                     bottomRow.Size = UDim2.new(1, 0, 1, 0)
+                    bottomRow.Visible = true
                 else
                     topRow.Visible = true
                     if bottomCount == 0 then
@@ -1000,10 +1008,9 @@ function initLibrary()
                         column1.Size = UDim2.new(0, colWidth, 1, 0)
                         column1.Position = UDim2.new(0, 0, 0, 0)
                         column1.Visible = true
-                        local xPos = colWidth + 4
                         if tabColumnSizes[2] then
                             column2.Size = UDim2.new(0, colWidth, 1, 0)
-                            column2.Position = UDim2.new(0, xPos, 0, 0)
+                            column2.Position = UDim2.new(0, colWidth + 4, 0, 0)
                             column2.Visible = true
                         else
                             column2.Visible = false
@@ -1025,10 +1032,9 @@ function initLibrary()
                         column3.Size = UDim2.new(0, colWidth, 1, 0)
                         column3.Position = UDim2.new(0, 0, 0, 0)
                         column3.Visible = true
-                        local xPos = colWidth + 4
                         if tabColumnSizes[4] then
                             column4.Size = UDim2.new(0, colWidth, 1, 0)
-                            column4.Position = UDim2.new(0, xPos, 0, 0)
+                            column4.Position = UDim2.new(0, colWidth + 4, 0, 0)
                             column4.Visible = true
                         else
                             column4.Visible = false
@@ -1614,159 +1620,217 @@ function initLibrary()
                 end
 
                 function sectionTypes:Slider(opts)
-                    local options = utility.table(opts)
-                    local min = options.min or 0
-                    local max = options.max or 100
-                    local valueText = options.valueText or "Slider: [VALUE]/" .. tostring(max)
-                    local default = options.default or math.clamp(0, min, max)
-                    local decimals = options.decimals or 0.1
-                    local flag = options.flag
-                    local callback = options.callback or function() end
+                        local options = utility.table(opts)
+                        local min = options.min or 0
+                        local max = options.max or 100
+                        local valueText = options.valueText or "Slider: [VALUE]/" .. tostring(max)
+                        local default = options.default or math.clamp(0, min, max)
+                        local decimals = options.decimals or 0.1
+                        local flag = options.flag
+                        local callback = options.callback or function() end
+                        local showTextBox = options.showTextBox or true
 
-                    decimals = math.floor(10 ^ decimals)
+                        decimals = math.floor(10 ^ decimals)
 
-                    if flag then
-                        library.flags[flag] = default
-                    end
-                    callback(default)
-
-                    local value = default
-                    local sliding = false
-
-                    local slider = utility.create("Frame", {
-                        ZIndex = 3,
-                        Size = UDim2.new(1, 0, 0, 16),
-                        BorderColor3 = selectedTheme.background,
-                        Position = UDim2.new(0, 0, 1, -13),
-                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                        Parent = sectionContent
-                    })
-
-                    local fill = utility.create("Frame", {
-                        ZIndex = 4,
-                        Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
-                        BorderSizePixel = 0,
-                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                        Parent = slider
-                    })
-
-                    local fillGradient = utility.create("UIGradient", {
-                        Rotation = 90,
-                        Color = ColorSequence.new{
-                            ColorSequenceKeypoint.new(0, library.color),
-                            ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
-                        },
-                        Parent = fill
-                    })
-
-                    table.insert(coloredGradients, fillGradient)
-
-                    utility.create("UIGradient", {
-                        Rotation = 90,
-                        Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
-                        Parent = slider
-                    })
-
-                    local title = utility.create("TextLabel", {
-                        ZIndex = 5,
-                        Size = UDim2.new(1, 0, 1, 0),
-                        BackgroundTransparency = 1,
-                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                        FontSize = Enum.FontSize.Size12,
-                        TextSize = 12,
-                        TextColor3 = selectedTheme.text,
-                        Text = valueText:gsub("%[VALUE%]", tostring(default)),
-                        Font = Enum.Font.Gotham,
-                        Parent = slider
-                    })
-
-                    local function slide(input)
-                        local sizeX = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
-                        fill.Size = UDim2.new(sizeX, 0, 1, 0)
-                        value = math.floor((((max - min) * sizeX) + min) * decimals) / decimals
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
                         if flag then
-                            library.flags[flag] = value
+                                library.flags[flag] = default
                         end
-                        callback(value)
-                    end
+                        callback(default)
 
-                    slider.InputBegan:Connect(function(input)
-                        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                            sliding = true
-                            slide(input)
+                        local value = default
+                        local sliding = false
+
+                        local sliderHolder = utility.create("Frame", {
+                                Size = UDim2.new(1, 0, 0, 16),
+                                BackgroundTransparency = 1,
+                                Parent = sectionContent
+                        })
+
+                        local slider = utility.create("Frame", {
+                                ZIndex = 3,
+                                Size = UDim2.new(1, (showTextBox and -50) or 0, 0, 16),
+                                BorderColor3 = selectedTheme.background,
+                                Position = UDim2.new(0, 0, 0, 0),
+                                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                Parent = sliderHolder
+                        })
+
+                        local fill = utility.create("Frame", {
+                                ZIndex = 4,
+                                Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
+                                BorderSizePixel = 0,
+                                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                Parent = slider
+                        })
+
+                        local fillGradient = utility.create("UIGradient", {
+                                Rotation = 90,
+                                Color = ColorSequence.new{
+                                        ColorSequenceKeypoint.new(0, library.color),
+                                        ColorSequenceKeypoint.new(1, utility.change_color(library.color, -47))
+                                },
+                                Parent = fill
+                        })
+
+                        table.insert(coloredGradients, fillGradient)
+
+                        utility.create("UIGradient", {
+                                Rotation = 90,
+                                Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
+                                Parent = slider
+                        })
+
+                        local title = utility.create("TextLabel", {
+                                ZIndex = 5,
+                                Size = UDim2.new(1, 0, 1, 0),
+                                BackgroundTransparency = 1,
+                                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                FontSize = Enum.FontSize.Size12,
+                                TextSize = 12,
+                                TextColor3 = selectedTheme.text,
+                                Text = valueText:gsub("%[VALUE%]", tostring(default)),
+                                Font = Enum.Font.Gotham,
+                                Parent = slider
+                        })
+
+                        local textBox = nil
+                        if showTextBox then
+                                textBox = utility.create("TextBox", {
+                                        ZIndex = 4,
+                                        Size = UDim2.new(0, 44, 0, 16),
+                                        Position = UDim2.new(1, -48, 0, 0),
+                                        BorderColor3 = selectedTheme.background,
+                                        BackgroundColor3 = selectedTheme.background,
+                                        FontSize = Enum.FontSize.Size12,
+                                        TextSize = 12,
+                                        TextColor3 = selectedTheme.text,
+                                        Text = tostring(default),
+                                        Font = Enum.Font.Gotham,
+                                        Parent = sliderHolder
+                                })
+
+                                local textBoxBg = utility.create("Frame", {
+                                        ZIndex = 3,
+                                        Size = UDim2.new(1, 0, 1, 0),
+                                        BorderColor3 = selectedTheme.background,
+                                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                                        Parent = textBox
+                                })
+
+                                utility.create("UIGradient", {
+                                        Rotation = 90,
+                                        Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
+                                        Parent = textBoxBg
+                                })
+
+                                textBox.FocusLost:Connect(function()
+                                        local num = tonumber(textBox.Text) or value
+                                        num = math.clamp(num, min, max)
+                                        local sizeX = (num - min) / (max - min)
+                                        fill.Size = UDim2.new(sizeX, 0, 1, 0)
+                                        value = math.floor(num * decimals) / decimals
+                                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                        textBox.Text = tostring(value)
+                                        if flag then
+                                                library.flags[flag] = value
+                                        end
+                                        callback(value)
+                                end)
                         end
-                    end)
 
-                    slider.InputEnded:Connect(function(input)
-                        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                            sliding = false
+                        local function slide(input)
+                                local sizeX = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+                                fill.Size = UDim2.new(sizeX, 0, 1, 0)
+                                value = math.floor((((max - min) * sizeX) + min) * decimals) / decimals
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                if textBox then
+                                        textBox.Text = tostring(value)
+                                end
+                                if flag then
+                                        library.flags[flag] = value
+                                end
+                                callback(value)
                         end
-                    end)
 
-                    inputService.InputChanged:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                            if sliding then
-                                slide(input)
-                            end
+                        slider.InputBegan:Connect(function(input)
+                                if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+                                        sliding = true
+                                        slide(input)
+                                end
+                        end)
+
+                        slider.InputEnded:Connect(function(input)
+                                if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+                                        sliding = false
+                                end
+                        end)
+
+                        inputService.InputChanged:Connect(function(input)
+                                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                                        if sliding then
+                                                slide(input)
+                                        end
+                                end
+                        end)
+
+                        local sliderTypes = utility.table()
+
+                        function sliderTypes:Show()
+                                sliderHolder.Visible = true
                         end
-                    end)
 
-                    local sliderTypes = utility.table()
+                        function sliderTypes:Hide()
+                                sliderHolder.Visible = false
+                        end
 
-                    function sliderTypes:Show()
-                        slider.Visible = true
-                    end
+                        function sliderTypes:SetValueText(str)
+                                valueText = str
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                        end
 
-                    function sliderTypes:Hide()
-                        slider.Visible = false
-                    end
+                        function sliderTypes:Set(num)
+                                num = math.floor(math.clamp(num, min, max) * decimals) / decimals
+                                value = num
+                                fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                if textBox then
+                                        textBox.Text = tostring(value)
+                                end
+                                if flag then
+                                        library.flags[flag] = value
+                                end
+                                callback(value)
+                        end
 
-                    function sliderTypes:SetValueText(str)
-                        valueText = str
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                    end
+                        function sliderTypes:SetMin(num)
+                                min = num
+                                value = math.floor(math.clamp(value, min, max) * decimals) / decimals
+                                fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                if flag then
+                                        library.flags[flag] = value
+                                end
+                                callback(value)
+                        end
 
-                    function sliderTypes:Set(num)
-                        num = math.floor(math.clamp(num, min, max) * decimals) / decimals
-                        value = num
-                        fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                        function sliderTypes:SetMax(num)
+                                max = num
+                                value = math.floor(math.clamp(value, min, max) * decimals) / decimals
+                                fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+                                title.Text = valueText:gsub("%[VALUE%]", tostring(value))
+                                if flag then
+                                        library.flags[flag] = value
+                                end
+                                callback(value)
+                        end
+
                         if flag then
-                            library.flags[flag] = value
+                                flags.sliders[flag] = function(num)
+                                        sliderTypes:Set(num)
+                                end
                         end
-                        callback(value)
-                    end
 
-                    function sliderTypes:SetMin(num)
-                        min = num
-                        value = math.floor(math.clamp(value, min, max) * decimals) / decimals
-                        fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                        if flag then
-                            library.flags[flag] = value
-                        end
-                        callback(value)
-                    end
-
-                    function sliderTypes:SetMax(num)
-                        max = num
-                        value = math.floor(math.clamp(value, min, max) * decimals) / decimals
-                        fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
-                        title.Text = valueText:gsub("%[VALUE%]", tostring(value))
-                        if flag then
-                            library.flags[flag] = value
-                        end
-                        callback(value)
-                    end
-
-                    if flag then
-                        flags.sliders[flag] = function(num)
-                            sliderTypes:Set(num)
-                        end
-                    end
-
-                    return sliderTypes
+                        return sliderTypes
                 end
 
                 function sectionTypes:ToggleSlider(opts)
@@ -3031,17 +3095,29 @@ function initLibrary()
                     local default = options.default or Color3.fromRGB(255, 255, 255)
                     local flag = options.flag
                     local callback = options.callback or function() end
+                    local rainbow = options.rainbow or false
+                    local rainbowFlag = options.rainbowFlag
 
                     local open = false
                     local hue, sat, val = default:ToHSV()
                     local slidingHue = false
                     local slidingSaturation = false
                     local hsv = Color3.fromHSV(hue, sat, val)
+                    local rainbowEnabled = rainbow
+                    local rainbowConnection = nil
+                    local savedColor = default
 
                     if flag then
                         library.flags[flag] = default
                     end
                     callback(default)
+
+                    if rainbowFlag and library.flags[rainbowFlag] ~= nil then
+                        rainbowEnabled = library.flags[rainbowFlag]
+                    end
+                    if rainbowFlag then
+                        library.flags[rainbowFlag] = rainbowEnabled
+                    end
 
                     local colorPickerHolder = utility.create("Frame", {
                         Size = UDim2.new(1, 0, 0, 16),
@@ -3091,6 +3167,19 @@ function initLibrary()
                             ColorSequenceKeypoint.new(1, Color3.fromRGB(105, 105, 105))
                         },
                         Parent = icon
+                    })
+
+                    local rainbowButton = utility.create("TextButton", {
+                        ZIndex = 3,
+                        Size = UDim2.new(0, 22, 0, 14),
+                        BorderColor3 = selectedTheme.background,
+                        Position = UDim2.new(1, -48, 0, 1),
+                        BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary,
+                        Text = "🌈",
+                        TextSize = 12,
+                        TextColor3 = selectedTheme.text,
+                        Font = Enum.Font.Gotham,
+                        Parent = colorPicker
                     })
 
                     local picker = utility.create("Frame", {
@@ -3209,6 +3298,66 @@ function initLibrary()
                         Parent = bg2
                     })
 
+                    local function stopRainbow()
+                        if rainbowConnection then
+                            rainbowConnection:Disconnect()
+                            rainbowConnection = nil
+                        end
+                    end
+
+                    local function startRainbow()
+                        stopRainbow()
+                        rainbowConnection = runService.RenderStepped:Connect(function()
+                            local time = tick() % 6 / 6
+                            local newColor = Color3.fromHSV(time, 1, 1)
+                            hue = time
+                            hsv = newColor
+                            icon.BackgroundColor3 = newColor
+                            saturationFrame.BackgroundColor3 = newColor
+                            rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
+                            hex.Text = utility.rgb_to_hex(newColor)
+                            if flag then
+                                library.flags[flag] = newColor
+                            end
+                            callback(newColor)
+                        end)
+                    end
+
+                    local function toggleRainbow()
+                        if rainbowEnabled then
+                            stopRainbow()
+                            rainbowEnabled = false
+                            rainbowButton.BackgroundColor3 = selectedTheme.tertiary
+                            local restoreColor = savedColor or Color3.fromHSV(hue, sat, val)
+                            hue, sat, val = restoreColor:ToHSV()
+                            hsv = restoreColor
+                            icon.BackgroundColor3 = restoreColor
+                            saturationFrame.BackgroundColor3 = restoreColor
+                            rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
+                            hex.Text = utility.rgb_to_hex(restoreColor)
+                            if flag then
+                                library.flags[flag] = restoreColor
+                            end
+                            callback(restoreColor)
+                            if saturationFrame.AbsoluteSize.X > 0 then
+                                saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
+                            end
+                            if hueFrame.AbsoluteSize.Y > 0 then
+                                huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
+                            end
+                        else
+                            savedColor = Color3.fromHSV(hue, sat, val)
+                            rainbowEnabled = true
+                            rainbowButton.BackgroundColor3 = library.color
+                            startRainbow()
+                        end
+                        if rainbowFlag then
+                            library.flags[rainbowFlag] = rainbowEnabled
+                        end
+                    end
+
+                    rainbowButton.MouseButton1Click:Connect(toggleRainbow)
+
                     local function openPicker()
                         open = not open
                         picker.Visible = open
@@ -3218,6 +3367,9 @@ function initLibrary()
                     colorPicker.MouseButton1Click:connect(openPicker)
 
                     local function updateHue(input)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         local sizeY = 1 - math.clamp((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y, 0, 1)
                         local posY = math.clamp(((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 2)
                         huePicker.Position = UDim2.new(0, 0, 0, posY)
@@ -3255,6 +3407,9 @@ function initLibrary()
                     end)
 
                     local function updateSatVal(input)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         local sizeX = math.clamp((input.Position.X - saturationFrame.AbsolutePosition.X) / saturationFrame.AbsoluteSize.X, 0, 1)
                         local sizeY = 1 - math.clamp((input.Position.Y - saturationFrame.AbsolutePosition.Y) / saturationFrame.AbsoluteSize.Y, 0, 1)
                         local posY = math.clamp(((input.Position.Y - saturationFrame.AbsolutePosition.Y) / saturationFrame.AbsoluteSize.Y) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)
@@ -3308,11 +3463,22 @@ function initLibrary()
                         title.Text = str
                     end
 
+                    function colorPickerTypes:SetRainbow(bool)
+                        if bool and not rainbowEnabled then
+                            toggleRainbow()
+                        elseif not bool and rainbowEnabled then
+                            toggleRainbow()
+                        end
+                    end
+
                     function colorPickerTypes:SetRGB(color)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         hue, sat, val = color:ToHSV()
-                        hsv = Color3.fromHSV(hue, sat, val)
-                        saturationFrame.BackgroundColor3 = hsv
-                        icon.BackgroundColor3 = hsv
+                        hsv = color
+                        saturationFrame.BackgroundColor3 = color
+                        icon.BackgroundColor3 = color
                         if saturationFrame.AbsoluteSize.X > 0 then
                             saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
                         end
@@ -3320,31 +3486,16 @@ function initLibrary()
                             huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
                         end
                         rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
-                        hex.Text = utility.rgb_to_hex(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
+                        hex.Text = utility.rgb_to_hex(color)
                         if flag then
-                            library.flags[flag] = Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255)
+                            library.flags[flag] = color
                         end
-                        callback(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
+                        callback(color)
                     end
 
                     function colorPickerTypes:SetHex(hexValue)
                         local color = utility.hex_to_rgb(hexValue)
-                        hue, sat, val = color:ToHSV()
-                        hsv = Color3.fromHSV(hue, sat, val)
-                        saturationFrame.BackgroundColor3 = hsv
-                        icon.BackgroundColor3 = hsv
-                        if saturationFrame.AbsoluteSize.X > 0 then
-                            saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
-                        end
-                        if hueFrame.AbsoluteSize.Y > 0 then
-                            huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
-                        end
-                        rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
-                        hex.Text = utility.rgb_to_hex(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
-                        if flag then
-                            library.flags[flag] = Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255)
-                        end
-                        callback(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
+                        colorPickerTypes:SetRGB(color)
                     end
 
                     rgb.FocusLost:Connect(function()
@@ -3372,9 +3523,18 @@ function initLibrary()
                         end
                     end)
 
+                    if rainbowEnabled then
+                        startRainbow()
+                    end
+
                     if flag then
                         flags.colorpickers[flag] = function(color)
                             colorPickerTypes:SetRGB(color)
+                        end
+                    end
+                    if rainbowFlag then
+                        flags.rainbows[rainbowFlag] = function(bool)
+                            colorPickerTypes:SetRainbow(bool)
                         end
                     end
 
@@ -3389,6 +3549,8 @@ function initLibrary()
                     local colorPickerFlag = options.colorPickerFlag
                     local toggleCallback = options.toggleCallback or function() end
                     local colorPickerCallback = options.colorPickerCallback or function() end
+                    local rainbow = options.rainbow or false
+                    local rainbowFlag = options.rainbowFlag
 
                     local open = false
                     local toggled = false
@@ -3396,6 +3558,9 @@ function initLibrary()
                     local slidingHue = false
                     local slidingSaturation = false
                     local hsv = Color3.fromHSV(hue, sat, val)
+                    local rainbowEnabled = rainbow
+                    local rainbowConnection = nil
+                    local savedColor = default
 
                     if colorPickerFlag then
                         library.flags[colorPickerFlag] = default
@@ -3406,6 +3571,13 @@ function initLibrary()
                         library.flags[toggleFlag] = toggled
                     end
                     toggleCallback(false)
+
+                    if rainbowFlag and library.flags[rainbowFlag] ~= nil then
+                        rainbowEnabled = library.flags[rainbowFlag]
+                    end
+                    if rainbowFlag then
+                        library.flags[rainbowFlag] = rainbowEnabled
+                    end
 
                     local toggleColorPickerHolder = utility.create("Frame", {
                         Size = UDim2.new(1, 0, 0, 16),
@@ -3474,6 +3646,19 @@ function initLibrary()
                         Parent = icon
                     })
 
+                    local rainbowButton = utility.create("TextButton", {
+                        ZIndex = 3,
+                        Size = UDim2.new(0, 22, 0, 14),
+                        BorderColor3 = selectedTheme.background,
+                        Position = UDim2.new(1, -48, 0, 1),
+                        BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary,
+                        Text = "🌈",
+                        TextSize = 12,
+                        TextColor3 = selectedTheme.text,
+                        Font = Enum.Font.Gotham,
+                        Parent = colorPicker
+                    })
+
                     local picker = utility.create("Frame", {
                         ZIndex = 12,
                         Visible = false,
@@ -3590,6 +3775,66 @@ function initLibrary()
                         Parent = bg2
                     })
 
+                    local function stopRainbow()
+                        if rainbowConnection then
+                            rainbowConnection:Disconnect()
+                            rainbowConnection = nil
+                        end
+                    end
+
+                    local function startRainbow()
+                        stopRainbow()
+                        rainbowConnection = runService.RenderStepped:Connect(function()
+                            local time = tick() % 6 / 6
+                            local newColor = Color3.fromHSV(time, 1, 1)
+                            hue = time
+                            hsv = newColor
+                            colorPickerIcon.BackgroundColor3 = newColor
+                            saturationFrame.BackgroundColor3 = newColor
+                            rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
+                            hex.Text = utility.rgb_to_hex(newColor)
+                            if colorPickerFlag then
+                                library.flags[colorPickerFlag] = newColor
+                            end
+                            colorPickerCallback(newColor)
+                        end)
+                    end
+
+                    local function toggleRainbow()
+                        if rainbowEnabled then
+                            stopRainbow()
+                            rainbowEnabled = false
+                            rainbowButton.BackgroundColor3 = selectedTheme.tertiary
+                            local restoreColor = savedColor or Color3.fromHSV(hue, sat, val)
+                            hue, sat, val = restoreColor:ToHSV()
+                            hsv = restoreColor
+                            colorPickerIcon.BackgroundColor3 = restoreColor
+                            saturationFrame.BackgroundColor3 = restoreColor
+                            rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
+                            hex.Text = utility.rgb_to_hex(restoreColor)
+                            if colorPickerFlag then
+                                library.flags[colorPickerFlag] = restoreColor
+                            end
+                            colorPickerCallback(restoreColor)
+                            if saturationFrame.AbsoluteSize.X > 0 then
+                                saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
+                            end
+                            if hueFrame.AbsoluteSize.Y > 0 then
+                                huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
+                            end
+                        else
+                            savedColor = Color3.fromHSV(hue, sat, val)
+                            rainbowEnabled = true
+                            rainbowButton.BackgroundColor3 = library.color
+                            startRainbow()
+                        end
+                        if rainbowFlag then
+                            library.flags[rainbowFlag] = rainbowEnabled
+                        end
+                    end
+
+                    rainbowButton.MouseButton1Click:Connect(toggleRainbow)
+
                     local function toggleToggle()
                         toggled = not toggled
                         if toggled then
@@ -3626,6 +3871,9 @@ function initLibrary()
                     colorPickerIcon.MouseButton1Click:connect(openPicker)
 
                     local function updateHue(input)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         local sizeY = 1 - math.clamp((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y, 0, 1)
                         local posY = math.clamp(((input.Position.Y - hueFrame.AbsolutePosition.Y) / hueFrame.AbsoluteSize.Y) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 2)
                         huePicker.Position = UDim2.new(0, 0, 0, posY)
@@ -3663,6 +3911,9 @@ function initLibrary()
                     end)
 
                     local function updateSatVal(input)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         local sizeX = math.clamp((input.Position.X - saturationFrame.AbsolutePosition.X) / saturationFrame.AbsoluteSize.X, 0, 1)
                         local sizeY = 1 - math.clamp((input.Position.Y - saturationFrame.AbsolutePosition.Y) / saturationFrame.AbsoluteSize.Y, 0, 1)
                         local posY = math.clamp(((input.Position.Y - saturationFrame.AbsolutePosition.Y) / saturationFrame.AbsoluteSize.Y) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)
@@ -3723,6 +3974,9 @@ function initLibrary()
                     end
 
                     function toggleColorPickerTypes:SetRGB(color)
+                        if rainbowEnabled then
+                            toggleRainbow()
+                        end
                         hue, sat, val = color:ToHSV()
                         hsv = Color3.fromHSV(hue, sat, val)
                         saturationFrame.BackgroundColor3 = hsv
@@ -3743,22 +3997,15 @@ function initLibrary()
 
                     function toggleColorPickerTypes:SetHex(hexValue)
                         local color = utility.hex_to_rgb(hexValue)
-                        hue, sat, val = color:ToHSV()
-                        hsv = Color3.fromHSV(hue, sat, val)
-                        saturationFrame.BackgroundColor3 = hsv
-                        colorPickerIcon.BackgroundColor3 = hsv
-                        if saturationFrame.AbsoluteSize.X > 0 then
-                            saturationPicker.Position = UDim2.new(0, (math.clamp(sat * saturationFrame.AbsoluteSize.X, 0, saturationFrame.AbsoluteSize.X - 4)), 0, (math.clamp((1 - val) * saturationFrame.AbsoluteSize.Y, 0, saturationFrame.AbsoluteSize.Y - 4)))
+                        toggleColorPickerTypes:SetRGB(color)
+                    end
+
+                    function toggleColorPickerTypes:SetRainbow(bool)
+                        if bool and not rainbowEnabled then
+                            toggleRainbow()
+                        elseif not bool and rainbowEnabled then
+                            toggleRainbow()
                         end
-                        if hueFrame.AbsoluteSize.Y > 0 then
-                            huePicker.Position = UDim2.new(0, 0, 0, math.clamp((1 - hue) * hueFrame.AbsoluteSize.Y, 0, hueFrame.AbsoluteSize.Y - 4))
-                        end
-                        rgb.Text = math.floor((hsv.r * 255) + 0.5) .. ", " .. math.floor((hsv.g * 255) + 0.5) .. ", " .. math.floor((hsv.b * 255) + 0.5)
-                        hex.Text = utility.rgb_to_hex(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
-                        if colorPickerFlag then
-                            library.flags[colorPickerFlag] = Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255)
-                        end
-                        colorPickerCallback(Color3.fromRGB(hsv.r * 255, hsv.g * 255, hsv.b * 255))
                     end
 
                     rgb.FocusLost:Connect(function()
@@ -3786,6 +4033,10 @@ function initLibrary()
                         end
                     end)
 
+                    if rainbowEnabled then
+                        startRainbow()
+                    end
+
                     if colorPickerFlag then
                         flags.colorpickers[colorPickerFlag] = function(color)
                             toggleColorPickerTypes:SetRGB(color)
@@ -3795,6 +4046,12 @@ function initLibrary()
                     if toggleFlag then
                         flags.toggles[toggleFlag] = function(bool)
                             toggleColorPickerTypes:Toggle(bool)
+                        end
+                    end
+
+                    if rainbowFlag then
+                        flags.rainbows[rainbowFlag] = function(bool)
+                            toggleColorPickerTypes:SetRainbow(bool)
                         end
                     end
 
