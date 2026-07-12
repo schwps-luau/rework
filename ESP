@@ -80,7 +80,7 @@ local function shouldShowPlayer(player)
     local character = player.Character
     if not character then return false end
     
-    local humanoid = character:FindFirstChild("Humanoid")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return false end
     
     if ESP.TeamCheck and isTeammate(player) then
@@ -262,7 +262,14 @@ local function updateHealth(player)
         return
     end
     
-    local rootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+        or character:FindFirstChild("UpperTorso")
+        or character:FindFirstChild("Torso")
+    if not rootPart then
+        esp.health.Visible = false
+        esp.healthOutline.Visible = false
+        return
+    end
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
     if not onScreen then esp.health.Visible = false return end
     
@@ -326,5 +333,3 @@ function ESP:Init()
         end
     end)
 end
-
-return ESP
