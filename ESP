@@ -9,15 +9,20 @@ local cache = {}
 
 local ESP = {
     Enabled = false,
+
     TeamCheck = false,
     VisibleCheck = false,
     WallCheck = false,
+    
     ShowName = false,
     ShowHealth = false,
     ShowBox = false,
     ShowBoxFill = false,
     ShowTracer = false,
-    UseDisplayName = false,
+    ShowHighlight = false,
+
+    UseDisplayName = false
+    
     VisibleColor = Color3.fromRGB(255, 0, 0),
     InvisibleColor = Color3.fromRGB(128, 128, 128),
     HealthLowColor = Color3.fromRGB(255, 0, 0),
@@ -27,9 +32,10 @@ local ESP = {
     BoxColor = Color3.fromRGB(255, 255, 255),
     HighlightColor = Color3.fromRGB(255, 0, 0),
     TracerColor = Color3.fromRGB(255, 0, 0),
+    
     TracerThickness = 1,
     BoxThickness = 1,
-    BoxFillTransparency = 0.3
+    BoxFillTransparency = 0.3,
 }
 
 local raycastParams = RaycastParams.new()
@@ -119,7 +125,7 @@ local function createEsp(player)
         boxBottom = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
         boxLeft = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
         boxRight = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
-        tracer = createDrawing("Line", {Thickness = ESP.TracerThickness, Visible = false, Transparency = 0.6})
+        tracer = createDrawing("Line", {Thickness = ESP.TracerThickness, Visible = false, Transparency = 0.6}),
     }
     cache[player] = esp
 end
@@ -128,15 +134,13 @@ local function updateHighlight(player)
     local highlight = highlights[player]
     if not highlight then return end
     
-    if not ESP.Enabled or not shouldShowPlayer(player) or ESP.ShowBox then
+    if ESP.Enabled and ESP.ShowHighlight and player.Character then
+        highlight.Enabled = true
+        highlight.FillColor = ESP.HighlightColor
+        highlight.OutlineColor = ESP.HighlightColor
+    else
         highlight.Enabled = false
-        return
     end
-    
-    highlight.Enabled = true
-    local color = getColorByVisibility(ESP.HighlightColor, player)
-    highlight.FillColor = color
-    highlight.OutlineColor = color
 end
 
 local function updateName(player)
@@ -170,7 +174,6 @@ local function updateBox(player)
     local character = player.Character
     local rootPart = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso"))
     
-    -- Функция для быстрой очистки всех элементов бокса
     local function hideBox()
         esp.boxTop.Visible = false
         esp.boxBottom.Visible = false
@@ -179,26 +182,22 @@ local function updateBox(player)
         esp.boxFill.Visible = false
     end
 
-    -- 1. Проверка общих условий
     if not ESP.Enabled or not ESP.ShowBox or not shouldShowPlayer(player) or not rootPart then
         hideBox()
         return
     end
     
-    -- 2. Проверка нахождения на экране
     local hrp2D, onScreen = camera:WorldToViewportPoint(rootPart.Position)
     if not onScreen then 
         hideBox()
         return 
     end
     
-    -- 3. Если проверки пройдены — рисуем
     local charSize = (camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - camera:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 2.6, 0)).Y) / 2
     local boxSize = Vector2.new(math.floor(charSize * 1.8), math.floor(charSize * 1.9))
     local boxPos = Vector2.new(math.floor(hrp2D.X - boxSize.X / 2), math.floor(hrp2D.Y - boxSize.Y / 2))
     local color = getColorByVisibility(ESP.BoxColor, player)
     
-    -- Обновляем линии
     esp.boxTop.From = boxPos
     esp.boxTop.To = boxPos + Vector2.new(boxSize.X, 0)
     esp.boxTop.Color = color
@@ -219,7 +218,6 @@ local function updateBox(player)
     esp.boxRight.Color = color
     esp.boxRight.Visible = true
     
-    -- Обновляем заливку
     if ESP.ShowBoxFill then
         esp.boxFill.Position = boxPos
         esp.boxFill.Size = boxSize
