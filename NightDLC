@@ -165,7 +165,7 @@ function Library:InitHUD()
     self._Initialized = true
 
     local HUD = Instance.new("ScreenGui", CoreGui); HUD.Name = "Night_V23"; self.MainGui = HUD
-    local MenuBlur = Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18; MenuBlur.Enabled = self.Blur
+    local MenuBlur = Lighting:FindFirstChild("NightBlur") or Instance.new("BlurEffect", Lighting); MenuBlur.Name = "NightBlur"; MenuBlur.Size = 18; MenuBlur.Enabled = self.Blur
 
     local TH = Instance.new("Frame", HUD); TH.Size = UDim2.new(0, 210, 0, 65); TH.Position = UDim2.new(0.5, 100, 0.5, 100); TH.BackgroundColor3 = Color3.fromRGB(15,15,20); TH.Visible = false
     Instance.new("UICorner", TH).CornerRadius = UDim.new(0, 10)
