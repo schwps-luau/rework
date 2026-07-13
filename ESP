@@ -21,7 +21,7 @@ local ESP = {
     ShowTracer = false,
     ShowHighlight = false,
 
-    UseDisplayName = false
+    UseDisplayName = false,
     
     VisibleColor = Color3.fromRGB(255, 0, 0),
     InvisibleColor = Color3.fromRGB(128, 128, 128),
