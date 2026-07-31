@@ -1,7 +1,8 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local localPlayer = Players.LocalPlayer
-local camera = workspace.CurrentCamera
+local camera = Workspace.CurrentCamera
 
 local highlights = {}
 local connections = {}
@@ -20,6 +21,7 @@ local ESP = {
     ShowBoxFill = false,
     ShowTracer = false,
     ShowHighlight = false,
+    ShowOffScreen = false,
 
     UseDisplayName = false,
     
@@ -32,10 +34,12 @@ local ESP = {
     BoxColor = Color3.fromRGB(255, 255, 255),
     HighlightColor = Color3.fromRGB(255, 0, 0),
     TracerColor = Color3.fromRGB(255, 0, 0),
+    OffScreenColor = Color3.fromRGB(255, 255, 255),
     
     TracerThickness = 1,
     BoxThickness = 1,
     BoxFillTransparency = 0.3,
+    OffScreenRadius = 70,
 }
 
 local raycastParams = RaycastParams.new()
@@ -55,7 +59,7 @@ local function isPartVisible(part)
     if not part or not part:IsA("BasePart") then return false end
     local cameraPosition = camera.CFrame.Position
     local direction = (part.Position - cameraPosition)
-    local rayResult = workspace:Raycast(cameraPosition, direction, raycastParams)
+    local rayResult = Workspace:Raycast(cameraPosition, direction, raycastParams)
     
     if rayResult then
         return rayResult.Instance:IsDescendantOf(part.Parent)
@@ -126,6 +130,9 @@ local function createEsp(player)
         boxLeft = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
         boxRight = createDrawing("Line", {Thickness = ESP.BoxThickness, Visible = false}),
         tracer = createDrawing("Line", {Thickness = ESP.TracerThickness, Visible = false, Transparency = 0.6}),
+        arrowLine1 = createDrawing("Line", {Thickness = 1, Visible = false}),
+        arrowLine2 = createDrawing("Line", {Thickness = 1, Visible = false}),
+        arrowLine3 = createDrawing("Line", {Thickness = 1, Visible = false}),
     }
     cache[player] = esp
 end
@@ -289,6 +296,82 @@ local function updateHealth(player)
     esp.health.Visible = true
 end
 
+local function GetWorldAngle(cameraCFrame, worldPosition)
+    local relative = worldPosition - cameraCFrame.Position
+    local right = cameraCFrame.RightVector
+    local up = cameraCFrame.UpVector
+    local screenX = relative:Dot(right)
+    local screenY = relative:Dot(up)
+    return math.atan2(screenX, screenY)
+end
+
+local function updateOffScreen(player)
+    local esp = cache[player]
+    if not esp then return end
+    
+    local function hideArrows()
+        esp.arrowLine1.Visible = false
+        esp.arrowLine2.Visible = false
+        esp.arrowLine3.Visible = false
+    end
+
+    if not ESP.Enabled or not ESP.ShowOffScreen or not shouldShowPlayer(player) then
+        hideArrows()
+        return
+    end
+    
+    local character = player.Character
+    local targetRoot = character and character:FindFirstChild("HumanoidRootPart")
+    if not targetRoot then
+        hideArrows()
+        return
+    end
+    
+    local cameraCFrame = camera.CFrame
+    local targetPos = targetRoot.Position
+    
+    local _, onScreen = camera:WorldToViewportPoint(targetPos)
+    if onScreen then
+        hideArrows()
+        return
+    end
+    
+    local centerX = camera.ViewportSize.X / 2
+    local centerY = camera.ViewportSize.Y / 2
+    local angle = GetWorldAngle(cameraCFrame, targetPos)
+    
+    local baseX = centerX + math.sin(angle) * (ESP.OffScreenRadius - 14 / 2)
+    local baseY = centerY - math.cos(angle) * (ESP.OffScreenRadius - 14 / 2)
+    
+    local tipX = centerX + math.sin(angle) * (ESP.OffScreenRadius + 14 / 2)
+    local tipY = centerY - math.cos(angle) * (ESP.OffScreenRadius + 14 / 2)
+    
+    local perpAngle = angle + math.rad(90)
+    
+    local baseLeftX = baseX + math.sin(perpAngle) * (14 / 2)
+    local baseLeftY = baseY - math.cos(perpAngle) * (14 / 2)
+    
+    local baseRightX = baseX - math.sin(perpAngle) * (14 / 2)
+    local baseRightY = baseY + math.cos(perpAngle) * (14 / 2)
+    
+    local color = getColorByVisibility(ESP.OffScreenColor, player)
+    
+    esp.arrowLine1.Visible = true
+    esp.arrowLine1.From = Vector2.new(baseLeftX, baseLeftY)
+    esp.arrowLine1.To = Vector2.new(tipX, tipY)
+    esp.arrowLine1.Color = color
+    
+    esp.arrowLine2.Visible = true
+    esp.arrowLine2.From = Vector2.new(tipX, tipY)
+    esp.arrowLine2.To = Vector2.new(baseRightX, baseRightY)
+    esp.arrowLine2.Color = color
+    
+    esp.arrowLine3.Visible = true
+    esp.arrowLine3.From = Vector2.new(baseRightX, baseRightY)
+    esp.arrowLine3.To = Vector2.new(baseLeftX, baseLeftY)
+    esp.arrowLine3.Color = color
+end
+
 local function setupPlayer(player)
     if player == localPlayer then return end
     createEsp(player)
@@ -328,6 +411,7 @@ function ESP:Init()
             updateHealth(p)
             updateBox(p)
             updateTracer(p)
+            updateOffScreen(p)
         end
     end)
 end
