@@ -1,5 +1,4 @@
 function initLibrary()
-    local folderName = "config holder"
     local gameConfigFolder = "cfgs"
 
     if not isfolder(gameConfigFolder) then
@@ -865,7 +864,13 @@ function initLibrary()
                 Parent = tabTogglesHolder
             })
 
-            tabToggle.Size = UDim2.new(0, tabToggle.TextBounds.X + 12, 1, 0)
+            local width = utility.get_text_bounds(
+                name,
+                toggled and Enum.Font.GothamSemibold or Enum.Font.Gotham,
+                14
+            )
+
+            tabToggle.Size = UDim2.new(0, width + 12, 1, 0)
 
             local tab = utility.create("Frame", {
                 Size = UDim2.new(1, 0, 1, 0),
@@ -1056,19 +1061,38 @@ function initLibrary()
                 column4.CanvasSize = UDim2.new(0, 0, 0, column4List.AbsoluteContentSize.Y)
             end
 
+            local function updateTabSize(button)
+                local width = utility.get_text_bounds(
+                    button.Text,
+                    button.Font,
+                    button.TextSize
+                )
+
+                button.Size = UDim2.new(0, width + 12, 1, 0)
+            end
+
             local function openTab()
-                for _, obj in next, tabTogglesHolder:GetChildren() do
+
+                for _, obj in ipairs(tabTogglesHolder:GetChildren()) do
                     if obj:IsA("TextButton") then
                         obj.Font = Enum.Font.Gotham
+                        updateTabSize(obj)
                     end
                 end
+
                 tabToggle.Font = Enum.Font.GothamSemibold
-                for _, obj in next, tabs:GetChildren() do
+                updateTabSize(tabToggle)
+
+                for _, obj in ipairs(tabs:GetChildren()) do
                     obj.Visible = false
                 end
+
                 tab.Visible = true
-                wait(0.1)
-                updateLayout()
+
+                task.defer(function()
+                    updateLayout()
+                end)
+
             end
 
             tabToggle.MouseButton1Click:Connect(openTab)
@@ -3169,19 +3193,6 @@ function initLibrary()
                         Parent = icon
                     })
 
-                    local rainbowButton = utility.create("TextButton", {
-                        ZIndex = 3,
-                        Size = UDim2.new(0, 22, 0, 14),
-                        BorderColor3 = selectedTheme.background,
-                        Position = UDim2.new(1, -48, 0, 1),
-                        BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary,
-                        Text = "🌈",
-                        TextSize = 12,
-                        TextColor3 = selectedTheme.text,
-                        Font = Enum.Font.Gotham,
-                        Parent = colorPicker
-                    })
-
                     local picker = utility.create("Frame", {
                         ZIndex = 12,
                         Visible = false,
@@ -3236,11 +3247,18 @@ function initLibrary()
                         Parent = hueFrame
                     })
 
+                    local rgbRow = utility.create("Frame", {
+                        ZIndex = 13,
+                        Size = UDim2.new(1, -10, 0, 16),
+                        Position = UDim2.new(0, 5, 1, -42),
+                        BackgroundTransparency = 1,
+                        Parent = picker
+                    })
+
                     local rgb = utility.create("TextBox", {
                         ZIndex = 14,
-                        Size = UDim2.new(1, -10, 0, 16),
+                        Size = UDim2.new(1, -30, 1, 0),
                         BackgroundTransparency = 1,
-                        Position = UDim2.new(0, 5, 1, -42),
                         BackgroundColor3 = Color3.fromRGB(30, 30, 30),
                         PlaceholderColor3 = selectedTheme.textSecondary,
                         FontSize = Enum.FontSize.Size12,
@@ -3250,7 +3268,7 @@ function initLibrary()
                         ClearTextOnFocus = false,
                         Font = Enum.Font.Gotham,
                         PlaceholderText = "R,  G,  B",
-                        Parent = picker
+                        Parent = rgbRow
                     })
 
                     local bg = utility.create("Frame", {
@@ -3265,6 +3283,18 @@ function initLibrary()
                         Rotation = 90,
                         Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
                         Parent = bg
+                    })
+
+                    local rainbowButton = utility.create("TextButton", {
+                        ZIndex = 14,
+                        Size = UDim2.new(0, 26, 1, 0),
+                        Position = UDim2.new(1, -26, 0, 0),
+                        BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary,
+                        Text = "🌈",
+                        TextSize = 12,
+                        TextColor3 = selectedTheme.text,
+                        Font = Enum.Font.Gotham,
+                        Parent = rgbRow
                     })
 
                     local hex = utility.create("TextBox", {
@@ -3646,19 +3676,6 @@ function initLibrary()
                         Parent = icon
                     })
 
-                    local rainbowButton = utility.create("TextButton", {
-                        ZIndex = 3,
-                        Size = UDim2.new(0, 22, 0, 14),
-                        BorderColor3 = selectedTheme.background,
-                        Position = UDim2.new(1, -48, 0, 1),
-                        BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary,
-                        Text = "🌈",
-                        TextSize = 12,
-                        TextColor3 = selectedTheme.text,
-                        Font = Enum.Font.Gotham,
-                        Parent = colorPicker
-                    })
-
                     local picker = utility.create("Frame", {
                         ZIndex = 12,
                         Visible = false,
@@ -3713,11 +3730,18 @@ function initLibrary()
                         Parent = hueFrame
                     })
 
+                    local rgbRow = utility.create("Frame", {
+                        ZIndex = 13,
+                        Size = UDim2.new(1, -10, 0, 16),
+                        Position = UDim2.new(0, 5, 1, -42),
+                        BackgroundTransparency = 1,
+                        Parent = picker
+                    })
+
                     local rgb = utility.create("TextBox", {
                         ZIndex = 14,
-                        Size = UDim2.new(1, -10, 0, 16),
+                        Size = UDim2.new(1, -30, 1, 0),
                         BackgroundTransparency = 1,
-                        Position = UDim2.new(0, 5, 1, -42),
                         BackgroundColor3 = Color3.fromRGB(30, 30, 30),
                         PlaceholderColor3 = selectedTheme.textSecondary,
                         FontSize = Enum.FontSize.Size12,
@@ -3727,7 +3751,7 @@ function initLibrary()
                         ClearTextOnFocus = false,
                         Font = Enum.Font.Gotham,
                         PlaceholderText = "R,  G,  B",
-                        Parent = picker
+                        Parent = rgbRow
                     })
 
                     local bg = utility.create("Frame", {
@@ -3742,6 +3766,18 @@ function initLibrary()
                         Rotation = 90,
                         Color = ColorSequence.new(selectedTheme.gradient1, selectedTheme.gradient2),
                         Parent = bg
+                    })
+
+                    local rainbowButton = utility.create("TextButton", {
+                        ZIndex = 14,
+                        Size = UDim2.new(0, 26, 1, 0),
+                        Position = UDim2.new(1, -26, 0, 0),
+                        BackgroundColor3 = rainbowEnabled and library.color or selectedTheme.tertiary,
+                        Text = "🌈",
+                        TextSize = 12,
+                        TextColor3 = selectedTheme.text,
+                        Font = Enum.Font.Gotham,
+                        Parent = rgbRow
                     })
 
                     local hex = utility.create("TextBox", {
